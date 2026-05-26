@@ -1,6 +1,6 @@
 {
   "name": "claude-manager",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Claude Project Dashboard - manage your Claude Code project folders",
   "main": "main.js",
   "scripts": {
