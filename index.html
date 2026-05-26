@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Project Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #16213e, #0f3460);
+      padding: 20px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #e94560;
+      flex-shrink: 0;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header h1 .logo {
+      width: 28px;
+      height: 28px;
+      background: #e94560;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: #e94560;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #533483;
+      color: white;
+    }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.1);
+      color: #ccc;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .btn-ghost:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+    .btn-status {
+      background: rgba(179,136,255,0.18);
+      color: #d4baff;
+      border: 1px solid rgba(179,136,255,0.35);
+    }
+    .btn-status:hover { background: rgba(179,136,255,0.32); color: #fff; }
+    .btn-status.exists {
+      background: rgba(74,222,128,0.18);
+      color: #86efac;
+      border-color: rgba(74,222,128,0.4);
+    }
+    .btn-status.exists:hover { background: rgba(74,222,128,0.32); color: #fff; }
+
+    .btn-small {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    .btn-icon {
+      padding: 6px 10px;
+      font-size: 14px;
+    }
+
+    /* Search box */
+    .search-wrap {
+      position: relative;
+      width: 280px;
+      max-width: 100%;
+      margin-right: 4px;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 7px 30px 7px 32px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      background: #0f1729;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-wrap input:focus {
+      border-color: #e94560;
+      box-shadow: 0 0 0 2px rgba(233,69,96,0.15);
+    }
+    .search-wrap input::placeholder { color: #555; }
+    .search-wrap .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #666;
+      font-size: 13px;
+      pointer-events: none;
+    }
+    .search-wrap .search-clear {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: #888;
+      font-size: 16px;
+      cursor: pointer;
+      width: 22px;
+      height: 22px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      padding: 0;
+    }
+    .search-wrap .search-clear:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .search-wrap.has-value .search-clear { display: flex; }
+
+    /* Highlight matched tiles */
+    .folder-card.search-match {
+      border-color: #e94560;
+      box-shadow: 0 0 0 1px rgba(233,69,96,0.4), 0 4px 16px rgba(233,69,96,0.2);
+    }
+
+    /* Search match popover (subtle highlight inside summary tooltip) */
+    mark.hl {
+      background: rgba(233,69,96,0.4);
+      color: #fff;
+      padding: 0 2px;
+      border-radius: 2px;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 30px;
+      background: #16213e;
+      flex-shrink: 0;
+      gap: 10px;
+      flex-wrap: wrap;
+      row-gap: 10px;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      row-gap: 8px;
+    }
+
+    .sort-group {
+      flex-wrap: wrap;
+      row-gap: 6px;
+    }
+
+    /* Hide root path on narrow screens */
+    @media (max-width: 1100px) {
+      #rootPath { display: none; }
+    }
+    @media (max-width: 700px) {
+      .toolbar { padding: 12px 16px; }
+      .header { padding: 16px 16px; }
+      .content { padding: 14px 16px; }
+      .search-wrap { width: 100%; }
+    }
+    @media (max-width: 520px) {
+      .header h1 { font-size: 18px; }
+    }
+
+    .folder-count {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .sort-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sort-group label {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .sort-btn {
+      padding: 4px 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: transparent;
+      color: #aaa;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .sort-btn.active {
+      background: #e94560;
+      border-color: #e94560;
+      color: white;
+    }
+
+    .sort-btn:hover:not(.active) {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    /* Folder Grid */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 30px;
+    }
+
+    .folder-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .folder-card {
+      background: #16213e;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 18px;
+      transition: all 0.2s;
+      cursor: default;
+    }
+
+    .folder-card:hover {
+      border-color: #e94560;
+      background: #1a2744;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(233, 69, 96, 0.15);
+    }
+
+    .folder-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .folder-name .icon {
+      color: #e94560;
+      font-size: 18px;
+    }
+
+    .folder-meta {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+
+    .folder-meta span {
+      display: block;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(83, 52, 131, 0.5);
+      color: #b388ff;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 6px;
+    }
+
+    .folder-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: #16213e;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 28px;
+      width: 400px;
+      max-width: 90%;
+    }
+
+    .modal h2 {
+      font-size: 18px;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 6px;
+    }
+
+    .modal input:focus { border-color: #e94560; }
+
+    .modal .error-text {
+      color: #e94560;
+      font-size: 12px;
+      min-height: 18px;
+      margin-bottom: 10px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* Scrollbar */
+    .content::-webkit-scrollbar { width: 8px; }
+    .content::-webkit-scrollbar-track { background: transparent; }
+    .content::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+    .content::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+
+    .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: #888; }
+
+    /* View toggle */
+    .view-toggle {
+      display: flex;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-right: 10px;
+    }
+
+    .view-btn {
+      padding: 5px 14px;
+      border: none;
+      background: transparent;
+      color: #888;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-right: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .view-btn:last-child { border-right: none; }
+    .view-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .view-btn.active { background: #e94560; color: white; }
+
+    /* Archive checkbox */
+    .archive-check {
+      width: 22px;
+      height: 22px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      font-size: 13px;
+      color: transparent;
+    }
+
+    .archive-check:hover { border-color: #e94560; }
+    .archive-check.checked {
+      background: #533483;
+      border-color: #533483;
+      color: white;
+    }
+
+    .folder-card.archived-card { opacity: 0.6; }
+    .folder-card.archived-card:hover { opacity: 0.9; }
+
+    .folder-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .subfolder-link {
+      color: #b388ff;
+      cursor: default;
+      position: relative;
+      border-bottom: 1px dotted #b388ff;
+    }
+
+    /* Summary badge — small icon on tile that reveals summary on hover */
+    .summary-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: help;
+      flex-shrink: 0;
+      position: relative;
+      user-select: none;
+      transition: transform 0.15s;
+    }
+    .summary-badge:hover { transform: scale(1.15); }
+    .summary-badge.has {
+      background: rgba(179,136,255,0.2);
+      color: #b388ff;
+      border: 1px solid rgba(179,136,255,0.4);
+    }
+    .summary-badge.loading {
+      background: transparent;
+      border: 2px solid rgba(179,136,255,0.3);
+      border-top-color: #b388ff;
+      animation: spin 0.8s linear infinite;
+      color: transparent;
+    }
+    .summary-badge.error {
+      background: rgba(233,69,96,0.2);
+      color: #e94560;
+      border: 1px solid rgba(233,69,96,0.4);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .summary-badge:hover .summary-tip,
+    .summary-badge:focus .summary-tip { display: block; }
+    .summary-tip {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: -8px;
+      width: 240px;
+      background: #0f3460;
+      border: 1px solid rgba(179,136,255,0.3);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: normal;
+      color: #ddd;
+      line-height: 1.45;
+      text-align: left;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      z-index: 50;
+      white-space: normal;
+      cursor: default;
+      font-style: normal;
+    }
+    .summary-tip-hint {
+      display: block;
+      margin-top: 6px;
+      font-size: 10px;
+      color: #888;
+    }
+
+    /* Right-click context menu */
+    .ctx-menu {
+      position: fixed;
+      background: #16213e;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 6px;
+      padding: 4px 0;
+      min-width: 180px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+      z-index: 200;
+      display: none;
+    }
+    .ctx-menu.active { display: block; }
+    .ctx-item {
+      padding: 8px 14px;
+      font-size: 13px;
+      color: #ddd;
+      cursor: pointer;
+    }
+    .ctx-item:hover { background: rgba(233,69,96,0.2); color: #fff; }
+    .ctx-sep {
+      height: 1px;
+      background: rgba(255,255,255,0.08);
+      margin: 4px 0;
+    }
+
+    /* Summaries table modal */
+    .summaries-table {
+      width: 100%;
+      max-height: 60vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      background: #1a1a2e;
+    }
+    .summaries-table::-webkit-scrollbar { width: 8px; }
+    .summaries-table::-webkit-scrollbar-track { background: transparent; }
+    .summaries-table::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+    .sum-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 24px;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .sum-row:last-child { border-bottom: none; }
+    .sum-row.archived { opacity: 0.55; }
+    .sum-row-name {
+      font-size: 12px;
+      color: #ddd;
+      font-weight: 500;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sum-row-name .archived-tag {
+      display: inline-block;
+      font-size: 9px;
+      color: #888;
+      background: rgba(255,255,255,0.06);
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+    .sum-row input[type="text"] {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      background: #0f1729;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+      font-family: inherit;
+    }
+    .sum-row input[type="text"]:focus { border-color: #e94560; }
+    .sum-row input[type="text"].dirty { border-color: #b388ff; }
+    .sum-row-clear {
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: transparent;
+      color: #666;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0;
+      transition: all 0.15s;
+    }
+    .sum-row-clear:hover { background: rgba(233,69,96,0.2); color: #e94560; }
+
+    .summaries-toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .summaries-toolbar input[type="text"] {
+      flex: 1;
+      padding: 7px 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      background: #0f1729;
+      color: #fff;
+      font-size: 12px;
+      outline: none;
+      font-family: inherit;
+    }
+    .summaries-toolbar input[type="text"]:focus { border-color: #e94560; }
+    .summaries-toolbar .toolbar-info {
+      font-size: 11px;
+      color: #888;
+    }
+
+    /* Textarea inside modal */
+    .modal textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      margin-bottom: 6px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+    }
+    .modal textarea:focus { border-color: #e94560; }
+
+    .subfolder-link:hover::after {
+      content: attr(title);
+      position: absolute;
+      bottom: 120%;
+      left: 0;
+      background: #0f3460;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: #ccc;
+      white-space: pre;
+      z-index: 10;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>
+      <span class="logo">C</span>
+      Claude Project Dashboard
+    </h1>
+    <div class="header-actions">
+      <button class="btn btn-ghost" onclick="showAbout()">About</button>
+      <button class="btn btn-ghost" onclick="copyMemoryPrompt()" id="memoryBtn" title="Copies a prompt to your clipboard. Paste it into your Claude terminal to save the current session to memory.">Save to Memory</button>
+      <button class="btn btn-ghost" onclick="openGlobalClaudeMd()" title="Opens your global CLAUDE.md — personal preferences and rules that apply to ALL projects.">Global CLAUDE.md</button>
+      <button class="btn btn-primary" onclick="showCreateModal()">+ New Project</button>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="search-wrap" id="searchWrap">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" id="searchBox" placeholder="Search name or summary (e.g. eighteeneightdallas.com)..." oninput="onSearchInput()" onkeydown="onSearchKey(event)">
+        <button class="search-clear" onclick="clearSearch()" title="Clear">&times;</button>
+      </div>
+      <div class="view-toggle">
+        <button class="view-btn active" id="view-active" onclick="setView('active')">Active</button>
+        <button class="view-btn" id="view-archived" onclick="setView('archived')">Archived</button>
+        <button class="view-btn" id="view-all" onclick="setView('all')">All</button>
+      </div>
+      <span class="folder-count" id="folderCount">0 projects</span>
+      <span class="folder-count" id="rootPath" style="margin-left: 8px; color: #555;"></span>
+      <button class="btn btn-ghost btn-small" onclick="refreshFolders()">Refresh</button>
+    </div>
+    <div class="sort-group">
+      <label>Sort by:</label>
+      <button class="sort-btn active" id="sort-modified" onclick="setSort('modified')">Last Modified</button>
+      <button class="sort-btn" id="sort-created" onclick="setSort('created')">Date Created</button>
+      <button class="sort-btn" id="sort-name" onclick="setSort('name')">Name</button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="folder-grid" id="folderGrid"></div>
+  </div>
+
+  <!-- About Modal -->
+  <div class="modal-overlay" id="aboutModal">
+    <div class="modal" style="width: 520px; max-height: 90vh; overflow-y: auto;">
+      <h2>About Claude Project Dashboard <span style="font-size: 12px; color: #888; font-weight: normal;">v2.2.0</span> <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="margin-left: 10px; font-size: 11px; padding: 3px 9px; vertical-align: middle;">Check for updates</button></h2>
+      <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
+        <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
+
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.2.0:</h3>
+        <ul style="margin-left: 18px; margin-bottom: 14px;">
+          <li><strong>One-click auto-update</strong> — click "Check for updates" → if there's a new version, hit "Download &amp; Install" and the app downloads, installs, and relaunches itself on the new version. No email, no manual download, no copy-paste anything.</li>
+          <li><strong>Full changelog when you update</strong> — if you're a few versions behind, the popup shows what changed in <em>every</em> version between yours and the latest, not just the newest one.</li>
+          <li><strong>Open source on GitHub</strong> — the app code now lives at <a href="https://github.com/Remagent001/claude-project-dashboard" target="_blank" rel="noopener" style="color:#e94560;">github.com/Remagent001/claude-project-dashboard</a>. Releases live there too.</li>
+        </ul>
+
+        <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
+          <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
+          <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.1.x (May 2026):</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>Check for updates button</strong> (v2.1.0) — initial version polled a hosted version file. Replaced by the full auto-install flow in v2.2.0.</li>
+              <li><strong>Smarter right-click menu</strong> (v2.1.0) — right-click the <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(179,136,255,0.2);color:#b388ff;border:1px solid rgba(179,136,255,0.4);font-size:9px;font-weight:700;vertical-align:middle;">i</span> badge for summary options; the <strong>📊 Status</strong> button for status options; elsewhere on a card for everything.</li>
+            </ul>
+
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.0.0:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>📊 Status button on every project tile</strong> — click it to open a pretty status report for the project. The report shows the objective, what's been done so far, what's next (with checkboxes you can tick off), and a notepad area for free-form notes. Reports are built from the project's <code style="color:#b388ff;">brain/</code> folder, so they stay in sync with what Claude knows about the project.</li>
+              <li><strong>Right-click the Status button</strong> for more options: Refresh (rebuild from latest brain/ files) and Delete.</li>
+              <li><strong>Customize the look</strong> using the "Edit Status Report Template" button below — power users can tweak the HTML template that controls how reports are rendered.</li>
+            </ul>
+
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v1.4.0:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>Auto-create a <code style="color:#b388ff;">brain/</code> folder for new projects</strong> — when you click <strong>+ New Project</strong>, the app now sets up a small <strong>brain/</strong> folder inside it. That's where Claude keeps notes about what you're working on, so when you come back later you can just say <em>"where were we?"</em> and Claude picks up where you left off. Toggle this on/off below.</li>
+            </ul>
+
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v1.3.6:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>Search</strong> — type in the search box at the top to find projects by name OR by what's in their summary. E.g. typing <em>eighteeneightdallas.com</em> jumps to the project whose summary mentions that domain. Press <strong>Enter</strong> if there's only one match — it'll launch Claude Code in that project. <kbd style="background:#0f1729;border:1px solid #444;border-radius:3px;padding:1px 5px;font-size:11px;">Ctrl+F</kbd> or <kbd style="background:#0f1729;border:1px solid #444;border-radius:3px;padding:1px 5px;font-size:11px;">/</kbd> focuses the box. Search ignores Active/Archived view so you find everything.</li>
+              <li><strong>Project summaries</strong> — Each tile shows a <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(179,136,255,0.2);color:#b388ff;border:1px solid rgba(179,136,255,0.4);font-size:10px;font-weight:700;">i</span> badge once a summary exists — hover it to read.</li>
+              <li><strong>Edit Summaries</strong> button opens a table where you type one-liners for every project at once. The <strong>Auto-fill empty</strong> button there pulls descriptions from each project's CLAUDE.md, README, package.json, or last Claude session title.</li>
+            </ul>
+          </div>
+        </details>
+
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">Buttons on each project card:</h3>
+        <ul style="margin-left: 18px; margin-bottom: 14px;">
+          <li><strong>Launch Claude</strong> — Opens a terminal in that project folder and starts Claude Code automatically.</li>
+          <li><strong>CLAUDE.md</strong> — Opens (or creates) the CLAUDE.md file for that specific project. This is where you put instructions that only apply to this project, like what tech it uses or specific rules for Claude to follow.</li>
+          <li><strong>Folder icon</strong> — Opens the project folder in File Explorer.</li>
+        </ul>
+
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">Top bar buttons:</h3>
+        <ul style="margin-left: 18px; margin-bottom: 14px;">
+          <li><strong>Change Folder</strong> — Pick a different root folder where your projects live.</li>
+          <li><strong>Global CLAUDE.md</strong> — Opens the main CLAUDE.md that applies to ALL your projects. This is where you put your personal preferences — how you want Claude to talk to you, general rules, etc.</li>
+          <li><strong>+ New Project</strong> — Creates a new project folder with a CLAUDE.md ready to go.</li>
+        </ul>
+
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">What's the difference?</h3>
+        <p><strong>Global CLAUDE.md</strong> = Your general house rules (applies everywhere).<br>
+        <strong>Project CLAUDE.md</strong> = Rules for one specific project (only applies there).</p>
+      </div>
+      <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; padding-right: 14px;">
+              <strong style="color: #b388ff; font-size: 13px;">Project summaries</strong>
+              <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">Type a one-line description for each project. Hover the <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(179,136,255,0.2);color:#b388ff;border:1px solid rgba(179,136,255,0.4);font-size:9px;font-weight:700;vertical-align:middle;">i</span> badge on a tile to read it. You can also right-click any tile to edit just that one (or have Claude try to auto-generate).</div>
+            </div>
+            <button class="btn btn-secondary btn-small" onclick="hideAbout(); showSummariesTable();" style="flex-shrink:0;">Edit Summaries</button>
+          </div>
+        </div>
+
+      <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div>
+              <strong style="color: #b388ff; font-size: 13px;">Beep on prompt</strong>
+              <div style="font-size: 11px; color: #999; margin-top: 2px;">Play a sound whenever Claude is waiting for your input (like a yes/no confirmation).</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: 14px;">
+              <button class="btn btn-ghost" onclick="testBeep()" style="font-size: 11px; padding: 4px 10px;">Test</button>
+              <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer;">
+                <input type="checkbox" id="beepToggle" onchange="toggleBeep(this.checked)" style="opacity:0; width:0; height:0;">
+                <span id="beepSlider" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#333; border-radius:12px; transition:0.3s;"></span>
+                <span id="beepKnob" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:#888; border-radius:50%; transition:0.3s;"></span>
+              </label>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: #888; margin-top: 8px; line-height: 1.5;">
+            Hit <strong style="color: #b388ff;">Test</strong> to make sure you can hear the beep. If you don't hear anything, check that your <strong>system volume</strong> is up.
+            The beep only triggers on longer tasks — quick replies won't beep. So if Claude is doing real work (running commands, writing code), you'll hear it when it's done.
+          </div>
+        </div>
+
+      <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div>
+              <strong style="color: #b388ff; font-size: 13px;">Set up brain/ on new projects</strong>
+              <div style="font-size: 11px; color: #999; margin-top: 2px;">When you click + New Project, also create a <strong>brain/</strong> folder so Claude can remember what you're working on across sessions.</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: 14px;">
+              <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer;">
+                <input type="checkbox" id="brainToggle" onchange="toggleCreateBrain(this.checked)" style="opacity:0; width:0; height:0;">
+                <span id="brainSlider" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#333; border-radius:12px; transition:0.3s;"></span>
+                <span id="brainKnob" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:#888; border-radius:50%; transition:0.3s;"></span>
+              </label>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: #888; margin-top: 8px; line-height: 1.5;">
+            The <strong style="color: #b388ff;">brain/</strong> folder holds four small notes Claude updates as you work — what's in flight, what's next, decisions, and a changelog.
+            When you come back to a project, just say <strong>"where were we?"</strong> and Claude reads them to pick up where you left off.
+          </div>
+        </div>
+
+      <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+            <div>
+              <strong style="color: #b388ff; font-size: 13px;">Memory protocol in global CLAUDE.md</strong>
+              <div style="font-size: 11px; color: #999; margin-top: 2px;">Adds a small section to your <strong>~/.claude/CLAUDE.md</strong> so Claude knows to read &amp; update the <strong>brain/</strong> files automatically.</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: 14px;">
+              <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer;">
+                <input type="checkbox" id="memoryToggle" onchange="toggleMemoryProtocol(this.checked)" style="opacity:0; width:0; height:0;">
+                <span id="memorySlider" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#333; border-radius:12px; transition:0.3s;"></span>
+                <span id="memoryKnob" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:#888; border-radius:50%; transition:0.3s;"></span>
+              </label>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: #888; margin-top: 8px; line-height: 1.5;">
+            Without this, the <strong style="color: #b388ff;">brain/</strong> folder is just inert files — Claude won't touch them unless told.
+            Toggling off removes the section cleanly (it's wrapped in marker comments).
+          </div>
+        </div>
+
+      <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; padding-right: 14px;">
+              <strong style="color: #b388ff; font-size: 13px;">Status report template</strong>
+              <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">The HTML file that controls how every project's status report is laid out. Power users only — friends can leave this alone.</div>
+            </div>
+            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+              <button class="btn btn-ghost btn-small" onclick="resetStatusTemplate()" title="Replace your edits with the built-in default template">Reset</button>
+              <button class="btn btn-secondary btn-small" onclick="editStatusTemplate()">Edit Template</button>
+            </div>
+          </div>
+        </div>
+
+      <div style="margin-top: 10px; padding: 10px 12px; background: rgba(233,69,96,0.1); border-radius: 6px; font-size: 12px; color: #aaa; line-height: 1.6;">
+          <strong style="color: #e94560;">Note:</strong> The app only knows about terminals it launched. If you opened a terminal separately, it won't know about that one. Tracking resets when you close the app. But for normal use it prevents duplicates.
+        </div>
+
+      <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between;">
+        <button class="btn btn-secondary" onclick="changeFolder(); hideAbout();">Change Project Folder</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-ghost" onclick="hideAbout(); showShortcuts();">Shortcuts</button>
+          <button class="btn btn-ghost" onclick="hideAbout()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shortcuts Modal -->
+  <div class="modal-overlay" id="shortcutsModal">
+    <div class="modal" style="width: 540px;">
+      <h2>Shortcuts</h2>
+      <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
+        <h3 style="color: #e94560; font-size: 13px; margin-bottom: 6px;">Inside the Dashboard</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <td style="padding: 8px 12px; font-family: 'Consolas', 'Courier New', monospace; color: #b388ff; white-space: nowrap; font-size: 13px;">Ctrl+F &nbsp;or&nbsp; /</td>
+            <td style="padding: 8px 12px; color: #ccc;">Focus the search box.</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <td style="padding: 8px 12px; font-family: 'Consolas', 'Courier New', monospace; color: #b388ff; white-space: nowrap; font-size: 13px;">Enter</td>
+            <td style="padding: 8px 12px; color: #ccc;">In the search box: if exactly one project matches, launch Claude Code in it.</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <td style="padding: 8px 12px; font-family: 'Consolas', 'Courier New', monospace; color: #b388ff; white-space: nowrap; font-size: 13px;">Esc</td>
+            <td style="padding: 8px 12px; color: #ccc;">Clear search / close any open dialog.</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 12px; color: #ccc;" colspan="2"><em style="color:#888;">Right-click any tile</em> → Edit / Regenerate / Clear summary.</td>
+          </tr>
+        </table>
+
+        <h3 style="color: #e94560; font-size: 13px; margin-bottom: 6px;">Inside a Claude Code session</h3>
+        <p style="margin-bottom: 10px; color: #999; font-size: 12px;">Handy shortcuts you can use inside a Claude Code terminal session.</p>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <td style="padding: 8px 12px; font-family: 'Consolas', 'Courier New', monospace; color: #b388ff; white-space: nowrap; font-size: 13px;">/plugin</td>
+            <td style="padding: 8px 12px; color: #ccc;">Lists plugins you can add. Don't be scared.</td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <td style="padding: 8px 12px; font-family: 'Consolas', 'Courier New', monospace; color: #b388ff; white-space: nowrap; font-size: 13px;">Shift+Tab</td>
+            <td style="padding: 8px 12px; color: #ccc;">Toggles on "Auto Yes" — Claude won't ask for permission on each step.</td>
+          </tr>
+        </table>
+      </div>
+      <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: flex-end;">
+        <button class="btn btn-ghost" onclick="hideShortcuts()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right-click context menu for tiles -->
+  <div class="ctx-menu" id="ctxMenu">
+    <div class="ctx-item" id="ctxRegenerate">Regenerate summary</div>
+    <div class="ctx-item" id="ctxEdit">Edit summary&hellip;</div>
+    <div class="ctx-sep" id="ctxSep1"></div>
+    <div class="ctx-item" id="ctxClear">Clear summary</div>
+    <div class="ctx-sep" id="ctxSep2"></div>
+    <div class="ctx-item" id="ctxStatusCreate">Create status report</div>
+    <div class="ctx-item" id="ctxStatusOpen">Open status report</div>
+    <div class="ctx-item" id="ctxStatusRefresh">Refresh status report (rebuild)</div>
+    <div class="ctx-item" id="ctxStatusDelete">Delete status report</div>
+  </div>
+
+  <!-- Edit ALL Summaries Modal (table) -->
+  <div class="modal-overlay" id="summariesModal">
+    <div class="modal" style="width: 720px; max-width: 95%;">
+      <h2>Project Summaries</h2>
+      <div style="font-size: 12px; color: #999; margin-bottom: 14px; line-height: 1.5;">
+        Type a short description for each project so you can tell them apart at a glance. Hover the <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(179,136,255,0.2);color:#b388ff;border:1px solid rgba(179,136,255,0.4);font-size:9px;font-weight:700;vertical-align:middle;">i</span> badge on any tile to see what you wrote. Edits save when you click <strong>Save</strong>.
+      </div>
+      <div class="summaries-toolbar">
+        <input type="text" id="summariesFilter" placeholder="Filter projects..." oninput="filterSummariesTable()">
+        <button class="btn btn-ghost btn-small" id="autoFillBtn" onclick="autoFillEmptySummaries()" title="Pull descriptions from each project's CLAUDE.md, README, package.json, or last Claude Code session title. Only fills empty rows. Edit anything afterward — nothing saves until you click Save.">Auto-fill empty</button>
+        <span class="toolbar-info" id="summariesCount"></span>
+      </div>
+      <div class="summaries-table" id="summariesTable"></div>
+      <div class="modal-buttons" style="margin-top: 16px;">
+        <button class="btn btn-ghost" onclick="hideSummariesTable()">Cancel</button>
+        <button class="btn btn-primary" id="saveSummariesBtn" onclick="saveSummariesTable()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Summary Modal -->
+  <div class="modal-overlay" id="editSummaryModal">
+    <div class="modal" style="width: 460px;">
+      <h2>Edit summary</h2>
+      <div style="font-size: 12px; color: #888; margin-bottom: 10px;" id="editSummaryProjectName"></div>
+      <textarea id="editSummaryText" placeholder="One short sentence describing what this project is for..." maxlength="280"></textarea>
+      <div style="font-size: 11px; color: #666; margin-bottom: 10px;">Manual edits won't be overwritten by "Generate Summaries". Right-click &rarr; Regenerate to replace it.</div>
+      <div class="modal-buttons">
+        <button class="btn btn-ghost" onclick="hideEditSummary()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEditedSummary()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Folder Modal -->
+  <div class="modal-overlay" id="createModal">
+    <div class="modal">
+      <h2>Create New Project</h2>
+      <input type="text" id="newFolderName" placeholder="Project folder name..."
+             onkeydown="if(event.key==='Enter') createFolder()">
+      <div class="error-text" id="createError"></div>
+      <div class="modal-buttons">
+        <button class="btn btn-ghost" onclick="hideCreateModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createFolder()">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Check for updates result modal -->
+  <div class="modal-overlay" id="updateModal">
+    <div class="modal" style="width: 540px; max-height: 90vh; overflow-y: auto;">
+      <h2 id="updateModalTitle">Checking for updates&hellip;</h2>
+      <div id="updateModalBody" style="font-size: 13px; color: #bbb; line-height: 1.6; margin-bottom: 18px; min-height: 40px;">
+        <div style="color: #888;">One moment&hellip;</div>
+      </div>
+      <div class="modal-buttons" id="updateModalFooter">
+        <button class="btn btn-ghost" onclick="hideUpdateModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- No brain/ folder prompt (when status button clicked and no brain/ exists) -->
+  <div class="modal-overlay" id="noBrainModal">
+    <div class="modal" style="width: 460px;">
+      <h2>Set up brain/ for this project?</h2>
+      <div style="font-size: 13px; color: #bbb; line-height: 1.6; margin-bottom: 18px;">
+        This project doesn't have a <strong style="color:#b388ff;">brain/</strong> folder yet — that's where Claude keeps short notes about objective, what's done, what's next, and decisions.
+        <br><br>
+        Setting it up creates four small starter files. Then I can build your Status Report.
+      </div>
+      <div style="font-size: 12px; color: #888; margin-bottom: 14px;" id="noBrainProjectName"></div>
+      <div class="modal-buttons">
+        <button class="btn btn-ghost" onclick="hideNoBrainModal()">Cancel</button>
+        <button class="btn btn-primary" id="setupBrainBtn" onclick="confirmSetupBrain()">Set up brain/ and continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- First-launch memory protocol prompt -->
+  <div class="modal-overlay" id="memoryPromptModal">
+    <div class="modal" style="width: 480px;">
+      <h2>Set up project memory for Claude?</h2>
+      <div style="font-size: 13px; color: #bbb; line-height: 1.6; margin-bottom: 18px;">
+        When you create a new project, this app makes a <strong style="color:#b388ff;">brain/</strong> folder
+        — four small notes Claude can use to remember what you're working on.
+        <br><br>
+        Want Claude to read &amp; update those notes automatically? This adds a small section to your
+        global <strong style="color:#b388ff;">~/.claude/CLAUDE.md</strong> file. You can change this later in About.
+      </div>
+      <div class="modal-buttons">
+        <button class="btn btn-ghost" onclick="dismissMemoryPrompt(false)">Not now</button>
+        <button class="btn btn-primary" onclick="dismissMemoryPrompt(true)">Yes, set it up</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let folders = [];
+    let currentSort = 'modified';
+    let sortAscending = false;
+    let currentView = 'active';
+    let currentSearch = '';
+
+    function formatDate(ms) {
+      const d = new Date(ms);
+      const now = new Date();
+      const diff = now - d;
+
+      // Less than 1 hour
+      if (diff < 3600000) {
+        const mins = Math.floor(diff / 60000);
+        return mins <= 1 ? 'Just now' : `${mins} min ago`;
+      }
+      // Less than 24 hours
+      if (diff < 86400000) {
+        const hours = Math.floor(diff / 3600000);
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      }
+      // Less than 7 days
+      if (diff < 604800000) {
+        const days = Math.floor(diff / 86400000);
+        return `${days} day${days > 1 ? 's' : ''} ago`;
+      }
+
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function sortFolders(list) {
+      const dir = sortAscending ? 1 : -1;
+      return [...list].sort((a, b) => {
+        if (currentSort === 'modified') return (a.modified - b.modified) * dir;
+        if (currentSort === 'created') return (a.created - b.created) * dir;
+        return a.name.localeCompare(b.name) * dir;
+      });
+    }
+
+    function setSort(type) {
+      if (currentSort === type) {
+        sortAscending = !sortAscending;
+      } else {
+        currentSort = type;
+        sortAscending = false;
+      }
+      document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+      const btn = document.getElementById(`sort-${type}`);
+      btn.classList.add('active');
+      btn.textContent = btn.textContent.replace(/ [▲▼]$/, '') + (sortAscending ? ' ▲' : ' ▼');
+      renderFolders();
+    }
+
+    function setView(view) {
+      currentView = view;
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`view-${view}`).classList.add('active');
+      renderFolders();
+    }
+
+    function onSearchInput() {
+      const box = document.getElementById('searchBox');
+      currentSearch = box.value.trim();
+      document.getElementById('searchWrap').classList.toggle('has-value', currentSearch.length > 0);
+      renderFolders();
+    }
+
+    function onSearchKey(event) {
+      if (event.key === 'Escape') {
+        clearSearch();
+        return;
+      }
+      if (event.key === 'Enter') {
+        // If exactly one match, launch it
+        const q = currentSearch.toLowerCase();
+        if (!q) return;
+        const matches = folders.filter(f => {
+          if (f.name.toLowerCase().includes(q)) return true;
+          if (f.summary && f.summary.toLowerCase().includes(q)) return true;
+          if (f.subprojects && f.subprojects.some(s => s.toLowerCase().includes(q))) return true;
+          return false;
+        });
+        if (matches.length === 1) {
+          window.api.openTerminal(matches[0].path);
+        }
+      }
+    }
+
+    function clearSearch() {
+      currentSearch = '';
+      const box = document.getElementById('searchBox');
+      box.value = '';
+      document.getElementById('searchWrap').classList.remove('has-value');
+      renderFolders();
+      box.focus();
+    }
+
+    function renderFolders() {
+      let filtered = folders;
+      // When actively searching, show across ALL views (ignore active/archived filter)
+      const searching = currentSearch.length > 0;
+      if (!searching) {
+        if (currentView === 'active') filtered = folders.filter(f => !f.archived);
+        if (currentView === 'archived') filtered = folders.filter(f => f.archived);
+      }
+      if (searching) {
+        const q = currentSearch.toLowerCase();
+        filtered = filtered.filter(f => {
+          if (f.name.toLowerCase().includes(q)) return true;
+          if (f.summary && f.summary.toLowerCase().includes(q)) return true;
+          if (f.subprojects && f.subprojects.some(s => s.toLowerCase().includes(q))) return true;
+          return false;
+        });
+      }
+
+      const sorted = sortFolders(filtered);
+      const grid = document.getElementById('folderGrid');
+      const count = document.getElementById('folderCount');
+      if (searching) {
+        count.textContent = `${filtered.length} match${filtered.length !== 1 ? 'es' : ''} for "${currentSearch}"`;
+      } else {
+        count.textContent = `${filtered.length} project${filtered.length !== 1 ? 's' : ''}`;
+      }
+
+      if (sorted.length === 0) {
+        const msg = searching
+          ? `No projects match "${currentSearch}". Try a different keyword, or fill in summaries via About → Edit Summaries.`
+          : currentView === 'archived'
+          ? 'No archived projects. Check a project card to archive it.'
+          : currentView === 'active'
+          ? 'No active projects.'
+          : 'No projects yet. Click "+ New Project" to create one.';
+        grid.innerHTML = `
+          <div class="empty-state" style="grid-column: 1/-1;">
+            <h3>${msg}</h3>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = sorted.map(f => {
+        const escapedPath = f.path.replace(/\\/g, '\\\\');
+        const escapedAttr = f.path.replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
+        const badge = f.hasClaudeMd ? '<span class="badge">CLAUDE.md</span>' : '';
+        const archivedClass = f.archived ? ' archived-card' : '';
+        const checkClass = f.archived ? ' checked' : '';
+        let subLine = '';
+        if (f.subprojects && f.subprojects.length > 0) {
+          const list = f.subprojects.map(s => s.split('/').slice(1).join('/')).join('\\n');
+          subLine = `<span class="subfolder-link" title="${list}">Subprojects: ${f.subprojects.length}</span>`;
+        }
+        let summaryBadge = '';
+        const state = summaryState[f.path];
+        if (state === 'loading') {
+          summaryBadge = '<span class="summary-badge loading" title="Generating summary...">&nbsp;</span>';
+        } else if (state && state.error) {
+          summaryBadge = `<span class="summary-badge error" tabindex="0" oncontextmenu="showCtxMenu(event, '${escapedPath}', 'summary')">!<span class="summary-tip">Couldn't generate: ${escapeHtml(state.error)}<span class="summary-tip-hint">Right-click to retry</span></span></span>`;
+        } else if (f.summary) {
+          summaryBadge = `<span class="summary-badge has" tabindex="0" oncontextmenu="showCtxMenu(event, '${escapedPath}', 'summary')">i<span class="summary-tip">${escapeHtml(f.summary)}<span class="summary-tip-hint">Right-click for summary options</span></span></span>`;
+        }
+        const matchClass = currentSearch ? ' search-match' : '';
+        return `
+        <div class="folder-card${archivedClass}${matchClass}" data-path="${escapedAttr}" oncontextmenu="showCtxMenu(event, '${escapedPath}')">
+          <div class="folder-header">
+            <div class="folder-name" style="margin-bottom:0;">
+              <span class="icon">&#128193;</span>
+              ${f.name}
+              ${summaryBadge}
+              ${badge}
+            </div>
+            <div class="archive-check${checkClass}" onclick="toggleArchive('${escapedPath}')" title="${f.archived ? 'Unarchive' : 'Archive'}">&#10003;</div>
+          </div>
+          <div class="folder-meta">
+            <span>Modified: ${formatDate(f.modified)}</span>
+            <span>Created: ${formatDate(f.created)}</span>
+            ${subLine}
+          </div>
+          <div class="folder-actions">
+            <button class="btn btn-primary btn-small" onclick="openTerminal('${escapedPath}')">Launch Claude</button>
+            <button class="btn btn-secondary btn-small" onclick="openClaudeMd('${escapedPath}')">CLAUDE.md</button>
+            <button class="btn btn-status btn-small${f.hasStatusReport ? ' exists' : ''}" onclick="handleStatusClick('${escapedPath}')" oncontextmenu="showCtxMenu(event, '${escapedPath}', 'status')" title="${f.hasStatusReport ? 'Open status report (right-click for more options)' : 'Create a status report for this project'}">📊 Status</button>
+            <button class="btn btn-ghost btn-small btn-icon" onclick="openExplorer('${escapedPath}')">&#128194;</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function escapeAttr(s) { return escapeHtml(s); }
+
+    async function refreshFolders() {
+      const settings = await window.api.getSettings();
+      if (!settings.projectRoot) {
+        document.getElementById('rootPath').textContent = 'No folder selected';
+        folders = [];
+        renderFolders();
+        await showWelcome();
+        return;
+      }
+      document.getElementById('rootPath').textContent = settings.projectRoot;
+      folders = await window.api.getFolders();
+      renderFolders();
+      autoGenerateNewProjects();
+    }
+
+    async function showWelcome() {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
+          <h2 style="color: #b388ff; margin-bottom: 12px;">Welcome to Claude Project Dashboard</h2>
+          <p style="color: #999; font-size: 14px; max-width: 420px; margin: 0 auto 24px; line-height: 1.6;">
+            To get started, choose the folder where your Claude Code projects live.
+            Each subfolder with a <strong style="color: #e94560;">CLAUDE.md</strong> file will show up as a project.
+          </p>
+          <button class="btn btn-primary" onclick="changeFolder()" style="font-size: 14px; padding: 10px 24px;">
+            Choose Project Folder
+          </button>
+        </div>
+      `;
+    }
+
+    async function changeFolder() {
+      await window.api.chooseFolder();
+      await refreshFolders();
+    }
+
+    function showCreateModal() {
+      document.getElementById('createModal').classList.add('active');
+      document.getElementById('newFolderName').value = '';
+      document.getElementById('createError').textContent = '';
+      setTimeout(() => document.getElementById('newFolderName').focus(), 100);
+    }
+
+    function hideCreateModal() {
+      document.getElementById('createModal').classList.remove('active');
+    }
+
+    async function createFolder() {
+      const name = document.getElementById('newFolderName').value.trim();
+      if (!name) {
+        document.getElementById('createError').textContent = 'Please enter a name';
+        return;
+      }
+      if (/[<>:"/\\|?*]/.test(name)) {
+        document.getElementById('createError').textContent = 'Name contains invalid characters';
+        return;
+      }
+      const result = await window.api.createFolder(name);
+      if (result.success) {
+        hideCreateModal();
+        await refreshFolders();
+      } else {
+        document.getElementById('createError').textContent = result.error;
+      }
+    }
+
+    function openTerminal(path) { window.api.openTerminal(path); }
+    function openClaudeMd(path) { window.api.openClaudeMd(path); }
+    function openGlobalClaudeMd() { window.api.openGlobalClaudeMd(); }
+    function copyMemoryPrompt() {
+      const prompt = 'Review this project\'s current state and update your memory file. Note the project structure, key files, what\'s been built, any patterns or decisions made, and current status.';
+      navigator.clipboard.writeText(prompt);
+      const btn = document.getElementById('memoryBtn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Save to Memory'; }, 2000);
+    }
+    function openExplorer(path) { window.api.openExplorer(path); }
+
+    // ---- Status Report (v2.0) ----
+    let pendingStatusPath = null;
+
+    async function handleStatusClick(escapedPath) {
+      const realPath = escapedPath.replace(/\\\\/g, '\\');
+      const folder = folders.find(f => f.path === realPath);
+      if (folder && folder.hasStatusReport) {
+        await window.api.openStatusReport(realPath);
+        return;
+      }
+      // Try to generate; if no brain/, show dialog
+      const res = await window.api.generateStatusReport(realPath);
+      if (res && res.success) {
+        await window.api.openStatusReport(realPath);
+        await refreshFolders();
+      } else if (res && res.reason === 'no-brain') {
+        pendingStatusPath = realPath;
+        const projName = realPath.split(/[\\/]/).pop();
+        document.getElementById('noBrainProjectName').textContent = 'Project: ' + projName;
+        document.getElementById('noBrainModal').classList.add('active');
+      } else if (res && res.error) {
+        alert('Could not create status report: ' + res.error);
+      }
+    }
+
+    function hideNoBrainModal() {
+      document.getElementById('noBrainModal').classList.remove('active');
+      pendingStatusPath = null;
+    }
+
+    async function confirmSetupBrain() {
+      if (!pendingStatusPath) { hideNoBrainModal(); return; }
+      const p = pendingStatusPath;
+      const btn = document.getElementById('setupBrainBtn');
+      btn.disabled = true; btn.textContent = 'Setting up...';
+      try {
+        const scaffolded = await window.api.scaffoldBrainForProject(p);
+        if (!scaffolded || !scaffolded.success) {
+          alert('Could not create brain/ folder: ' + (scaffolded && scaffolded.error || 'unknown error'));
+          return;
+        }
+        const res = await window.api.generateStatusReport(p);
+        if (res && res.success) {
+          await window.api.openStatusReport(p);
+          hideNoBrainModal();
+          await refreshFolders();
+        } else {
+          alert('Brain folder created but report failed: ' + (res && res.error || 'unknown'));
+        }
+      } finally {
+        btn.disabled = false; btn.textContent = 'Set up brain/ and continue';
+      }
+    }
+
+    async function editStatusTemplate() {
+      await window.api.openStatusTemplate();
+    }
+
+    // ---- Check for updates ----
+    let pendingUpdate = null; // { downloadUrl, latest, downloadSize }
+    let downloadProgressUnsub = null;
+
+    async function checkForUpdatesClick() {
+      const modal = document.getElementById('updateModal');
+      const title = document.getElementById('updateModalTitle');
+      const body = document.getElementById('updateModalBody');
+      const footer = document.getElementById('updateModalFooter');
+      title.textContent = 'Checking for updates…';
+      body.innerHTML = '<div style="color:#888;">One moment…</div>';
+      footer.innerHTML = '<button class="btn btn-ghost" onclick="hideUpdateModal()">Close</button>';
+      modal.classList.add('active');
+      try {
+        const res = await window.api.checkForUpdates();
+        if (!res || !res.success) {
+          title.textContent = 'Could not check for updates';
+          body.innerHTML = '<p>The app couldn\'t reach GitHub to check for updates.</p>'
+            + '<p style="margin-top:8px; color:#888; font-size:12px;">Network problem? Check your internet connection and try again.</p>'
+            + (res && res.error ? `<p style="margin-top:8px; color:#666; font-size:11px; font-family:Consolas,monospace;">${escapeHtml(res.error)}</p>` : '');
+          return;
+        }
+        if (res.isUpdate) {
+          title.textContent = '🎉 New version available!';
+          const sizeMB = res.downloadSize ? ' (' + (res.downloadSize / 1024 / 1024).toFixed(0) + ' MB)' : '';
+          const dateLine = res.releasedAt
+            ? `<div style="font-size:11px; color:#888; margin-bottom:10px;">Latest released ${escapeHtml(res.releasedAt)}</div>`
+            : '';
+
+          // Build the delta notes — one section per intermediate release
+          const intermediates = (res.intermediateReleases && res.intermediateReleases.length)
+            ? res.intermediateReleases
+            : [{ version: res.latest, releasedAt: res.releasedAt, notes: res.notes }];
+          let deltaHtml = '<div style="background:rgba(83,52,131,0.15); border-left:3px solid #b388ff; padding:12px 14px; border-radius:4px; margin:10px 0; font-size:13px; line-height:1.55; max-height:260px; overflow-y:auto;">';
+          deltaHtml += '<div style="color:#b388ff; font-weight:600; margin-bottom:8px;">What\'s changed since v' + escapeHtml(res.current) + ':</div>';
+          intermediates.forEach((r, i) => {
+            const sep = i > 0 ? 'border-top:1px solid rgba(255,255,255,0.08); margin-top:10px; padding-top:10px;' : '';
+            const date = r.releasedAt ? ` <span style="font-size:11px; color:#888;">(${escapeHtml(r.releasedAt)})</span>` : '';
+            deltaHtml += `<div style="${sep}"><div style="color:#e94560; font-weight:600; font-size:13px; margin-bottom:4px;">v${escapeHtml(r.version)}${date}</div>`;
+            deltaHtml += r.notes ? `<div style="white-space:pre-wrap; color:#ddd;">${escapeHtml(r.notes)}</div>` : '<div style="color:#888; font-style:italic;">(no notes)</div>';
+            deltaHtml += '</div>';
+          });
+          deltaHtml += '</div>';
+
+          let actionsHtml;
+          if (res.downloadUrl && /^https?:\/\//i.test(res.downloadUrl)) {
+            pendingUpdate = { downloadUrl: res.downloadUrl, latest: res.latest, downloadSize: res.downloadSize };
+            actionsHtml = `<button class="btn btn-ghost" onclick="hideUpdateModal()">Not now</button>`
+              + `<button class="btn btn-primary" onclick="startUpdateDownload()">Download &amp; Install${sizeMB}</button>`;
+          } else {
+            // No download asset on this release yet
+            const releaseUrl = res.releaseUrl || `https://github.com/Remagent001/claude-project-dashboard/releases`;
+            actionsHtml = `<button class="btn btn-ghost" onclick="hideUpdateModal()">Close</button>`
+              + `<a class="btn btn-primary" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noopener">View on GitHub</a>`;
+          }
+
+          body.innerHTML = `<div style="margin-bottom:6px;"><strong>You have:</strong> v${escapeHtml(res.current)} &nbsp; <strong>Latest:</strong> v${escapeHtml(res.latest)}</div>${dateLine}${deltaHtml}`;
+          footer.innerHTML = actionsHtml;
+        } else {
+          title.textContent = '✅ You\'re up to date';
+          body.innerHTML = `<p>You're on the latest version (v${escapeHtml(res.current)}).</p>`
+            + (res.releasedAt ? `<p style="margin-top:8px; font-size:12px; color:#888;">This release came out ${escapeHtml(res.releasedAt)}.</p>` : '');
+        }
+      } catch (err) {
+        title.textContent = 'Could not check for updates';
+        body.innerHTML = `<p>${escapeHtml(err.message || String(err))}</p>`;
+      }
+    }
+
+    async function startUpdateDownload() {
+      if (!pendingUpdate) return;
+      const { downloadUrl, latest, downloadSize } = pendingUpdate;
+      const title = document.getElementById('updateModalTitle');
+      const body = document.getElementById('updateModalBody');
+      const footer = document.getElementById('updateModalFooter');
+      title.textContent = 'Downloading v' + latest + '…';
+      const totalMB = downloadSize ? (downloadSize / 1024 / 1024).toFixed(1) : '?';
+      body.innerHTML = `
+        <div style="margin-bottom:10px; font-size:13px; color:#bbb;">Hang on, downloading the installer…</div>
+        <div style="background:#0f1729; height:14px; border-radius:7px; overflow:hidden; border:1px solid rgba(255,255,255,0.1);">
+          <div id="updateDownloadFill" style="background:#e94560; height:100%; width:0%; transition:width 0.2s;"></div>
+        </div>
+        <div id="updateDownloadStatus" style="margin-top:6px; font-size:11px; color:#888;">0 / ${totalMB} MB</div>
+        <div style="margin-top:14px; font-size:11px; color:#888; line-height:1.6;">When the download finishes, the installer will run automatically and the app will restart on the new version. Windows may show a "More info → Run anyway" warning — that's normal (the app isn't code-signed).</div>
+      `;
+      footer.innerHTML = '<button class="btn btn-ghost" onclick="hideUpdateModal()" disabled style="opacity:0.5;">Close</button>';
+
+      // Listen for progress
+      if (downloadProgressUnsub) downloadProgressUnsub();
+      downloadProgressUnsub = window.api.onUpdateDownloadProgress((data) => {
+        const fill = document.getElementById('updateDownloadFill');
+        const status = document.getElementById('updateDownloadStatus');
+        if (fill) fill.style.width = data.pct + '%';
+        if (status) {
+          const gotMB = (data.got / 1024 / 1024).toFixed(1);
+          const totMB = (data.total / 1024 / 1024).toFixed(1);
+          status.textContent = `${gotMB} / ${totMB} MB (${data.pct}%)`;
+        }
+      });
+
+      const res = await window.api.downloadAndInstallUpdate(downloadUrl, latest);
+      if (downloadProgressUnsub) { downloadProgressUnsub(); downloadProgressUnsub = null; }
+      if (!res || !res.success) {
+        title.textContent = 'Download failed';
+        body.innerHTML = `<p>${escapeHtml((res && res.error) || 'Unknown error')}</p>`;
+        footer.innerHTML = '<button class="btn btn-ghost" onclick="hideUpdateModal()">Close</button>';
+      }
+      // On success the app quits shortly — no UI update needed
+    }
+
+    function hideUpdateModal() {
+      if (downloadProgressUnsub) { downloadProgressUnsub(); downloadProgressUnsub = null; }
+      pendingUpdate = null;
+      document.getElementById('updateModal').classList.remove('active');
+    }
+
+    async function resetStatusTemplate() {
+      if (!confirm('Reset the status report template to the default? Any changes you made to it will be lost.')) return;
+      const res = await window.api.resetStatusTemplate();
+      if (res && res.success) {
+        alert('Template reset. Right-click any existing report tile and choose Refresh to apply.');
+      } else if (res && res.error) {
+        alert('Could not reset: ' + res.error);
+      }
+    }
+    async function toggleArchive(escapedPath) {
+      const realPath = escapedPath.replace(/\\\\/g, '\\');
+      await window.api.toggleArchive(realPath);
+      const folder = folders.find(f => f.path === realPath);
+      if (folder) folder.archived = !folder.archived;
+      renderFolders();
+    }
+    async function showAbout() {
+      document.getElementById('aboutModal').classList.add('active');
+      const enabled = await window.api.getBeepEnabled();
+      document.getElementById('beepToggle').checked = enabled;
+      updateBeepVisual(enabled);
+      const brainEnabled = await window.api.getCreateBrainEnabled();
+      document.getElementById('brainToggle').checked = brainEnabled;
+      updateBrainVisual(brainEnabled);
+      const memoryInstalled = await window.api.getMemoryProtocolInstalled();
+      document.getElementById('memoryToggle').checked = memoryInstalled;
+      updateMemoryVisual(memoryInstalled);
+    }
+    function hideAbout() { document.getElementById('aboutModal').classList.remove('active'); }
+    function showShortcuts() { document.getElementById('shortcutsModal').classList.add('active'); }
+    function hideShortcuts() { document.getElementById('shortcutsModal').classList.remove('active'); }
+
+    async function testBeep() {
+      await window.api.testBeep();
+    }
+
+    async function toggleBeep(enabled) {
+      await window.api.setBeepEnabled(enabled);
+      updateBeepVisual(enabled);
+    }
+
+    function updateBeepVisual(on) {
+      const slider = document.getElementById('beepSlider');
+      const knob = document.getElementById('beepKnob');
+      slider.style.background = on ? '#533483' : '#333';
+      knob.style.background = on ? '#b388ff' : '#888';
+      knob.style.left = on ? '22px' : '2px';
+    }
+
+    async function toggleCreateBrain(enabled) {
+      await window.api.setCreateBrainEnabled(enabled);
+      updateBrainVisual(enabled);
+    }
+
+    function updateBrainVisual(on) {
+      const slider = document.getElementById('brainSlider');
+      const knob = document.getElementById('brainKnob');
+      slider.style.background = on ? '#533483' : '#333';
+      knob.style.background = on ? '#b388ff' : '#888';
+      knob.style.left = on ? '22px' : '2px';
+    }
+
+    async function toggleMemoryProtocol(enabled) {
+      const result = await window.api.setMemoryProtocolInstalled(enabled);
+      document.getElementById('memoryToggle').checked = result;
+      updateMemoryVisual(result);
+    }
+
+    function updateMemoryVisual(on) {
+      const slider = document.getElementById('memorySlider');
+      const knob = document.getElementById('memoryKnob');
+      slider.style.background = on ? '#533483' : '#333';
+      knob.style.background = on ? '#b388ff' : '#888';
+      knob.style.left = on ? '22px' : '2px';
+    }
+
+    async function maybeShowMemoryPrompt() {
+      try {
+        const installed = await window.api.getMemoryProtocolInstalled();
+        const dismissed = await window.api.getMemoryPromptDismissed();
+        if (!installed && !dismissed) {
+          document.getElementById('memoryPromptModal').classList.add('active');
+        }
+      } catch (e) {}
+    }
+
+    async function dismissMemoryPrompt(install) {
+      if (install) {
+        await window.api.setMemoryProtocolInstalled(true);
+      }
+      await window.api.setMemoryPromptDismissed(true);
+      document.getElementById('memoryPromptModal').classList.remove('active');
+    }
+
+    // ---- Summary generation (UI side) ----
+
+    // Per-path state: 'loading' | { error: '...' } | undefined
+    const summaryState = {};
+    let ctxMenuPath = null;
+
+    async function generateSummaryFor(folderPath) {
+      summaryState[folderPath] = 'loading';
+      renderFolders();
+      try {
+        const result = await window.api.generateSummary(folderPath);
+        if (result.success) {
+          delete summaryState[folderPath];
+          const folder = folders.find(f => f.path === folderPath);
+          if (folder) {
+            folder.summary = result.summary;
+            folder.summaryManual = false;
+          }
+        } else {
+          summaryState[folderPath] = { error: result.error || 'Unknown error' };
+        }
+      } catch (err) {
+        summaryState[folderPath] = { error: err.message };
+      }
+      renderFolders();
+    }
+
+    function generateAllMissingSummaries() {
+      const missing = folders.filter(f => !f.summary && !f.archived && summaryState[f.path] !== 'loading');
+      const btn = document.getElementById('genSummariesBtn');
+      if (missing.length === 0) {
+        const orig = btn.textContent;
+        btn.textContent = 'All caught up!';
+        setTimeout(() => { btn.textContent = orig; }, 1800);
+        return;
+      }
+      // Close About modal so the tiles are visible while generation runs
+      hideAbout();
+      missing.forEach(f => generateSummaryFor(f.path));
+    }
+
+    // Auto-generate for new projects ONLY if Claude has been used to generate at least one summary.
+    // If the user is going fully manual, never auto-trigger.
+    function autoGenerateNewProjects() {
+      const hasAnyAuto = folders.some(f => f.summary && !f.summaryManual);
+      if (!hasAnyAuto) return;
+      folders
+        .filter(f => !f.summary && !f.archived && summaryState[f.path] !== 'loading')
+        .forEach(f => generateSummaryFor(f.path));
+    }
+
+    // ---- Right-click context menu ----
+
+    function showCtxMenu(event, escapedPath, context) {
+      event.preventDefault();
+      event.stopPropagation();
+      context = context || 'all'; // 'summary' | 'status' | 'all'
+      const realPath = escapedPath.replace(/\\\\/g, '\\');
+      ctxMenuPath = realPath;
+      const menu = document.getElementById('ctxMenu');
+      const folder = folders.find(f => f.path === realPath);
+      const hasSum = folder && folder.summary;
+      const hasReport = folder && folder.hasStatusReport;
+      const showSummary = (context === 'all' || context === 'summary');
+      const showStatus = (context === 'all' || context === 'status');
+
+      // Summary items
+      const set = (id, on) => document.getElementById(id).style.display = on ? 'block' : 'none';
+      set('ctxRegenerate', showSummary);
+      document.getElementById('ctxRegenerate').textContent = hasSum ? 'Regenerate summary' : 'Generate summary';
+      set('ctxEdit', showSummary);
+      set('ctxSep1', showSummary && hasSum);
+      set('ctxClear', showSummary && hasSum);
+
+      // Separator only when BOTH sides have visible items
+      set('ctxSep2', showSummary && showStatus);
+
+      // Status items
+      set('ctxStatusCreate', showStatus && !hasReport);
+      set('ctxStatusOpen', showStatus && hasReport);
+      set('ctxStatusRefresh', showStatus && hasReport);
+      set('ctxStatusDelete', showStatus && hasReport);
+
+      const menuW = 240, menuH = 180;
+      let x = event.clientX, y = event.clientY;
+      if (x + menuW > window.innerWidth) x = window.innerWidth - menuW - 4;
+      if (y + menuH > window.innerHeight) y = window.innerHeight - menuH - 4;
+      menu.style.left = x + 'px';
+      menu.style.top = y + 'px';
+      menu.classList.add('active');
+    }
+
+    function hideCtxMenu() {
+      document.getElementById('ctxMenu').classList.remove('active');
+      ctxMenuPath = null;
+    }
+
+    document.addEventListener('click', hideCtxMenu);
+    document.addEventListener('contextmenu', (e) => {
+      if (!e.target.closest('.folder-card')) hideCtxMenu();
+    });
+
+    document.getElementById('ctxRegenerate').addEventListener('click', () => {
+      if (ctxMenuPath) generateSummaryFor(ctxMenuPath);
+      hideCtxMenu();
+    });
+    document.getElementById('ctxEdit').addEventListener('click', () => {
+      if (ctxMenuPath) showEditSummary(ctxMenuPath);
+      hideCtxMenu();
+    });
+    document.getElementById('ctxStatusCreate').addEventListener('click', async () => {
+      if (!ctxMenuPath) return;
+      const p = ctxMenuPath;
+      hideCtxMenu();
+      // Reuse the same flow as the Status button click
+      const escaped = p.replace(/\\/g, '\\\\');
+      handleStatusClick(escaped);
+    });
+    document.getElementById('ctxStatusOpen').addEventListener('click', async () => {
+      if (!ctxMenuPath) return;
+      const p = ctxMenuPath;
+      hideCtxMenu();
+      await window.api.openStatusReport(p);
+    });
+    document.getElementById('ctxStatusRefresh').addEventListener('click', async () => {
+      if (!ctxMenuPath) return;
+      const p = ctxMenuPath;
+      hideCtxMenu();
+      const res = await window.api.generateStatusReport(p);
+      if (res && res.success) {
+        await window.api.openStatusReport(p);
+        await refreshFolders();
+      } else if (res && res.error) {
+        alert('Could not refresh: ' + res.error);
+      }
+    });
+    document.getElementById('ctxStatusDelete').addEventListener('click', async () => {
+      if (!ctxMenuPath) return;
+      const p = ctxMenuPath;
+      hideCtxMenu();
+      if (!confirm('Delete the status report for this project? Your notes and checkbox state in the browser will be lost.')) return;
+      await window.api.deleteStatusReport(p);
+      await refreshFolders();
+    });
+
+    document.getElementById('ctxClear').addEventListener('click', async () => {
+      if (!ctxMenuPath) return;
+      const p = ctxMenuPath;
+      hideCtxMenu();
+      await window.api.setSummary(p, '');
+      const folder = folders.find(f => f.path === p);
+      if (folder) { folder.summary = null; folder.summaryManual = false; }
+      delete summaryState[p];
+      renderFolders();
+    });
+
+    // ---- Edit Summary Modal ----
+
+    let editingPath = null;
+
+    function showEditSummary(folderPath) {
+      const folder = folders.find(f => f.path === folderPath);
+      if (!folder) return;
+      editingPath = folderPath;
+      document.getElementById('editSummaryProjectName').textContent = folder.name;
+      document.getElementById('editSummaryText').value = folder.summary || '';
+      document.getElementById('editSummaryModal').classList.add('active');
+      setTimeout(() => document.getElementById('editSummaryText').focus(), 100);
+    }
+
+    function hideEditSummary() {
+      document.getElementById('editSummaryModal').classList.remove('active');
+      editingPath = null;
+    }
+
+    async function saveEditedSummary() {
+      if (!editingPath) return;
+      const text = document.getElementById('editSummaryText').value.trim();
+      await window.api.setSummary(editingPath, text);
+      const folder = folders.find(f => f.path === editingPath);
+      if (folder) {
+        folder.summary = text || null;
+        folder.summaryManual = !!text;
+      }
+      delete summaryState[editingPath];
+      hideEditSummary();
+      renderFolders();
+    }
+
+    // ---- Edit ALL Summaries (table) ----
+
+    function showSummariesTable() {
+      renderSummariesTable();
+      document.getElementById('summariesFilter').value = '';
+      document.getElementById('summariesModal').classList.add('active');
+      setTimeout(() => document.getElementById('summariesFilter').focus(), 100);
+    }
+
+    function hideSummariesTable() {
+      document.getElementById('summariesModal').classList.remove('active');
+    }
+
+    function renderSummariesTable() {
+      const sorted = [...folders].sort((a, b) => {
+        if (a.archived !== b.archived) return a.archived ? 1 : -1;
+        return a.name.localeCompare(b.name);
+      });
+      const tbody = document.getElementById('summariesTable');
+      tbody.innerHTML = sorted.map(f => {
+        const escapedPath = f.path.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const val = (f.summary || '').replace(/"/g, '&quot;');
+        const archTag = f.archived ? '<span class="archived-tag">archived</span>' : '';
+        const archClass = f.archived ? ' archived' : '';
+        return `
+          <div class="sum-row${archClass}" data-path="${f.path.replace(/"/g,'&quot;')}" data-original="${val}">
+            <div class="sum-row-name" title="${f.name}">${escapeHtml(f.name)}${archTag}</div>
+            <input type="text" placeholder="One-line description..." value="${val}" maxlength="280" oninput="markSummaryDirty(this)">
+            <button class="sum-row-clear" title="Clear" onclick="clearSummaryRow(this)">&times;</button>
+          </div>`;
+      }).join('');
+      document.getElementById('summariesCount').textContent = `${sorted.length} project${sorted.length !== 1 ? 's' : ''}`;
+    }
+
+    function markSummaryDirty(input) {
+      const row = input.closest('.sum-row');
+      const original = row.getAttribute('data-original') || '';
+      if (input.value !== original) input.classList.add('dirty');
+      else input.classList.remove('dirty');
+    }
+
+    function clearSummaryRow(btn) {
+      const row = btn.closest('.sum-row');
+      const input = row.querySelector('input[type="text"]');
+      input.value = '';
+      markSummaryDirty(input);
+      input.focus();
+    }
+
+    function filterSummariesTable() {
+      const q = document.getElementById('summariesFilter').value.toLowerCase().trim();
+      const rows = document.querySelectorAll('#summariesTable .sum-row');
+      let visible = 0;
+      rows.forEach(row => {
+        const name = row.querySelector('.sum-row-name').textContent.toLowerCase();
+        const summary = row.querySelector('input').value.toLowerCase();
+        const match = !q || name.includes(q) || summary.includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+      });
+      document.getElementById('summariesCount').textContent = q
+        ? `${visible} of ${rows.length} shown`
+        : `${rows.length} project${rows.length !== 1 ? 's' : ''}`;
+    }
+
+    async function autoFillEmptySummaries() {
+      const btn = document.getElementById('autoFillBtn');
+      const rows = document.querySelectorAll('#summariesTable .sum-row');
+      const empty = [];
+      rows.forEach(row => {
+        const input = row.querySelector('input[type="text"]');
+        if (!input.value.trim()) empty.push({ row, input, path: row.getAttribute('data-path') });
+      });
+      if (empty.length === 0) {
+        const orig = btn.textContent;
+        btn.textContent = 'Nothing empty!';
+        setTimeout(() => { btn.textContent = orig; }, 1800);
+        return;
+      }
+      btn.disabled = true;
+      let filled = 0;
+      for (let i = 0; i < empty.length; i++) {
+        btn.textContent = `Filling ${i + 1}/${empty.length}...`;
+        const e = empty[i];
+        try {
+          const result = await window.api.suggestSummary(e.path);
+          if (result && result.text) {
+            e.input.value = result.text;
+            markSummaryDirty(e.input);
+            filled++;
+          }
+        } catch (err) {}
+      }
+      btn.textContent = filled === empty.length
+        ? `Filled ${filled}`
+        : `Filled ${filled} of ${empty.length}`;
+      btn.disabled = false;
+      setTimeout(() => { btn.textContent = 'Auto-fill empty'; }, 2500);
+    }
+
+    async function saveSummariesTable() {
+      const btn = document.getElementById('saveSummariesBtn');
+      const rows = document.querySelectorAll('#summariesTable .sum-row');
+      const dirtyRows = [];
+      rows.forEach(row => {
+        const input = row.querySelector('input[type="text"]');
+        if (input.classList.contains('dirty')) {
+          dirtyRows.push({ path: row.getAttribute('data-path'), text: input.value.trim() });
+        }
+      });
+      if (dirtyRows.length === 0) {
+        hideSummariesTable();
+        return;
+      }
+      btn.textContent = `Saving ${dirtyRows.length}...`;
+      btn.disabled = true;
+      for (const r of dirtyRows) {
+        await window.api.setSummary(r.path, r.text);
+        const folder = folders.find(f => f.path === r.path);
+        if (folder) {
+          folder.summary = r.text || null;
+          folder.summaryManual = !!r.text;
+        }
+        delete summaryState[r.path];
+      }
+      btn.textContent = 'Save';
+      btn.disabled = false;
+      hideSummariesTable();
+      renderFolders();
+    }
+
+    // Close modals on overlay click
+    document.getElementById('createModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) hideCreateModal();
+    });
+    document.getElementById('aboutModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) hideAbout();
+    });
+    document.getElementById('shortcutsModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) hideShortcuts();
+    });
+    document.getElementById('editSummaryModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) hideEditSummary();
+    });
+    document.getElementById('summariesModal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) hideSummariesTable();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hideCreateModal(); hideAbout(); hideShortcuts(); hideEditSummary(); hideSummariesTable(); hideCtxMenu(); hideNoBrainModal(); hideUpdateModal();
+      }
+      // Ctrl+F or "/" → focus search (when not typing in another input)
+      const inField = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+      if ((e.ctrlKey && e.key.toLowerCase() === 'f') || (!inField && e.key === '/')) {
+        e.preventDefault();
+        const box = document.getElementById('searchBox');
+        if (box) { box.focus(); box.select(); }
+      }
+    });
+
+    // Load on start
+    refreshFolders();
+    maybeShowMemoryPrompt();
+  </script>
+
+</body>
+</html>

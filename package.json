@@ -1,0 +1,43 @@
+{
+  "name": "claude-manager",
+  "version": "2.2.0",
+  "description": "Claude Project Dashboard - manage your Claude Code project folders",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "author": "Keith",
+  "license": "ISC",
+  "type": "commonjs",
+  "build": {
+    "appId": "com.keith.claude-manager",
+    "productName": "Claude Project Dashboard",
+    "afterPack": "./afterPack.js",
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false,
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "shortcutName": "Claude Project Dashboard"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "icon.ico"
+    ]
+  },
+  "devDependencies": {
+    "electron": "^40.8.0",
+    "electron-builder": "^26.8.1"
+  }
+}

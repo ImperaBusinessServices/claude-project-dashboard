@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output — installers get uploaded to GitHub Releases, not committed
+dist/
+*.exe
+*.exe.blockmap
+
+# Personal / internal docs not for public distribution
+CLAUDE.md
+brain/
+backups/
+plans/
+
+# Generated status reports
+status-report.html
+.claude-manager-status-template.html
+
+# Temp files
+.tmp-*
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
