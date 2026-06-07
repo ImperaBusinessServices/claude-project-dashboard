@@ -731,7 +731,7 @@
   <!-- About Modal -->
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 520px; max-height: 90vh; overflow-y: auto;">
-      <h2>About Claude Project Dashboard <span style="font-size: 12px; color: #888; font-weight: normal;">v2.2.2</span> <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="margin-left: 10px; font-size: 11px; padding: 3px 9px; vertical-align: middle;">Check for updates</button> <a class="btn btn-ghost btn-small" href="https://github.com/Remagent001/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; vertical-align: middle; text-decoration: none;">View on GitHub</a></h2>
+      <h2>About Claude Project Dashboard <span style="font-size: 12px; color: #888; font-weight: normal;">v2.2.2</span> <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="margin-left: 10px; font-size: 11px; padding: 3px 9px; vertical-align: middle;">Check for updates</button> <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; vertical-align: middle; text-decoration: none;">View on GitHub</a></h2>
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
@@ -753,7 +753,7 @@
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>One-click auto-update</strong> — click "Check for updates" → if there's a new version, hit "Download &amp; Install" and the app downloads, installs, and relaunches itself on the new version. No email, no manual download.</li>
               <li><strong>Full changelog when you update</strong> — if you're a few versions behind, the popup shows what changed in <em>every</em> version between yours and the latest.</li>
-              <li><strong>Open source on GitHub</strong> — code lives at <a href="https://github.com/Remagent001/claude-project-dashboard" target="_blank" rel="noopener" style="color:#e94560;">github.com/Remagent001/claude-project-dashboard</a>.</li>
+              <li><strong>Open source on GitHub</strong> — code lives at <a href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="color:#e94560;">github.com/ImperaBusinessServices/claude-project-dashboard</a>.</li>
             </ul>
 
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.1.x (May 2026):</h3>
@@ -1430,7 +1430,7 @@
               + `<button class="btn btn-primary" onclick="startUpdateDownload()">Download &amp; Install${sizeMB}</button>`;
           } else {
             // No download asset on this release yet
-            const releaseUrl = res.releaseUrl || `https://github.com/Remagent001/claude-project-dashboard/releases`;
+            const releaseUrl = res.releaseUrl || `https://github.com/ImperaBusinessServices/claude-project-dashboard/releases`;
             actionsHtml = `<button class="btn btn-ghost" onclick="hideUpdateModal()">Close</button>`
               + `<a class="btn btn-primary" href="${escapeHtml(releaseUrl)}" target="_blank" rel="noopener">View on GitHub</a>`;
           }

@@ -13,7 +13,7 @@ A simple Windows desktop app for managing your Claude Code project folders. Buil
 
 ## Install
 
-1. Go to the [latest release](https://github.com/Remagent001/claude-project-dashboard/releases/latest)
+1. Go to the [latest release](https://github.com/ImperaBusinessServices/claude-project-dashboard/releases/latest)
 2. Download `Claude Project Dashboard Setup X.Y.Z.exe`
 3. Double-click to install. Windows SmartScreen may show a warning — click **More info → Run anyway**. (The app isn't code-signed; this is a one-person side project, not malware.)
 4. The installer is one-click — no admin rights needed, installs per-user.

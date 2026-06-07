@@ -5,7 +5,7 @@ const https = require('https');
 const { exec, spawn } = require('child_process');
 
 const APP_VERSION = require('./package.json').version;
-const GITHUB_OWNER = 'Remagent001';
+const GITHUB_OWNER = 'ImperaBusinessServices';
 const GITHUB_REPO = 'claude-project-dashboard';
 const RELEASES_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases?per_page=30`;
 
