@@ -4,20 +4,50 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Claude Project Dashboard — a home for everything you build with Claude Code</title>
-<meta name="description" content="A tiny desktop app that turns your scattered Claude Code project folders into one clean, launch-ready workspace — with live status reports that show what Claude has been working on.">
+<meta name="description" content="A tiny desktop app that opens Claude Code in the right folder every time, remembers where you left off, and shows you exactly what Claude has been working on.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-
-<!-- Open Graph -->
 <meta property="og:title" content="Claude Project Dashboard">
 <meta property="og:description" content="A home for everything you build with Claude Code. Free for Windows.">
 <meta property="og:type" content="website">
+
+<!-- No-flash theme: default LIGHT -->
+<script>(function(){try{var t=localStorage.getItem('cpd-theme')||'light';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..900;1,9..144,400..600&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
 <style>
+  /* ============ THEME (light = default) ============ */
   :root {
+    --bg:        #f7f1e8;
+    --bg-deep:   #efe6d8;
+    --panel:     #fffaf2;
+    --panel-2:   #fbf4e9;
+    --panel-3:   #f3e8d7;
+    --line:      rgba(74, 50, 26, 0.13);
+    --line-soft: rgba(74, 50, 26, 0.07);
+    --text:      #2c2117;
+    --muted:     #6d5f4e;
+    --faint:     #9a8b76;
+    --coral:     #cb6336;
+    --coral-br:  #d9764a;
+    --coral-deep:#b1521f;
+    --amber:     #c2872c;
+    --sage:      #5d9069;
+    --nav-bg:    linear-gradient(to bottom, rgba(247,241,232,0.88), rgba(247,241,232,0.45));
+    --ghost-bg:  rgba(74,50,26,0.05);
+    --ghost-hov: rgba(74,50,26,0.10);
+    --card-shadow: 0 26px 54px -28px rgba(90,58,28,0.30);
+    --hover-shadow:0 24px 50px -24px rgba(90,58,28,0.32);
+    --grain-op:  0.05;
+
+    --display: 'Fraunces', Georgia, serif;
+    --sans: 'Hanken Grotesk', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --maxw: 1180px;
+  }
+  :root[data-theme="dark"] {
     --bg:        #14100c;
     --bg-deep:   #0d0a07;
     --panel:     #1e1813;
@@ -33,30 +63,41 @@
     --coral-deep:#c9633b;
     --amber:     #e9b063;
     --sage:      #8bb691;
-    --display: 'Fraunces', Georgia, serif;
-    --sans: 'Hanken Grotesk', system-ui, sans-serif;
-    --mono: 'JetBrains Mono', ui-monospace, monospace;
-    --maxw: 1180px;
+    --nav-bg:    linear-gradient(to bottom, rgba(20,16,12,0.82), rgba(20,16,12,0.35));
+    --ghost-bg:  rgba(255,238,224,0.04);
+    --ghost-hov: rgba(255,238,224,0.08);
+    --card-shadow: 0 24px 50px -24px rgba(0,0,0,0.6);
+    --hover-shadow:0 24px 50px -24px rgba(0,0,0,0.6);
+    --grain-op:  0.035;
+  }
+
+  /* Surfaces that should always read as a dark "device" (the app + terminal) */
+  .surface-dark {
+    --panel:#1e1813; --panel-2:#261e17; --panel-3:#2f261d; --bg-deep:#0d0a07;
+    --text:#f3ece3; --muted:#ab9b8b; --faint:#7c6f62;
+    --line:rgba(255,238,224,0.09); --line-soft:rgba(255,238,224,0.05);
+    --coral:#e2825b; --coral-br:#f29a72; --amber:#e9b063; --sage:#8bb691;
   }
 
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-
   body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 17px;
-    line-height: 1.65;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 17px; line-height: 1.65;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    transition: background 0.4s ease, color 0.4s ease;
   }
 
-  /* Atmospheric background: warm glow + grain */
   body::before {
-    content: '';
-    position: fixed; inset: 0; z-index: -2;
+    content: ''; position: fixed; inset: 0; z-index: -2;
+    background:
+      radial-gradient(680px 540px at 78% -8%, rgba(216,118,74,0.16), transparent 60%),
+      radial-gradient(720px 620px at 8% 8%, rgba(220,160,70,0.14), transparent 55%),
+      radial-gradient(900px 700px at 50% 115%, rgba(216,118,74,0.10), transparent 60%),
+      var(--bg);
+    transition: background 0.4s ease;
+  }
+  :root[data-theme="dark"] body::before {
     background:
       radial-gradient(680px 540px at 78% -8%, rgba(226,130,91,0.20), transparent 60%),
       radial-gradient(720px 620px at 8% 8%, rgba(233,176,99,0.10), transparent 55%),
@@ -64,136 +105,93 @@
       var(--bg);
   }
   body::after {
-    content: '';
-    position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    opacity: 0.035;
+    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    opacity: var(--grain-op);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   a { color: inherit; text-decoration: none; }
-  ::selection { background: rgba(226,130,91,0.32); color: #fff; }
-
+  ::selection { background: rgba(216,118,74,0.30); color: #fff; }
   .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
 
   /* ---------- Nav ---------- */
-  nav {
-    position: sticky; top: 0; z-index: 50;
-    backdrop-filter: blur(14px);
-    background: linear-gradient(to bottom, rgba(20,16,12,0.82), rgba(20,16,12,0.35));
-    border-bottom: 1px solid var(--line-soft);
-  }
-  .nav-in {
-    max-width: var(--maxw); margin: 0 auto; padding: 14px 28px;
-    display: flex; align-items: center; justify-content: space-between; gap: 20px;
-  }
+  nav { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(14px); background: var(--nav-bg); border-bottom: 1px solid var(--line-soft); transition: background 0.4s ease; }
+  .nav-in { max-width: var(--maxw); margin: 0 auto; padding: 13px 28px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
   .brand { display: flex; align-items: center; gap: 11px; font-weight: 600; letter-spacing: -0.01em; }
-  .brand img { width: 30px; height: 30px; border-radius: 9px; box-shadow: 0 4px 14px rgba(201,99,59,0.4); }
+  .brand img { width: 30px; height: 30px; border-radius: 9px; box-shadow: 0 4px 14px rgba(201,99,59,0.35); }
   .brand b { font-weight: 600; font-size: 16px; }
-  .nav-links { display: flex; align-items: center; gap: 28px; }
+  .nav-links { display: flex; align-items: center; gap: 24px; }
   .nav-links a.lnk { color: var(--muted); font-size: 14.5px; font-weight: 500; transition: color 0.2s; }
   .nav-links a.lnk:hover { color: var(--text); }
   .nav-ver { color: var(--faint); font-family: var(--mono); font-size: 12px; }
-  @media (max-width: 760px) { .nav-links .lnk, .nav-ver { display: none; } }
+  @media (max-width: 820px) { .nav-links .lnk, .nav-ver { display: none; } }
 
-  .btn {
-    display: inline-flex; align-items: center; gap: 9px;
-    font-family: var(--sans); font-weight: 600; font-size: 15px;
-    padding: 11px 20px; border-radius: 11px; cursor: pointer;
-    border: 1px solid transparent; transition: transform 0.18s, box-shadow 0.25s, background 0.2s;
+  .toggle {
+    width: 38px; height: 38px; border-radius: 11px; border: 1px solid var(--line);
+    background: var(--ghost-bg); color: var(--text); cursor: pointer; display: grid; place-items: center;
+    transition: background 0.2s, transform 0.2s, border-color 0.2s;
   }
-  .btn-primary {
-    background: linear-gradient(180deg, var(--coral-br), var(--coral-deep));
-    color: #2a160c;
-    box-shadow: 0 8px 24px -6px rgba(226,130,91,0.55), inset 0 1px 0 rgba(255,255,255,0.28);
-  }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 32px -8px rgba(226,130,91,0.7), inset 0 1px 0 rgba(255,255,255,0.3); }
-  .btn-ghost { background: rgba(255,238,224,0.04); color: var(--text); border-color: var(--line); }
-  .btn-ghost:hover { background: rgba(255,238,224,0.08); transform: translateY(-2px); }
+  .toggle:hover { background: var(--ghost-hov); transform: translateY(-1px); border-color: rgba(216,118,74,0.4); }
+  .toggle .i-sun { display: none; } .toggle .i-moon { display: block; }
+  :root[data-theme="dark"] .toggle .i-sun { display: block; } :root[data-theme="dark"] .toggle .i-moon { display: none; }
+
+  .btn { display: inline-flex; align-items: center; gap: 9px; font-family: var(--sans); font-weight: 600; font-size: 15px; padding: 11px 20px; border-radius: 11px; cursor: pointer; border: 1px solid transparent; transition: transform 0.18s, box-shadow 0.25s, background 0.2s; }
+  .btn-primary { background: linear-gradient(180deg, var(--coral-br), var(--coral-deep)); color: #fff6ef; box-shadow: 0 8px 24px -6px rgba(203,99,54,0.5), inset 0 1px 0 rgba(255,255,255,0.25); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 32px -8px rgba(203,99,54,0.62), inset 0 1px 0 rgba(255,255,255,0.28); }
+  .btn-ghost { background: var(--ghost-bg); color: var(--text); border-color: var(--line); }
+  .btn-ghost:hover { background: var(--ghost-hov); transform: translateY(-2px); }
   .btn-sm { padding: 8px 15px; font-size: 13.5px; border-radius: 9px; }
 
   /* ---------- Hero ---------- */
-  header.hero { position: relative; padding: 70px 0 30px; }
-  .hero-grid {
-    display: grid; grid-template-columns: 1.02fr 1.1fr; gap: 54px; align-items: center;
-  }
+  header.hero { position: relative; padding: 64px 0 26px; }
+  .hero-grid { display: grid; grid-template-columns: 1.02fr 1.12fr; gap: 52px; align-items: center; }
   @media (max-width: 940px) { .hero-grid { grid-template-columns: 1fr; gap: 40px; } }
 
-  .eyebrow {
-    display: inline-flex; align-items: center; gap: 9px;
-    font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
-    color: var(--coral-br); background: rgba(226,130,91,0.10);
-    border: 1px solid rgba(226,130,91,0.25); border-radius: 100px; padding: 6px 14px;
-  }
-  .eyebrow .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--coral-br); box-shadow: 0 0 0 0 rgba(242,154,114,0.6); animation: pulse 2.4s infinite; }
-  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(242,154,114,0.55);} 70%{box-shadow:0 0 0 9px rgba(242,154,114,0);} 100%{box-shadow:0 0 0 0 rgba(242,154,114,0);} }
+  .eyebrow { display: inline-flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--coral-deep); background: rgba(216,118,74,0.10); border: 1px solid rgba(216,118,74,0.25); border-radius: 100px; padding: 6px 14px; }
+  :root[data-theme="dark"] .eyebrow { color: var(--coral-br); }
+  .eyebrow .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 0 rgba(216,118,74,0.55); animation: pulse 2.4s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(216,118,74,0.5);} 70%{box-shadow:0 0 0 9px rgba(216,118,74,0);} 100%{box-shadow:0 0 0 0 rgba(216,118,74,0);} }
 
-  h1 {
-    font-family: var(--display);
-    font-weight: 540;
-    font-size: clamp(40px, 5.6vw, 68px);
-    line-height: 1.02;
-    letter-spacing: -0.018em;
-    margin: 22px 0 0;
-    font-variation-settings: 'opsz' 144, 'SOFT' 0, 'WONK' 1;
-  }
-  h1 .accent { font-style: italic; color: var(--coral-br); font-variation-settings: 'opsz' 144, 'WONK' 1; }
-  .lede { color: var(--muted); font-size: 19px; line-height: 1.6; margin: 22px 0 0; max-width: 33ch; }
+  h1 { font-family: var(--display); font-weight: 540; font-size: clamp(40px, 5.6vw, 68px); line-height: 1.02; letter-spacing: -0.018em; margin: 22px 0 0; font-variation-settings: 'opsz' 144, 'SOFT' 0, 'WONK' 1; }
+  h1 .accent { font-style: italic; color: var(--coral-deep); }
+  :root[data-theme="dark"] h1 .accent { color: var(--coral-br); }
+  .lede { color: var(--muted); font-size: 19px; line-height: 1.6; margin: 22px 0 0; max-width: 34ch; }
   .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 30px; }
   .meta-line { margin-top: 16px; color: var(--faint); font-size: 13.5px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .meta-line .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); }
 
-  /* staggered intro */
   .intro { opacity: 0; transform: translateY(18px); animation: rise 0.9s cubic-bezier(.2,.7,.2,1) forwards; }
   .d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.27s}.d4{animation-delay:.39s}.d5{animation-delay:.5s}
   @keyframes rise { to { opacity: 1; transform: none; } }
 
-  /* ---------- App window mock ---------- */
-  .window {
-    position: relative;
-    background: linear-gradient(180deg, var(--panel-2), var(--panel));
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    box-shadow: 0 40px 90px -30px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.02) inset;
-    overflow: hidden;
-    transform: perspective(1600px) rotateY(-7deg) rotateX(2.5deg);
-    transition: transform 0.6s cubic-bezier(.2,.7,.2,1);
-  }
+  /* ---------- App window (Status Report mock, always dark) ---------- */
+  .window { position: relative; background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 40px 90px -30px rgba(0,0,0,0.55); overflow: hidden; transform: perspective(1600px) rotateY(-7deg) rotateX(2.5deg); transition: transform 0.6s cubic-bezier(.2,.7,.2,1); }
   .window:hover { transform: perspective(1600px) rotateY(-2deg) rotateX(1deg); }
-  .window::after { /* sheen */
-    content:''; position:absolute; inset:0; pointer-events:none;
-    background: linear-gradient(125deg, rgba(255,255,255,0.06), transparent 30%);
-  }
-  .win-bar {
-    display: flex; align-items: center; gap: 8px;
-    padding: 12px 16px; border-bottom: 1px solid var(--line-soft);
-    background: rgba(0,0,0,0.18);
-  }
+  .win-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); background: rgba(0,0,0,0.2); }
   .win-bar .dot { width: 11px; height: 11px; border-radius: 50%; }
   .win-bar .r { background: #e06b5e; } .win-bar .y { background: #e9b063; } .win-bar .g { background: #8bb691; }
   .win-title { margin-left: 10px; font-size: 12.5px; color: var(--faint); font-family: var(--mono); }
+  .win-wrap { position: relative; }
   .win-body { padding: 22px 24px 24px; }
+  .report-scroll { max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(226,130,91,0.5) transparent; }
+  .report-scroll::-webkit-scrollbar { width: 9px; }
+  .report-scroll::-webkit-scrollbar-thumb { background: rgba(226,130,91,0.4); border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
+  .scroll-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 54px; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--panel)); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; }
+  .scroll-fade .chev { font-family: var(--mono); font-size: 11px; color: var(--coral-br); animation: nudge 1.8s ease-in-out infinite; }
+  @keyframes nudge { 0%,100%{transform:translateY(0);opacity:.7} 50%{transform:translateY(3px);opacity:1} }
 
-  .rep-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line-soft); padding-bottom: 14px; }
-  .rep-title { font-family: var(--display); font-size: 23px; font-weight: 600; letter-spacing: -0.01em; }
-  .rep-sub { color: var(--faint); font-size: 12px; font-family: var(--mono); }
+  .rep-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line-soft); padding-bottom: 14px; }
+  .rep-title { font-family: var(--display); font-size: 23px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+  .rep-pill { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--coral-br); background: rgba(226,130,91,0.14); border: 1px solid rgba(226,130,91,0.3); padding: 4px 9px; border-radius: 100px; }
   .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 14px; margin: 16px 0 4px; font-size: 12.5px; color: var(--muted); }
   .legend .chip { display: inline-flex; align-items: center; gap: 6px; }
   .legend .sq { width: 11px; height: 11px; border-radius: 3px; }
   .sq.amber { background: var(--amber); } .sq.sage { background: var(--sage); } .sq.empty { border: 1px solid var(--faint); }
 
-  .sec-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--coral-br); margin: 18px 0 8px; }
+  .sec-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--coral-br); margin: 20px 0 8px; }
   ul.check { list-style: none; margin: 0; padding: 0; }
-  ul.check li {
-    display: flex; align-items: center; gap: 12px;
-    padding: 9px 11px; border-radius: 9px;
-    border-left: 3px solid transparent;
-    transition: background 0.4s, border-color 0.4s, color 0.4s;
-  }
-  ul.check li .box {
-    width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
-    border: 1.6px solid var(--faint);
-    display: grid; place-items: center; transition: all 0.35s; position: relative;
-  }
+  ul.check li { display: flex; align-items: center; gap: 12px; padding: 9px 11px; border-radius: 9px; border-left: 3px solid transparent; transition: background 0.4s, border-color 0.4s, color 0.4s; }
+  ul.check li .box { width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0; border: 1.6px solid var(--faint); display: grid; place-items: center; transition: all 0.35s; }
   ul.check li .label { font-size: 15px; color: var(--text); transition: color 0.4s; }
   ul.check li[data-s="1"] { background: rgba(233,176,99,0.10); border-left-color: var(--amber); }
   ul.check li[data-s="1"] .box { border-color: var(--amber); }
@@ -207,73 +205,88 @@
   .prog .fill { height: 100%; width: 0%; border-radius: 4px; background: linear-gradient(90deg, var(--amber), var(--sage)); transition: width 0.6s cubic-bezier(.3,.8,.3,1); }
   .prog .ptext { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
 
-  /* floating spec tags around window */
-  .float { position: absolute; font-family: var(--mono); font-size: 11px; padding: 7px 11px; border-radius: 9px; background: var(--panel-3); border: 1px solid var(--line); color: var(--muted); box-shadow: 0 12px 30px -12px rgba(0,0,0,0.7); animation: bob 5s ease-in-out infinite; }
-  .float b { color: var(--coral-br); font-weight: 600; }
-  .float.f1 { top: -16px; right: 34px; animation-delay: 0s; }
-  .float.f2 { bottom: 26px; left: -30px; animation-delay: 1.4s; }
-  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
-  @media (max-width: 540px) { .float { display: none; } .window { transform: none; } .window:hover{transform:none;} }
+  ul.done { list-style: none; margin: 0; padding: 0; }
+  ul.done li { display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; font-size: 14.5px; color: var(--muted); }
+  ul.done li::before { content: '✓'; color: var(--sage); font-weight: 700; flex-shrink: 0; }
+  .decisions { background: rgba(0,0,0,0.18); border: 1px solid var(--line-soft); border-radius: 10px; padding: 12px 14px; }
+  .decisions p { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+  .decisions p:last-child { margin: 0; } .decisions b { color: var(--coral-br); font-weight: 600; }
+  .notes-box { background: rgba(0,0,0,0.22); border: 1px solid var(--line-soft); border-radius: 10px; padding: 13px 15px; font-size: 14px; color: var(--muted); line-height: 1.6; font-style: italic; }
 
-  /* ---------- Section scaffolding ---------- */
-  section.band { padding: 84px 0; position: relative; }
-  .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--coral-br); }
+  .float { position: absolute; font-family: var(--mono); font-size: 11px; padding: 7px 11px; border-radius: 9px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); box-shadow: 0 12px 30px -12px rgba(80,50,25,0.4); animation: bob 5s ease-in-out infinite; }
+  .float b { color: var(--coral-deep); font-weight: 600; }
+  :root[data-theme="dark"] .float b { color: var(--coral-br); }
+  .float.f1 { top: -16px; right: 30px; } .float.f2 { bottom: 20px; left: -28px; animation-delay: 1.4s; }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+  @media (max-width: 560px) { .float { display: none; } .window { transform: none; } .window:hover{transform:none;} }
+
+  /* ---------- Sections ---------- */
+  section.band { padding: 80px 0; position: relative; }
+  .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--coral-deep); }
+  :root[data-theme="dark"] .kicker { color: var(--coral-br); }
   h2 { font-family: var(--display); font-weight: 560; font-size: clamp(30px, 4vw, 46px); line-height: 1.07; letter-spacing: -0.016em; margin: 12px 0 0; font-variation-settings: 'opsz' 80, 'WONK' 1; }
-  h2 em { font-style: italic; color: var(--coral-br); }
-  .section-lede { color: var(--muted); font-size: 18px; max-width: 56ch; margin: 16px 0 0; }
+  h2 em { font-style: italic; color: var(--coral-deep); }
+  :root[data-theme="dark"] h2 em { color: var(--coral-br); }
+  .section-lede { color: var(--muted); font-size: 18px; max-width: 58ch; margin: 16px 0 0; }
 
   .reveal { opacity: 0; transform: translateY(26px); transition: opacity 0.8s cubic-bezier(.2,.7,.2,1), transform 0.8s cubic-bezier(.2,.7,.2,1); }
   .reveal.in { opacity: 1; transform: none; }
 
+  /* ---------- Headline capability + Synapse ---------- */
+  .hero-feature { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; margin-top: 44px; }
+  @media (max-width: 900px){ .hero-feature { grid-template-columns: 1fr; gap: 36px; } }
+  .hf-point { display: flex; gap: 15px; margin-bottom: 22px; }
+  .hf-point .pic { width: 42px; height: 42px; flex-shrink: 0; border-radius: 11px; display: grid; place-items: center; font-size: 19px; background: rgba(216,118,74,0.12); border: 1px solid rgba(216,118,74,0.24); }
+  .hf-point h3 { font-family: var(--display); font-size: 20px; font-weight: 600; margin: 2px 0 5px; letter-spacing: -0.01em; }
+  .hf-point p { margin: 0; color: var(--muted); font-size: 15.5px; line-height: 1.58; }
+  .hf-point p b { color: var(--coral-deep); font-weight: 600; }
+  :root[data-theme="dark"] .hf-point p b { color: var(--coral-br); }
+  .synapse-name { font-family: var(--display); font-style: italic; font-weight: 600; }
+
+  /* memory constellation */
+  .constellation { position: relative; width: 100%; aspect-ratio: 460 / 360; background: radial-gradient(60% 60% at 50% 45%, rgba(216,118,74,0.10), transparent 70%), linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--card-shadow); overflow: hidden; }
+  .constellation svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .cnode { position: absolute; transform: translate(-50%,-50%); display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11.5px; color: var(--text); background: var(--panel); border: 1px solid var(--line); padding: 6px 11px; border-radius: 100px; white-space: nowrap; box-shadow: 0 6px 16px -8px rgba(80,50,25,0.4); animation: float-n 6s ease-in-out infinite; }
+  .cnode .led { width: 7px; height: 7px; border-radius: 50%; background: var(--sage); box-shadow: 0 0 8px var(--sage); }
+  @keyframes float-n { 0%,100%{transform:translate(-50%,-50%)} 50%{transform:translate(-50%,calc(-50% - 6px))} }
+  .cnode.core { font-family: var(--display); font-style: italic; font-size: 15px; font-weight: 600; color: #fff6ef; background: linear-gradient(180deg, var(--coral-br), var(--coral-deep)); border: none; padding: 10px 18px; box-shadow: 0 0 0 6px rgba(216,118,74,0.14), 0 14px 34px -10px rgba(203,99,54,0.6); animation: corepulse 3.4s ease-in-out infinite; }
+  @keyframes corepulse { 0%,100%{box-shadow:0 0 0 6px rgba(216,118,74,0.14), 0 14px 34px -10px rgba(203,99,54,0.5);} 50%{box-shadow:0 0 0 12px rgba(216,118,74,0.06), 0 14px 40px -8px rgba(203,99,54,0.7);} }
+
   /* ---------- Feature cards ---------- */
   .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 44px; }
   @media (max-width: 720px){ .features { grid-template-columns: 1fr; } }
-  .card {
-    position: relative; background: linear-gradient(180deg, var(--panel-2), var(--panel));
-    border: 1px solid var(--line); border-radius: 16px; padding: 26px 26px 28px; overflow: hidden;
-    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
-  }
-  .card:hover { transform: translateY(-4px); border-color: rgba(226,130,91,0.4); box-shadow: 0 24px 50px -24px rgba(0,0,0,0.6); }
-  .card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(226,130,91,0.5), transparent); opacity:0; transition: opacity .3s; }
+  .card { position: relative; background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 16px; padding: 26px 26px 28px; overflow: hidden; transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s; }
+  .card:hover { transform: translateY(-4px); border-color: rgba(216,118,74,0.4); box-shadow: var(--hover-shadow); }
+  .card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(216,118,74,0.5), transparent); opacity:0; transition: opacity .3s; }
   .card:hover::before { opacity: 1; }
-  .card .ic { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: rgba(226,130,91,0.12); border: 1px solid rgba(226,130,91,0.22); margin-bottom: 18px; }
+  .card .ic { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: rgba(216,118,74,0.12); border: 1px solid rgba(216,118,74,0.22); margin-bottom: 18px; }
   .card h3 { font-family: var(--display); font-size: 21px; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.01em; }
   .card p { color: var(--muted); font-size: 15.5px; margin: 0; line-height: 1.6; }
-
-  /* mini tri-state inside a feature card */
   .mini-check { margin-top: 18px; display: flex; flex-direction: column; gap: 7px; }
   .mini-row { display: flex; align-items: center; gap: 9px; font-size: 13px; color: var(--muted); }
   .mini-row .mb { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--faint); flex-shrink:0; }
   .mini-row.done .mb { background: var(--sage); border-color: var(--sage); }
   .mini-row.done span { text-decoration: line-through; color: var(--faint); }
-  .mini-row.prog .mb { border-color: var(--amber); background: rgba(233,176,99,0.18); }
+  .mini-row.prog .mb { border-color: var(--amber); background: rgba(194,135,44,0.22); }
 
-  /* ---------- Terminal / watch it work ---------- */
+  /* ---------- Watch it work ---------- */
   .work-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 30px; margin-top: 46px; align-items: stretch; }
   @media (max-width: 900px){ .work-grid { grid-template-columns: 1fr; } }
-
-  .terminal {
-    background: var(--bg-deep); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
-    box-shadow: 0 30px 70px -34px rgba(0,0,0,0.8); display: flex; flex-direction: column; min-height: 340px;
-  }
+  .terminal { background: var(--bg-deep); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: 0 30px 70px -34px rgba(0,0,0,0.5); display: flex; flex-direction: column; min-height: 340px; }
   .term-body { padding: 20px 22px; font-family: var(--mono); font-size: 14px; line-height: 1.75; flex: 1; }
   .term-line { white-space: pre-wrap; word-break: break-word; }
-  .term-line.user { color: var(--text); }
-  .term-line.user .pfx { color: var(--coral-br); }
+  .term-line.user { color: var(--text); } .term-line.user .pfx { color: var(--coral-br); }
   .term-line.ok { color: var(--sage); }
-  .term-line.step { color: var(--muted); }
-  .term-line.step .pin { color: var(--coral-br); }
+  .term-line.step { color: var(--muted); } .term-line.step .pin { color: var(--coral-br); }
   .term-line.dim { color: var(--faint); }
   .caret { display: inline-block; width: 9px; height: 17px; background: var(--coral-br); vertical-align: -3px; margin-left: 2px; animation: blink 1.05s steps(2) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
-
-  /* mini dashboard that gains a tile */
-  .mini-dash { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: 0 30px 70px -34px rgba(0,0,0,0.7); }
+  .mini-dash { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: 0 30px 70px -34px rgba(0,0,0,0.5); }
   .mini-dash .md-head { display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
   .mini-dash .md-head span { font-size: 12.5px; color: var(--faint); font-family: var(--mono); }
   .md-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
-  .md-tile { background: rgba(0,0,0,0.2); border: 1px solid var(--line-soft); border-radius: 11px; padding: 13px 13px 15px; transition: transform .3s; }
-  .md-tile .nm { font-weight: 600; font-size: 14px; display:flex; align-items:center; gap:7px; }
+  .md-tile { background: rgba(0,0,0,0.2); border: 1px solid var(--line-soft); border-radius: 11px; padding: 13px 13px 15px; }
+  .md-tile .nm { font-weight: 600; font-size: 14px; display:flex; align-items:center; gap:7px; color: var(--text); }
   .md-tile .em { color: var(--faint); font-size: 11.5px; margin-top: 4px; font-family: var(--mono); }
   .md-tile .badge { font-size: 10px; padding: 2px 7px; border-radius: 100px; background: rgba(139,182,145,0.16); color: var(--sage); border:1px solid rgba(139,182,145,0.3); }
   .md-tile.born { animation: born 0.7s cubic-bezier(.2,.8,.2,1); border-color: rgba(226,130,91,0.5); box-shadow: 0 0 0 3px rgba(226,130,91,0.12); }
@@ -282,21 +295,17 @@
   /* ---------- Steps / download ---------- */
   .steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; margin-top: 42px; }
   @media (max-width: 720px){ .steps { grid-template-columns: 1fr; } }
-  .step { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
-  .step .num { font-family: var(--display); font-size: 34px; font-weight: 600; color: var(--coral-br); line-height: 1; font-variation-settings:'WONK' 1; }
+  .step { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px; box-shadow: var(--card-shadow); }
+  .step .num { font-family: var(--display); font-size: 34px; font-weight: 600; color: var(--coral-deep); line-height: 1; font-variation-settings:'WONK' 1; }
+  :root[data-theme="dark"] .step .num { color: var(--coral-br); }
   .step h4 { font-size: 17px; margin: 12px 0 6px; font-weight: 600; }
   .step p { color: var(--muted); font-size: 14.5px; margin: 0; }
-
-  .download-cta { margin-top: 50px; text-align: center; position: relative; padding: 56px 28px; border-radius: 22px; overflow: hidden;
-    background: radial-gradient(120% 160% at 50% -20%, rgba(226,130,91,0.22), transparent 60%), linear-gradient(180deg, var(--panel-2), var(--panel));
-    border: 1px solid rgba(226,130,91,0.28); }
+  .download-cta { margin-top: 50px; text-align: center; position: relative; padding: 56px 28px; border-radius: 22px; overflow: hidden; background: radial-gradient(120% 160% at 50% -20%, rgba(216,118,74,0.16), transparent 60%), linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid rgba(216,118,74,0.28); box-shadow: var(--card-shadow); }
   .download-cta h3 { font-family: var(--display); font-size: clamp(26px, 4vw, 40px); font-weight: 560; margin: 0 0 10px; letter-spacing: -0.015em; font-variation-settings:'WONK' 1; }
   .download-cta p { color: var(--muted); margin: 0 auto 26px; max-width: 48ch; }
   .btn-xl { padding: 16px 30px; font-size: 17px; border-radius: 14px; }
   .smartscreen { margin-top: 18px; font-size: 13px; color: var(--faint); }
-  .smartscreen b { color: var(--muted); }
 
-  /* ---------- Footer ---------- */
   footer { border-top: 1px solid var(--line-soft); padding: 40px 0 60px; margin-top: 30px; }
   .foot-in { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
   .foot-in .brand b { font-size: 15px; }
@@ -306,8 +315,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.1ms !important; }
-    .intro { opacity: 1; transform: none; }
-    .reveal { opacity: 1; transform: none; }
+    .intro, .reveal { opacity: 1; transform: none; }
   }
 </style>
 </head>
@@ -318,10 +326,14 @@
   <div class="nav-in">
     <a class="brand" href="#top"><img src="favicon.svg" alt=""><b>Project Dashboard</b></a>
     <div class="nav-links">
-      <a class="lnk" href="#features">What it does</a>
+      <a class="lnk" href="#setup">How it works</a>
       <a class="lnk" href="#work">Watch it work</a>
       <a class="lnk" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener">GitHub</a>
       <span class="nav-ver" id="navVer">v2.2.2</span>
+      <button class="toggle" id="themeToggle" aria-label="Toggle light / dark">
+        <svg class="i-moon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <svg class="i-sun" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
       <a class="btn btn-primary btn-sm" id="navDownload" href="#download">Download</a>
     </div>
   </div>
@@ -333,7 +345,7 @@
     <div class="hero-copy">
       <span class="eyebrow intro d1"><span class="pulse"></span> For everyone getting started with Claude Code</span>
       <h1 class="intro d2">A home for everything you <span class="accent">build</span> with Claude Code.</h1>
-      <p class="lede intro d3">A tiny desktop app that turns your scattered project folders into one clean, launch-ready workspace — and shows you, at a glance, exactly what Claude has been working on.</p>
+      <p class="lede intro d3">One tiny desktop app that opens Claude Code in the right folder every single time, remembers where you left off, and shows you exactly what’s been done.</p>
       <div class="cta-row intro d4">
         <a class="btn btn-primary btn-xl" id="heroDownload" href="#download">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -348,62 +360,146 @@
       </div>
     </div>
 
-    <!-- Animated app window: a live, self-filling status report -->
+    <!-- Animated, scrollable Status Report mock -->
     <div class="hero-mock intro d3">
-      <div class="window">
+      <div class="window surface-dark">
         <div class="win-bar">
           <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-          <span class="win-title">Claude Project Dashboard — salon-website</span>
+          <span class="win-title">Status Report — salon-website</span>
         </div>
-        <div class="win-body">
-          <div class="rep-head">
-            <div class="rep-title">salon-website</div>
-            <div class="rep-sub">Status · updating live</div>
+        <div class="win-wrap">
+          <div class="win-body report-scroll" id="reportScroll">
+            <div class="rep-head">
+              <div class="rep-title">salon-website</div>
+              <span class="rep-pill">Status Report</span>
+            </div>
+            <div class="legend">
+              <strong style="color:var(--muted);font-weight:600;">Click to cycle:</strong>
+              <span class="chip"><span class="sq amber"></span>in progress</span>
+              <span class="chip"><span class="sq sage"></span>done</span>
+              <span class="chip"><span class="sq empty"></span>clear</span>
+            </div>
+
+            <div class="sec-label">➡ Up next</div>
+            <ul class="check" id="demoCheck">
+              <li data-s="0"><span class="box"></span><span class="label">Draft the new homepage copy</span></li>
+              <li data-s="0"><span class="box"></span><span class="label">Pick a warm color palette</span></li>
+              <li data-s="0"><span class="box"></span><span class="label">Wire up the booking form</span></li>
+              <li data-s="0"><span class="box"></span><span class="label">Build the contact page</span></li>
+              <li data-s="0"><span class="box"></span><span class="label">Connect the domain name</span></li>
+              <li data-s="0"><span class="box"></span><span class="label">Publish to the web</span></li>
+            </ul>
+            <div class="prog">
+              <span class="ptext">Progress</span>
+              <div class="bar"><div class="fill" id="demoFill"></div></div>
+              <span class="ptext" id="demoText">0 / 6 done</span>
+            </div>
+
+            <div class="sec-label">✅ Done so far</div>
+            <ul class="done">
+              <li>Set up the project folder &amp; first draft</li>
+              <li>Chose the booking provider</li>
+              <li>Wrote the “About the salon” section</li>
+            </ul>
+
+            <div class="sec-label">🧠 Decisions</div>
+            <div class="decisions">
+              <p><b>Warm, calm look</b> — creams &amp; terracotta, not loud neon.</p>
+              <p><b>Booking first</b> — the “Book now” button follows you down the page.</p>
+            </div>
+
+            <div class="sec-label">📝 My notes</div>
+            <div class="notes-box">Ask Claude to add a gallery once the photos are back from the shoot. Domain renews in March.</div>
           </div>
-          <div class="legend">
-            <strong style="color:var(--muted);font-weight:600;">Click to cycle:</strong>
-            <span class="chip"><span class="sq amber"></span>in progress</span>
-            <span class="chip"><span class="sq sage"></span>done</span>
-            <span class="chip"><span class="sq empty"></span>clear</span>
-          </div>
-          <div class="sec-label">➡ Up next</div>
-          <ul class="check" id="demoCheck">
-            <li data-s="0"><span class="box"></span><span class="label">Draft the new homepage copy</span></li>
-            <li data-s="0"><span class="box"></span><span class="label">Pick a warm color palette</span></li>
-            <li data-s="0"><span class="box"></span><span class="label">Wire up the booking form</span></li>
-            <li data-s="0"><span class="box"></span><span class="label">Build the contact page</span></li>
-            <li data-s="0"><span class="box"></span><span class="label">Connect the domain name</span></li>
-            <li data-s="0"><span class="box"></span><span class="label">Publish to the web</span></li>
-          </ul>
-          <div class="prog">
-            <span class="ptext">Progress</span>
-            <div class="bar"><div class="fill" id="demoFill"></div></div>
-            <span class="ptext" id="demoText">0 / 6 done</span>
-          </div>
+          <div class="scroll-fade"><span class="chev">scroll ⌄</span></div>
         </div>
       </div>
       <div class="float f1">📊 <b>live</b> status reports</div>
-      <div class="float f2"><b>brain/</b> remembers everything</div>
+      <div class="float f2"><b>Synapse</b> remembers everything</div>
     </div>
   </div>
 </header>
+
+<!-- ============ HEADLINE CAPABILITY + SYNAPSE ============ -->
+<section class="band" id="setup">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="kicker">The part that changes everything</span>
+      <h2>It sets the whole thing up — so you can just <em>start</em>.</h2>
+      <p class="section-lede">The hardest part of any project is the blank page: which folder, which terminal, what was I even doing? The dashboard quietly handles all of it.</p>
+    </div>
+
+    <div class="hero-feature">
+      <div class="reveal">
+        <div class="hf-point">
+          <div class="pic">📂</div>
+          <div>
+            <h3>Opens in the right place — every time</h3>
+            <p>Click a project and Claude Code launches in <b>its own terminal, already in the correct folder</b>, caught up on exactly where you left off. Starting fresh? It <b>creates the project folder and sets everything up for you</b> — no paths to type, no “wait, where did I put that?”</p>
+          </div>
+        </div>
+        <div class="hf-point">
+          <div class="pic">🕸️</div>
+          <div>
+            <h3>A shared memory across every project — <span class="synapse-name">Synapse</span></h3>
+            <p>An Obsidian-style web of memory woven right into your code. Every project quietly remembers itself — and they’re all <b>linked together</b>. So Claude can borrow a detail from one project while working in another, and your projects can <b>build on each other</b> instead of starting cold each time.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Memory constellation -->
+      <div class="constellation reveal" id="constellation">
+        <svg viewBox="0 0 460 360" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <defs>
+            <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="var(--coral-br)" stop-opacity="0.55"/>
+              <stop offset="1" stop-color="var(--amber)" stop-opacity="0.35"/>
+            </linearGradient>
+          </defs>
+          <g stroke="url(#edge)" stroke-width="1.4" fill="none">
+            <path id="e1" d="M230,180 L230,52"/>
+            <path id="e2" d="M230,180 L84,90"/>
+            <path id="e3" d="M230,180 L380,96"/>
+            <path id="e4" d="M230,180 L80,282"/>
+            <path id="e5" d="M230,180 L384,278"/>
+            <path id="e6" d="M84,90 L80,282" stroke-opacity="0.5"/>
+            <path id="e7" d="M380,96 L384,278" stroke-opacity="0.5"/>
+            <path id="e8" d="M84,90 L230,52" stroke-opacity="0.5"/>
+          </g>
+          <g fill="var(--coral-br)">
+            <circle r="3"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#e2"/></animateMotion></circle>
+            <circle r="3"><animateMotion dur="3.0s" begin="0.4s" repeatCount="indefinite"><mpath href="#e3"/></animateMotion></circle>
+            <circle r="3"><animateMotion dur="2.8s" begin="0.9s" repeatCount="indefinite"><mpath href="#e4"/></animateMotion></circle>
+            <circle r="3"><animateMotion dur="3.2s" begin="0.2s" repeatCount="indefinite"><mpath href="#e5"/></animateMotion></circle>
+            <circle r="2.4" fill="var(--amber)"><animateMotion dur="3.6s" begin="1.1s" repeatCount="indefinite"><mpath href="#e6"/></animateMotion></circle>
+            <circle r="2.4" fill="var(--amber)"><animateMotion dur="3.4s" begin="0.6s" repeatCount="indefinite"><mpath href="#e7"/></animateMotion></circle>
+          </g>
+        </svg>
+        <div class="cnode core" style="left:50%; top:50%">Synapse</div>
+        <div class="cnode" style="left:50%;  top:14.4%"><span class="led"></span>invoices</div>
+        <div class="cnode" style="left:18.3%;top:25%"><span class="led"></span>salon-website</div>
+        <div class="cnode" style="left:82.6%;top:26.7%"><span class="led"></span>tax-helper</div>
+        <div class="cnode" style="left:17.4%;top:78.3%"><span class="led"></span>recipes</div>
+        <div class="cnode" style="left:83.5%;top:77.2%"><span class="led"></span>portfolio</div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- ============ FEATURES ============ -->
 <section class="band" id="features">
   <div class="wrap">
     <div class="reveal">
-      <span class="kicker">What it does</span>
+      <span class="kicker">What else it does</span>
       <h2>Built to make Claude Code feel <em>effortless</em>.</h2>
       <p class="section-lede">No setup, no jargon. Point it at the folder where your projects live, and everything just shows up — ready to open, ready to work.</p>
     </div>
-
     <div class="features">
       <div class="card reveal">
         <div class="ic">🚀</div>
         <h3>One click to launch</h3>
         <p>Every project becomes a tile. Click it and Claude Code opens right there, in its own terminal, already pointed at the right folder. No typing paths, no remembering where things live.</p>
       </div>
-
       <div class="card reveal">
         <div class="ic">📊</div>
         <h3>See what Claude’s been doing</h3>
@@ -414,13 +510,11 @@
           <div class="mini-row"><span class="mb"></span><span>Go live</span></div>
         </div>
       </div>
-
       <div class="card reveal">
         <div class="ic">🧠</div>
         <h3>A memory that sticks</h3>
-        <p>Every new project gets a little <b style="color:var(--coral-br);font-weight:600">brain/</b> — a set of notes Claude keeps up to date. So when you come back next week and say “where were we?”, Claude actually knows.</p>
+        <p>Come back next week and say “where were we?” — and because of <span class="synapse-name" style="color:var(--coral-br)">Synapse</span>, Claude actually knows. Every project keeps its own up-to-date notes, automatically.</p>
       </div>
-
       <div class="card reveal">
         <div class="ic">✨</div>
         <h3>Updates itself</h3>
@@ -436,36 +530,28 @@
     <div class="reveal">
       <span class="kicker">Watch it work</span>
       <h2>Watch an idea become a <em>project</em>.</h2>
-      <p class="section-lede">This is the whole point of Claude Code — you describe what you want in plain English, and it builds it. The dashboard just gives all that work a tidy home.</p>
+      <p class="section-lede">This is the whole point of Claude Code — you describe what you want in plain English, and it builds it. The dashboard gives all that work a tidy home.</p>
     </div>
-
     <div class="work-grid">
-      <div class="terminal reveal">
+      <div class="terminal surface-dark reveal">
         <div class="win-bar">
           <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
           <span class="win-title">claude — salon-website</span>
         </div>
         <div class="term-body" id="term"></div>
       </div>
-
-      <div class="mini-dash reveal">
-        <div class="md-head">
-          <span>Your projects</span><span id="mdCount">2 projects</span>
-        </div>
+      <div class="mini-dash surface-dark reveal">
+        <div class="md-head"><span>Your projects</span><span id="mdCount">2 projects</span></div>
         <div class="md-tiles" id="mdTiles">
-          <div class="md-tile">
-            <div class="nm">📁 tax-helper</div><div class="em">opened 2d ago</div>
-          </div>
-          <div class="md-tile">
-            <div class="nm">📁 family-recipes</div><div class="em">opened yesterday</div>
-          </div>
+          <div class="md-tile"><div class="nm">📁 tax-helper</div><div class="em">opened 2d ago</div></div>
+          <div class="md-tile"><div class="nm">📁 family-recipes</div><div class="em">opened yesterday</div></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ============ GET STARTED / DOWNLOAD ============ -->
+<!-- ============ DOWNLOAD ============ -->
 <section class="band" id="download">
   <div class="wrap">
     <div class="reveal">
@@ -473,31 +559,17 @@
       <h2>Ready in under a <em>minute</em>.</h2>
       <p class="section-lede">No accounts, no command line, no fuss. Three steps and you’re in.</p>
     </div>
-
     <div class="steps">
-      <div class="step reveal">
-        <div class="num">1</div>
-        <h4>Download &amp; open</h4>
-        <p>Grab the installer below and double-click it. It installs just for you — no admin password.</p>
-      </div>
-      <div class="step reveal">
-        <div class="num">2</div>
-        <h4>Click “Run anyway”</h4>
-        <p>Windows shows a blue “unrecognized app” notice. Click <b style="color:var(--muted)">More info → Run anyway</b> — it’s safe, just not yet code-signed.</p>
-      </div>
-      <div class="step reveal">
-        <div class="num">3</div>
-        <h4>Point it at your folder</h4>
-        <p>On first launch, pick the folder where your projects live. That’s it — your tiles appear.</p>
-      </div>
+      <div class="step reveal"><div class="num">1</div><h4>Download &amp; open</h4><p>Grab the installer below and double-click it. It installs just for you — no admin password.</p></div>
+      <div class="step reveal"><div class="num">2</div><h4>Click “Run anyway”</h4><p>Windows shows a blue “unrecognized app” notice. Click <b style="color:var(--muted)">More info → Run anyway</b> — it’s safe, just not yet code-signed.</p></div>
+      <div class="step reveal"><div class="num">3</div><h4>Point it at your folder</h4><p>On first launch, pick the folder where your projects live. That’s it — your tiles appear.</p></div>
     </div>
-
     <div class="download-cta reveal">
       <h3>Get the Claude Project Dashboard</h3>
       <p>Free, open source, and a tiny ~92&nbsp;MB. Works on Windows 10 and 11.</p>
       <a class="btn btn-primary btn-xl" id="mainDownload" href="https://github.com/ImperaBusinessServices/claude-project-dashboard/releases/latest">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Download for Windows <span id="btnVer" style="opacity:.7;font-weight:500">v2.2.2</span>
+        Download for Windows <span id="btnVer" style="opacity:.75;font-weight:500">v2.2.2</span>
       </a>
       <div class="smartscreen">Prefer the source? <a href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="color:var(--coral-br)">Browse it on GitHub →</a></div>
     </div>
@@ -510,100 +582,84 @@
     <div class="foot-in">
       <a class="brand" href="#top"><img src="favicon.svg" alt=""><b>Claude Project Dashboard</b></a>
       <div class="foot-links">
-        <a href="#features">Features</a>
+        <a href="#setup">How it works</a>
         <a href="#download">Download</a>
         <a href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener">GitHub</a>
       </div>
     </div>
-    <p class="disclaimer">An independent, community-made tool for people who use Claude Code. Claude and Claude Code are products of Anthropic — this project is not affiliated with or endorsed by Anthropic. Made with care for friends getting started.</p>
+    <p class="disclaimer">An independent, community-made tool for people who use Claude Code. Claude and Claude Code are products of Anthropic — this project is not affiliated with or endorsed by Anthropic. “Synapse” is the friendly name for the app’s project-memory system. Made with care for friends getting started.</p>
   </div>
 </footer>
 
 <script>
 (function () {
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var root = document.documentElement;
 
-  /* ---------- Live status-report demo (the signature animation) ---------- */
+  /* ---------- Theme toggle ---------- */
+  var tbtn = document.getElementById('themeToggle');
+  tbtn.addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('cpd-theme', next); } catch (e) {}
+  });
+
+  /* ---------- Live status-report demo ---------- */
   var items = Array.prototype.slice.call(document.querySelectorAll('#demoCheck li'));
   var fill = document.getElementById('demoFill');
   var text = document.getElementById('demoText');
-
   function paint() {
     var done = 0, prog = 0;
-    items.forEach(function (li) {
-      var s = li.getAttribute('data-s');
-      if (s === '2') done++; else if (s === '1') prog++;
-    });
+    items.forEach(function (li) { var s = li.getAttribute('data-s'); if (s === '2') done++; else if (s === '1') prog++; });
     fill.style.width = Math.round((done / items.length) * 100) + '%';
     text.textContent = done + ' / ' + items.length + ' done' + (prog ? ' · ' + prog + ' in progress' : '');
   }
-
-  // A scripted "work happening" timeline that loops.
-  var timeline = [
-    [0,1],[0,2],          // item 0 -> in progress -> done
-    [1,1],                // item 1 -> in progress
-    [0,2,'p0done'],       // (placeholder structure replaced below)
-  ];
-  // Build a clean sequence programmatically instead:
   function buildSeq() {
-    var seq = []; // {at, i, s}
-    var t = 700;
+    var seq = [], t = 700;
     for (var i = 0; i < items.length; i++) {
-      seq.push({ at: t, i: i, s: 1 }); t += 620;          // start it
-      seq.push({ at: t, i: i, s: 2 }); t += 760;          // finish it
-      if (i === 2) { // leave a little realism: next one lingers "in progress"
-        seq.push({ at: t, i: i + 1, s: 1 }); t += 1500;
-      }
+      seq.push({ at: t, i: i, s: 1 }); t += 620;
+      seq.push({ at: t, i: i, s: 2 }); t += 760;
+      if (i === 2) { seq.push({ at: t, i: i + 1, s: 1 }); t += 1500; }
     }
     return { seq: seq, total: t + 1700 };
   }
-
   var timers = [];
   function runDemo() {
     timers.forEach(clearTimeout); timers = [];
     items.forEach(function (li) { li.setAttribute('data-s', '0'); });
     paint();
     var b = buildSeq();
-    b.seq.forEach(function (ev) {
-      timers.push(setTimeout(function () {
-        items[ev.i].setAttribute('data-s', String(ev.s));
-        paint();
-      }, ev.at));
-    });
+    b.seq.forEach(function (ev) { timers.push(setTimeout(function () { items[ev.i].setAttribute('data-s', String(ev.s)); paint(); }, ev.at)); });
     if (!reduce) timers.push(setTimeout(runDemo, b.total));
   }
-
-  if (reduce) {
-    // static, representative end-state
-    ['2','2','2','1','0','0'].forEach(function (s, i) { items[i].setAttribute('data-s', s); });
-    paint();
-  } else {
-    runDemo();
-  }
-
-  // Let people actually click the demo items too (cycles 0->1->2->0)
+  if (reduce) { ['2','2','2','1','0','0'].forEach(function (s, i) { items[i].setAttribute('data-s', s); }); paint(); }
+  else { runDemo(); }
   items.forEach(function (li) {
     li.style.cursor = 'pointer';
     li.addEventListener('click', function () {
-      timers.forEach(clearTimeout); timers = []; // stop the auto loop on interaction
+      timers.forEach(clearTimeout); timers = [];
       var s = (parseInt(li.getAttribute('data-s'), 10) + 1) % 3;
-      li.setAttribute('data-s', String(s));
-      paint();
+      li.setAttribute('data-s', String(s)); paint();
     });
   });
+
+  /* ---------- Gentle one-time scroll hint on the report ---------- */
+  var rep = document.getElementById('reportScroll');
+  if (rep && !reduce) {
+    setTimeout(function () {
+      rep.scrollTo({ top: 150, behavior: 'smooth' });
+      setTimeout(function () { rep.scrollTo({ top: 0, behavior: 'smooth' }); }, 1500);
+    }, 2800);
+  }
 
   /* ---------- Reveal on scroll ---------- */
   var reveals = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window && !reduce) {
     var ro = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); }
-      });
+      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } });
     }, { threshold: 0.16 });
     reveals.forEach(function (el) { ro.observe(el); });
-  } else {
-    reveals.forEach(function (el) { el.classList.add('in'); });
-  }
+  } else { reveals.forEach(function (el) { el.classList.add('in'); }); }
 
   /* ---------- Terminal typewriter + tile birth ---------- */
   var term = document.getElementById('term');
@@ -612,106 +668,70 @@
     { t: 'gap' },
     { t: 'step', text: 'Setting up a new project folder, salon-website…' },
     { t: 'step', text: 'Writing the homepage, booking form, and contact page…' },
-    { t: 'step', text: 'Saving notes to brain/ so I remember where we are…' },
+    { t: 'step', text: 'Saving notes to Synapse so I remember where we are…' },
     { t: 'gap' },
     { t: 'ok',   text: '✓ Done — opening it in your browser.' },
     { t: 'dim',  text: 'A new tile just appeared in your dashboard →' },
     { t: 'spawn' }
   ];
-
   function typeLine(node, str, speed, done) {
-    var i = 0;
-    var caret = document.createElement('span'); caret.className = 'caret';
-    node.appendChild(caret);
+    var i = 0, caret = document.createElement('span'); caret.className = 'caret'; node.appendChild(caret);
     (function tick() {
-      if (i < str.length) {
-        caret.insertAdjacentText('beforebegin', str.charAt(i));
-        i++;
-        setTimeout(tick, speed + (str.charAt(i - 1) === ' ' ? 18 : 0));
-      } else {
-        caret.remove();
-        if (done) done();
-      }
+      if (i < str.length) { caret.insertAdjacentText('beforebegin', str.charAt(i)); i++; setTimeout(tick, speed + (str.charAt(i - 1) === ' ' ? 18 : 0)); }
+      else { caret.remove(); if (done) done(); }
     })();
   }
-
   function spawnTile() {
     var tiles = document.getElementById('mdTiles');
-    var el = document.createElement('div');
-    el.className = 'md-tile born';
+    var el = document.createElement('div'); el.className = 'md-tile born';
     el.innerHTML = '<div class="nm">📁 salon-website <span class="badge">new</span></div><div class="em">just now · created by Claude</div>';
     tiles.insertBefore(el, tiles.firstChild);
     document.getElementById('mdCount').textContent = '3 projects';
   }
-
+  function resetMini() {
+    var born = document.getElementById('mdTiles').querySelector('.born'); if (born) born.remove();
+    document.getElementById('mdCount').textContent = '2 projects';
+  }
   function runTerminal() {
-    term.innerHTML = '';
-    var idx = 0;
+    term.innerHTML = ''; var idx = 0;
     function next() {
-      if (idx >= script.length) {
-        if (!reduce) setTimeout(function () { resetMini(); runTerminal(); }, 4200);
-        return;
-      }
+      if (idx >= script.length) { if (!reduce) setTimeout(function () { resetMini(); runTerminal(); }, 4200); return; }
       var item = script[idx++];
       if (item.t === 'gap') { var g = document.createElement('div'); g.style.height = '10px'; term.appendChild(g); return next(); }
       if (item.t === 'spawn') { spawnTile(); return; }
-      var line = document.createElement('div');
-      line.className = 'term-line ' + item.t;
+      var line = document.createElement('div'); line.className = 'term-line ' + item.t;
       if (item.t === 'user') {
         var pfx = document.createElement('span'); pfx.className = 'pfx'; pfx.textContent = '› '; line.appendChild(pfx);
-        term.appendChild(line);
-        typeLine(line, item.text, 34, function () { setTimeout(next, 480); });
+        term.appendChild(line); typeLine(line, item.text, 34, function () { setTimeout(next, 480); });
       } else {
-        // step/ok/dim lines reveal with a small lead-in dot
         if (item.t === 'step') { var pin = document.createElement('span'); pin.className = 'pin'; pin.textContent = '● '; line.appendChild(pin); }
-        term.appendChild(line);
-        var span = document.createElement('span');
-        line.appendChild(span);
+        term.appendChild(line); var span = document.createElement('span'); line.appendChild(span);
         typeLine(span, item.text, 14, function () { setTimeout(next, item.t === 'ok' ? 360 : 240); });
       }
       term.scrollTop = term.scrollHeight;
     }
     next();
   }
-
-  function resetMini() {
-    var tiles = document.getElementById('mdTiles');
-    var born = tiles.querySelector('.born');
-    if (born) born.remove();
-    document.getElementById('mdCount').textContent = '2 projects';
-  }
-
-  // Start terminal when it scrolls into view
   var workSection = document.getElementById('work');
   if ('IntersectionObserver' in window) {
     var started = false;
     var to = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting && !started) { started = true; runTerminal(); to.disconnect(); }
-      });
+      entries.forEach(function (e) { if (e.isIntersecting && !started) { started = true; runTerminal(); to.disconnect(); } });
     }, { threshold: 0.3 });
     to.observe(workSection);
-  } else {
-    runTerminal();
-  }
+  } else { runTerminal(); }
 
-  /* ---------- Pull the real latest version from GitHub (best-effort) ---------- */
-  // Keeps the version label + download button current without a rebuild.
+  /* ---------- Hydrate version + download links from latest release ---------- */
   try {
     fetch('https://api.github.com/repos/ImperaBusinessServices/claude-project-dashboard/releases/latest')
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (rel) {
         if (!rel || !rel.tag_name) return;
-        var v = rel.tag_name.replace(/^v/, '');
-        var ver = 'v' + v;
+        var ver = 'v' + rel.tag_name.replace(/^v/, '');
         ['navVer', 'btnVer'].forEach(function (id) { var n = document.getElementById(id); if (n) n.textContent = ver; });
-        // Prefer the exact installer asset; fall back to the releases page.
-        var asset = (rel.assets || []).find(function (a) { return /setup.*\.exe$/i.test(a.name); })
-                 || (rel.assets || []).find(function (a) { return /\.exe$/i.test(a.name); });
+        var asset = (rel.assets || []).find(function (a) { return /setup.*\.exe$/i.test(a.name); }) || (rel.assets || []).find(function (a) { return /\.exe$/i.test(a.name); });
         var url = asset ? asset.browser_download_url : (rel.html_url || '#');
-        ['navDownload', 'heroDownload', 'mainDownload'].forEach(function (id) {
-          var n = document.getElementById(id); if (n) n.setAttribute('href', url);
-        });
+        ['navDownload', 'heroDownload', 'mainDownload'].forEach(function (id) { var n = document.getElementById(id); if (n) n.setAttribute('href', url); });
       })
       .catch(function () {});
   } catch (e) {}
