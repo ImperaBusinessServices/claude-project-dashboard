@@ -747,6 +747,8 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     --accent-soft: rgba(233,69,96,0.12);
     --purple: #b388ff;
     --done: #4ade80;
+    --amber: #f5b97d;
+    --amber-soft: rgba(245,185,125,0.12);
     --border: rgba(255,255,255,0.1);
   }
   * { box-sizing: border-box; }
@@ -792,17 +794,37 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   section.card ul, section.card ol { padding-left: 20px; margin: 6px 0; }
   section.card ul.checklist { list-style: none; padding-left: 0; }
   section.card ul.checklist li {
-    padding: 5px 0; display: flex; align-items: flex-start; gap: 10px;
+    padding: 5px 8px; display: flex; align-items: flex-start; gap: 10px;
+    border-left: 3px solid transparent; border-radius: 4px;
+    transition: background 0.15s, border-color 0.15s;
   }
   section.card ul.checklist input[type="checkbox"] {
     margin-top: 5px; width: 16px; height: 16px; accent-color: var(--accent);
     cursor: pointer; flex-shrink: 0;
   }
   section.card ul.checklist label { cursor: pointer; flex: 1; }
-  section.card ul.checklist input:checked + label {
+  /* Tri-state: 1 = in progress (amber), 2 = done (green + strikethrough) */
+  section.card ul.checklist li[data-state="1"] {
+    background: var(--amber-soft); border-left-color: var(--amber);
+  }
+  section.card ul.checklist li[data-state="1"] input[type="checkbox"] { accent-color: var(--amber); }
+  section.card ul.checklist li[data-state="2"] input[type="checkbox"] { accent-color: var(--done); }
+  section.card ul.checklist li[data-state="2"] label {
     color: var(--muted); text-decoration: line-through;
   }
   section.card li.static-cb { list-style: none; padding: 3px 0; }
+  .legend {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 16px; margin-bottom: 16px; font-size: 12px; color: var(--muted);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px;
+  }
+  .legend b { color: var(--text); font-weight: 600; }
+  .legend .chip { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+  .legend .dot.amber { background: var(--amber); }
+  .legend .dot.green { background: var(--done); }
+  .legend .dot.empty { background: transparent; border: 1px solid var(--muted); }
+  .progress-text { white-space: nowrap; }
   code {
     background: var(--panel-2); padding: 2px 6px; border-radius: 4px;
     font-size: 13px; color: #f5b97d; font-family: 'Consolas', 'Courier New', monospace;
@@ -845,6 +867,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 </style>
 </head>
 <body>
+<!-- CMSR-TEMPLATE-VERSION: 2 -->
 <div class="wrap" data-project-key="{{projectKey}}">
 
   <header class="report-head">
@@ -854,6 +877,13 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     </div>
     <span class="refresh-link" title="Use the dashboard's right-click menu to refresh">↻ Refresh from dashboard</span>
   </header>
+
+  <div class="legend">
+    <b>Tip:</b> click any checkbox to cycle it ·
+    <span class="chip"><span class="dot amber"></span>1 click = in progress</span>
+    <span class="chip"><span class="dot green"></span>2 clicks = done</span>
+    <span class="chip"><span class="dot empty"></span>3 clicks = clear</span>
+  </div>
 
   <section class="card">
     <h2>🎯 Objective</h2>
@@ -868,11 +898,6 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   <section class="card">
     <h2>➡️ Up next</h2>
     {{next}}
-    <div class="progress" id="nextProgress" style="display:none">
-      <span>Progress</span>
-      <div class="progress-bar"><div class="progress-fill" id="nextProgressFill"></div></div>
-      <span id="nextProgressText">0 / 0</span>
-    </div>
   </section>
 
   <section class="card">
@@ -924,50 +949,104 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     }, 800);
   });
 
-  // Checkboxes: persist by label text (stable across regenerations of same labels)
+  // Tri-state check items: persist by label text (stable across regenerations).
+  // State 0 = not started, 1 = in progress, 2 = done.
   function hashId(s) {
     var h = 0, i, c;
     for (i = 0; i < s.length; i++) { c = s.charCodeAt(i); h = ((h << 5) - h) + c; h |= 0; }
     return Math.abs(h).toString(36);
   }
-  var boxes = document.querySelectorAll('ul.checklist input[type="checkbox"]');
-  boxes.forEach(function(cb) {
-    var label = cb.nextElementSibling ? cb.nextElementSibling.textContent.trim() : '';
-    var key = storagePrefix + 'cb-' + hashId(label);
+
+  function applyState(li, cb, state) {
+    li.setAttribute('data-state', String(state));
+    // A prevented checkbox click makes the browser revert checked/indeterminate
+    // after the handler runs, so set them on the next tick.
+    setTimeout(function() {
+      cb.checked = (state === 2);
+      cb.indeterminate = (state === 1);
+    }, 0);
+  }
+
+  var items = document.querySelectorAll('ul.checklist li');
+  items.forEach(function(li) {
+    var cb = li.querySelector('input[type="checkbox"]');
+    var label = li.querySelector('label');
+    if (!cb || !label) return;
+    var key = storagePrefix + 'cb-' + hashId(label.textContent.trim());
+    var state = 0;
     try {
       var stored = localStorage.getItem(key);
-      if (stored === '1') cb.checked = true;
-      else if (stored === '0') cb.checked = false;
+      if (stored === '1' || stored === '2') state = parseInt(stored, 10);
     } catch (e) {}
-    cb.addEventListener('change', function() {
-      try { localStorage.setItem(key, cb.checked ? '1' : '0'); } catch (e) {}
-      updateProgress();
+    applyState(li, cb, state);
+
+    cb.addEventListener('click', function(e) {
+      e.preventDefault();
+      state = (state + 1) % 3;
+      try { localStorage.setItem(key, String(state)); } catch (e) {}
+      applyState(li, cb, state);
+      updateAllProgress();
     });
   });
 
-  function updateProgress() {
-    if (boxes.length === 0) return;
-    var done = 0;
-    boxes.forEach(function(cb) { if (cb.checked) done++; });
-    var pct = Math.round((done / boxes.length) * 100);
-    var fill = document.getElementById('nextProgressFill');
-    var text = document.getElementById('nextProgressText');
-    var bar = document.getElementById('nextProgress');
-    if (fill) fill.style.width = pct + '%';
-    if (text) text.textContent = done + ' / ' + boxes.length + ' (' + pct + '%)';
-    if (bar) bar.style.display = 'flex';
+  // Per-card progress: one bar per card that contains a checklist, counting
+  // only the items inside that card.
+  var cards = document.querySelectorAll('section.card');
+  cards.forEach(function(card) {
+    if (card.querySelectorAll('ul.checklist li').length === 0) return;
+    var bar = document.createElement('div');
+    bar.className = 'progress';
+    bar.innerHTML = '<div class="progress-bar"><div class="progress-fill"></div></div>'
+                  + '<span class="progress-text"></span>';
+    card.appendChild(bar);
+  });
+
+  function updateAllProgress() {
+    cards.forEach(function(card) {
+      var bar = card.querySelector('.progress');
+      if (!bar) return;
+      var lis = card.querySelectorAll('ul.checklist li');
+      var done = 0, prog = 0;
+      lis.forEach(function(li) {
+        var s = li.getAttribute('data-state');
+        if (s === '2') done++;
+        else if (s === '1') prog++;
+      });
+      var total = lis.length;
+      var pct = total ? Math.round((done / total) * 100) : 0;
+      bar.querySelector('.progress-fill').style.width = pct + '%';
+      var txt = done + ' / ' + total + ' done';
+      if (prog > 0) txt += ' · ' + prog + ' in progress';
+      bar.querySelector('.progress-text').textContent = txt;
+    });
   }
-  updateProgress();
+  updateAllProgress();
 })();
 </script>
 </body>
 </html>
 `;
 
+// Bump this when DEFAULT_STATUS_TEMPLATE gains features every report should get.
+// Must match the CMSR-TEMPLATE-VERSION marker embedded in the template.
+const STATUS_TEMPLATE_VERSION = 2;
+
 function ensureStatusTemplate() {
-  if (!fs.existsSync(STATUS_TEMPLATE_PATH)) {
-    fs.writeFileSync(STATUS_TEMPLATE_PATH, DEFAULT_STATUS_TEMPLATE);
-  }
+  try {
+    if (!fs.existsSync(STATUS_TEMPLATE_PATH)) {
+      fs.writeFileSync(STATUS_TEMPLATE_PATH, DEFAULT_STATUS_TEMPLATE);
+      return;
+    }
+    // Auto-upgrade an older stock template so existing installs pick up new
+    // report features (tri-state checks, per-card progress, etc.). A template
+    // with no version marker predates versioning and is treated as stock.
+    var current = fs.readFileSync(STATUS_TEMPLATE_PATH, 'utf-8');
+    var m = current.match(/CMSR-TEMPLATE-VERSION:\s*(\d+)/);
+    var onDisk = m ? parseInt(m[1], 10) : 0;
+    if (onDisk < STATUS_TEMPLATE_VERSION) {
+      fs.writeFileSync(STATUS_TEMPLATE_PATH, DEFAULT_STATUS_TEMPLATE);
+    }
+  } catch (e) { /* non-fatal — report gen will surface a read error if any */ }
 }
 
 function readStatusTemplate() {
