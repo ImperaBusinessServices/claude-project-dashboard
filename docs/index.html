@@ -142,8 +142,75 @@
   .btn-ghost:hover { background: var(--ghost-hov); transform: translateY(-2px); }
   .btn-sm { padding: 8px 15px; font-size: 13.5px; border-radius: 9px; }
 
-  /* ---------- Hero ---------- */
-  header.hero { position: relative; padding: 64px 0 26px; }
+  /* ---------- Hero (centered, app showcase below) ---------- */
+  header.hero { position: relative; padding: 60px 0 20px; text-align: center; }
+  .hero-copy { max-width: 760px; margin: 0 auto; }
+  .hero .lede { margin-left: auto; margin-right: auto; max-width: 56ch; }
+  .hero .cta-row, .hero .meta-line { justify-content: center; }
+
+  /* The real app, recreated (authentic dark "device", not page-themed) */
+  .app-showcase { position: relative; max-width: 1000px; margin: 50px auto 0; }
+  .app-glow { position: absolute; inset: -8% -4% -12%; z-index: 0; background: radial-gradient(60% 55% at 50% 35%, rgba(216,118,74,0.22), transparent 70%); filter: blur(8px); }
+  .appwin {
+    position: relative; z-index: 1;
+    --a-bg:#0e1626; --a-card:#17223e; --a-card2:#1b274696; --a-line:rgba(255,255,255,0.07);
+    --a-text:#e9eefb; --a-muted:#8a96b2; --a-faint:#69748f;
+    --a-pink:#e94560; --a-purple:#7d5cf6; --a-green:#46c08a; --a-yellow:#f0c24d;
+    background: var(--a-bg); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px;
+    overflow: hidden; box-shadow: 0 50px 110px -36px rgba(10,8,20,0.7), 0 0 0 1px rgba(255,255,255,0.02) inset;
+    text-align: left;
+  }
+  .a-titlebar { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; background: #11192b; border-bottom: 1px solid rgba(0,0,0,0.4); }
+  .a-titlebar .tb-l { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: #b9c2d8; font-weight: 600; }
+  .a-titlebar .tb-l img { width: 16px; height: 16px; border-radius: 4px; }
+  .a-titlebar .tb-c { display: flex; gap: 17px; color: #6b7693; font-size: 13px; }
+  .a-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 15px 20px; background: linear-gradient(180deg, #213459, #1a2840); border-bottom: 2px solid var(--a-pink); flex-wrap: wrap; }
+  .a-brand { display: flex; align-items: center; gap: 11px; }
+  .a-brand .clogo { width: 30px; height: 30px; border-radius: 8px; background: var(--a-pink); color: #fff; display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 17px; box-shadow: 0 3px 10px rgba(233,69,96,0.5); }
+  .a-brand b { font-size: 18px; color: #fff; letter-spacing: -0.01em; }
+  .a-actions { display: flex; gap: 9px; flex-wrap: wrap; }
+  .a-btn { font-family: var(--sans); font-size: 12.5px; font-weight: 600; padding: 8px 13px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #d5dcec; white-space: nowrap; }
+  .a-btn.pink { background: var(--a-pink); border-color: transparent; color: #fff; box-shadow: 0 4px 12px -3px rgba(233,69,96,0.6); }
+  .a-toolbar { display: flex; align-items: center; gap: 13px; padding: 14px 20px 4px; flex-wrap: wrap; }
+  .a-search { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 200px; background: #121b2e; border: 1px solid var(--a-line); border-radius: 9px; padding: 9px 13px; color: var(--a-faint); font-size: 13px; }
+  .a-search svg { color: var(--a-pink); flex-shrink: 0; }
+  .a-seg { display: flex; gap: 4px; background: #121b2e; border: 1px solid var(--a-line); border-radius: 9px; padding: 3px; }
+  .a-seg span { font-size: 12.5px; padding: 5px 13px; border-radius: 7px; color: var(--a-muted); font-weight: 600; }
+  .a-seg span.on { background: var(--a-pink); color: #fff; }
+  .a-count { font-size: 12.5px; color: var(--a-muted); }
+  .a-ghost { font-size: 12.5px; padding: 7px 13px; border-radius: 8px; border: 1px solid var(--a-line); background: rgba(255,255,255,0.04); color: #cdd5e6; }
+  .a-sort { display: flex; align-items: center; gap: 8px; padding: 10px 20px 0; font-size: 12.5px; color: var(--a-muted); flex-wrap: wrap; }
+  .a-sort .sb { padding: 5px 11px; border-radius: 7px; background: rgba(255,255,255,0.05); color: var(--a-muted); font-weight: 600; }
+  .a-sort .sb.on { background: var(--a-pink); color: #fff; }
+  .a-tilewrap { position: relative; }
+  .a-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 16px 20px 26px; }
+  @media (max-width: 620px){ .a-tiles { grid-template-columns: 1fr; } }
+  .a-tile { position: relative; background: var(--a-card); border: 1px solid var(--a-line); border-radius: 12px; padding: 15px 16px 16px; opacity: 0; transform: translateY(14px); transition: border-color .25s, transform .25s; }
+  .a-tile:hover { border-color: rgba(233,69,96,0.45); transform: translateY(-3px); }
+  .appwin.lit .a-tile { animation: tilein .6s cubic-bezier(.2,.7,.2,1) forwards; }
+  .appwin.lit .a-tile:nth-child(1){animation-delay:.05s}.appwin.lit .a-tile:nth-child(2){animation-delay:.13s}
+  .appwin.lit .a-tile:nth-child(3){animation-delay:.21s}.appwin.lit .a-tile:nth-child(4){animation-delay:.29s}
+  .appwin.lit .a-tile:nth-child(5){animation-delay:.37s}.appwin.lit .a-tile:nth-child(6){animation-delay:.45s}
+  @keyframes tilein { to { opacity: 1; transform: none; } }
+  .a-tile .cb { position: absolute; top: 14px; right: 14px; width: 17px; height: 17px; border: 1.6px solid var(--a-faint); border-radius: 4px; }
+  .a-tile .t-name { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; padding-right: 26px; }
+  .a-tile .t-name .fldr { font-size: 17px; }
+  .a-tile .t-name b { font-size: 16px; color: #fff; letter-spacing: -0.01em; }
+  .a-tile .ibadge { width: 17px; height: 17px; border-radius: 50%; background: rgba(125,92,246,0.25); border: 1px solid rgba(125,92,246,0.5); color: #b6a4ff; font-size: 11px; font-style: italic; display: grid; place-items: center; font-family: var(--display); }
+  .a-tile .mdpill { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 100px; background: rgba(125,92,246,0.16); color: #b6a4ff; border: 1px solid rgba(125,92,246,0.3); }
+  .a-tile .t-meta { color: var(--a-faint); font-size: 12px; margin: 10px 0 13px; line-height: 1.55; }
+  .a-tile .t-sub { color: var(--a-purple); font-size: 12px; margin: -7px 0 12px; text-decoration: underline; }
+  .a-tile .t-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tb-btn { font-size: 12px; font-weight: 600; padding: 8px 12px; border-radius: 8px; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .tb-btn.launch { background: linear-gradient(180deg, #ef4f6a, #d6354f); color: #fff; box-shadow: 0 3px 10px -2px rgba(233,69,96,0.55); }
+  .tb-btn.claude { background: linear-gradient(180deg, #7d5cf6, #6443d8); color: #fff; }
+  .tb-btn.status { background: rgba(70,192,138,0.10); border-color: rgba(70,192,138,0.45); color: #6fd6a4; }
+  .tb-btn.fld { background: rgba(255,255,255,0.05); border-color: var(--a-line); color: var(--a-yellow); padding: 8px 11px; }
+  .a-tile.pulse .tb-btn.launch { animation: btnpulse 2.6s ease-in-out infinite; }
+  @keyframes btnpulse { 0%,100%{box-shadow:0 3px 10px -2px rgba(233,69,96,0.55)} 50%{box-shadow:0 3px 22px 0 rgba(233,69,96,0.85)} }
+  .a-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 60px; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--a-bg)); }
+
+  /* ---------- Hero (legacy two-col kept for other sections) ---------- */
   .hero-grid { display: grid; grid-template-columns: 1.02fr 1.12fr; gap: 52px; align-items: center; }
   @media (max-width: 940px) { .hero-grid { grid-template-columns: 1fr; gap: 40px; } }
 
@@ -216,7 +283,8 @@
   .float { position: absolute; font-family: var(--mono); font-size: 11px; padding: 7px 11px; border-radius: 9px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); box-shadow: 0 12px 30px -12px rgba(80,50,25,0.4); animation: bob 5s ease-in-out infinite; }
   .float b { color: var(--coral-deep); font-weight: 600; }
   :root[data-theme="dark"] .float b { color: var(--coral-br); }
-  .float.f1 { top: -16px; right: 30px; } .float.f2 { bottom: 20px; left: -28px; animation-delay: 1.4s; }
+  .float.f1 { top: -18px; right: 38px; } .float.f2 { bottom: 30px; left: -16px; animation-delay: 1.4s; }
+  @media (max-width: 1080px){ .float.f2 { left: 8px; } }
   @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
   @media (max-width: 560px) { .float { display: none; } .window { transform: none; } .window:hover{transform:none;} }
 
@@ -252,9 +320,32 @@
   .cnode.core { font-family: var(--display); font-style: italic; font-size: 15px; font-weight: 600; color: #fff6ef; background: linear-gradient(180deg, var(--coral-br), var(--coral-deep)); border: none; padding: 10px 18px; box-shadow: 0 0 0 6px rgba(216,118,74,0.14), 0 14px 34px -10px rgba(203,99,54,0.6); animation: corepulse 3.4s ease-in-out infinite; }
   @keyframes corepulse { 0%,100%{box-shadow:0 0 0 6px rgba(216,118,74,0.14), 0 14px 34px -10px rgba(203,99,54,0.5);} 50%{box-shadow:0 0 0 12px rgba(216,118,74,0.06), 0 14px 40px -8px rgba(203,99,54,0.7);} }
 
+  /* ---------- Breakdown: every button explained ---------- */
+  .breakdown { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 42px; }
+  @media (max-width: 720px){ .breakdown { grid-template-columns: 1fr; } }
+  .bd-item { display: flex; gap: 16px; align-items: flex-start; background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 14px; padding: 20px; transition: transform .25s, border-color .25s, box-shadow .25s; }
+  .bd-item:hover { transform: translateY(-3px); border-color: rgba(216,118,74,0.4); box-shadow: var(--hover-shadow); }
+  .bd-chip { flex-shrink: 0; background: #141d33; border: 1px solid rgba(255,255,255,0.07); border-radius: 11px; padding: 12px; display: grid; place-items: center; min-width: 86px; }
+  .bd-text h4 { font-family: var(--display); font-size: 19px; font-weight: 600; margin: 0 0 5px; letter-spacing: -0.01em; }
+  .bd-text p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
+  .bd-text p b { color: var(--coral-deep); font-weight: 600; }
+  :root[data-theme="dark"] .bd-text p b { color: var(--coral-br); }
+  .bd-ibadge { width: 30px; height: 30px; border-radius: 50%; background: rgba(125,92,246,0.25); border: 1px solid rgba(125,92,246,0.55); color: #b6a4ff; font-size: 17px; font-style: italic; display: grid; place-items: center; font-family: var(--display); }
+
+  .toolbar-break { margin-top: 16px; background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; }
+  .toolbar-break h4 { font-family: var(--display); font-size: 18px; font-weight: 600; margin: 0 0 14px; }
+  .tbk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 22px; }
+  @media (max-width: 720px){ .tbk-grid { grid-template-columns: 1fr; } }
+  .tbk { display: flex; gap: 11px; align-items: flex-start; font-size: 14.5px; color: var(--muted); }
+  .tbk .chip2 { flex-shrink: 0; font-size: 11.5px; font-weight: 600; padding: 6px 11px; border-radius: 8px; white-space: nowrap; }
+  .chip2.pink { background: var(--coral); color: #fff; } .chip2.dim { background: var(--ghost-bg); border: 1px solid var(--line); color: var(--text); }
+  .tbk b { color: var(--text); font-weight: 600; }
+
   /* ---------- Feature cards ---------- */
   .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 44px; }
   @media (max-width: 720px){ .features { grid-template-columns: 1fr; } }
+  .features.three { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 860px){ .features.three { grid-template-columns: 1fr; } }
   .card { position: relative; background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 16px; padding: 26px 26px 28px; overflow: hidden; transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s; }
   .card:hover { transform: translateY(-4px); border-color: rgba(216,118,74,0.4); box-shadow: var(--hover-shadow); }
   .card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(216,118,74,0.5), transparent); opacity:0; transition: opacity .3s; }
@@ -326,7 +417,8 @@
   <div class="nav-in">
     <a class="brand" href="#top"><img src="favicon.svg" alt=""><b>Project Dashboard</b></a>
     <div class="nav-links">
-      <a class="lnk" href="#setup">How it works</a>
+      <a class="lnk" href="#tiles">How it works</a>
+      <a class="lnk" href="#report">Status report</a>
       <a class="lnk" href="#work">Watch it work</a>
       <a class="lnk" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener">GitHub</a>
       <span class="nav-ver" id="navVer">v2.2.2</span>
@@ -341,17 +433,17 @@
 
 <!-- ============ HERO ============ -->
 <header class="hero" id="top">
-  <div class="wrap hero-grid">
+  <div class="wrap">
     <div class="hero-copy">
       <span class="eyebrow intro d1"><span class="pulse"></span> For everyone getting started with Claude Code</span>
-      <h1 class="intro d2">A home for everything you <span class="accent">build</span> with Claude Code.</h1>
-      <p class="lede intro d3">One tiny desktop app that opens Claude Code in the right folder every single time, remembers where you left off, and shows you exactly what’s been done.</p>
+      <h1 class="intro d2">All your Claude Code projects, in <span class="accent">one place</span>.</h1>
+      <p class="lede intro d3">The Claude Project Dashboard turns your scattered project folders into clean tiles. Click one and Claude Code opens right there — in the correct folder, exactly where you left off.</p>
       <div class="cta-row intro d4">
         <a class="btn btn-primary btn-xl" id="heroDownload" href="#download">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Download for Windows
         </a>
-        <a class="btn btn-ghost btn-xl" href="#work">Watch it work ↓</a>
+        <a class="btn btn-ghost btn-xl" href="#tiles">See how it works ↓</a>
       </div>
       <div class="meta-line intro d5">
         <span>Free &amp; open source</span><span class="dot"></span>
@@ -360,89 +452,256 @@
       </div>
     </div>
 
-    <!-- Animated, scrollable Status Report mock -->
-    <div class="hero-mock intro d3">
-      <div class="window surface-dark">
-        <div class="win-bar">
-          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-          <span class="win-title">Status Report — salon-website</span>
+    <!-- The real app, recreated (demo project names, not real clients) -->
+    <div class="app-showcase intro d3">
+      <div class="app-glow"></div>
+      <div class="appwin" id="appwin">
+        <div class="a-titlebar">
+          <span class="tb-l"><img src="favicon.svg" alt="">Claude Project Dashboard</span>
+          <span class="tb-c"><span>—</span><span>▢</span><span>✕</span></span>
         </div>
-        <div class="win-wrap">
-          <div class="win-body report-scroll" id="reportScroll">
-            <div class="rep-head">
-              <div class="rep-title">salon-website</div>
-              <span class="rep-pill">Status Report</span>
-            </div>
-            <div class="legend">
-              <strong style="color:var(--muted);font-weight:600;">Click to cycle:</strong>
-              <span class="chip"><span class="sq amber"></span>in progress</span>
-              <span class="chip"><span class="sq sage"></span>done</span>
-              <span class="chip"><span class="sq empty"></span>clear</span>
-            </div>
-
-            <div class="sec-label">➡ Up next</div>
-            <ul class="check" id="demoCheck">
-              <li data-s="0"><span class="box"></span><span class="label">Draft the new homepage copy</span></li>
-              <li data-s="0"><span class="box"></span><span class="label">Pick a warm color palette</span></li>
-              <li data-s="0"><span class="box"></span><span class="label">Wire up the booking form</span></li>
-              <li data-s="0"><span class="box"></span><span class="label">Build the contact page</span></li>
-              <li data-s="0"><span class="box"></span><span class="label">Connect the domain name</span></li>
-              <li data-s="0"><span class="box"></span><span class="label">Publish to the web</span></li>
-            </ul>
-            <div class="prog">
-              <span class="ptext">Progress</span>
-              <div class="bar"><div class="fill" id="demoFill"></div></div>
-              <span class="ptext" id="demoText">0 / 6 done</span>
-            </div>
-
-            <div class="sec-label">✅ Done so far</div>
-            <ul class="done">
-              <li>Set up the project folder &amp; first draft</li>
-              <li>Chose the booking provider</li>
-              <li>Wrote the “About the salon” section</li>
-            </ul>
-
-            <div class="sec-label">🧠 Decisions</div>
-            <div class="decisions">
-              <p><b>Warm, calm look</b> — creams &amp; terracotta, not loud neon.</p>
-              <p><b>Booking first</b> — the “Book now” button follows you down the page.</p>
-            </div>
-
-            <div class="sec-label">📝 My notes</div>
-            <div class="notes-box">Ask Claude to add a gallery once the photos are back from the shoot. Domain renews in March.</div>
+        <div class="a-header">
+          <div class="a-brand"><span class="clogo">C</span><b>Claude Project Dashboard</b></div>
+          <div class="a-actions">
+            <span class="a-btn">About</span>
+            <span class="a-btn">Save to Memory</span>
+            <span class="a-btn">Global CLAUDE.md</span>
+            <span class="a-btn pink">+ New Project</span>
           </div>
-          <div class="scroll-fade"><span class="chev">scroll ⌄</span></div>
+        </div>
+        <div class="a-toolbar">
+          <div class="a-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2.2"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+            Search name or summary…
+          </div>
+          <div class="a-seg"><span class="on">Active</span><span>Archived</span><span>All</span></div>
+          <span class="a-count">12 projects</span>
+          <span class="a-ghost">Refresh</span>
+        </div>
+        <div class="a-sort">Sort by: <span class="sb on">Last Modified</span><span class="sb">Date Created</span><span class="sb">Name</span></div>
+
+        <div class="a-tilewrap">
+          <div class="a-tiles">
+            <div class="a-tile pulse">
+              <span class="cb"></span>
+              <div class="t-name"><span class="fldr">📁</span><b>salon-website</b><span class="ibadge">i</span></div>
+              <div class="t-meta">Modified: 2 hours ago<br>Created: Mar 2, 2026</div>
+              <div class="t-btns"><span class="tb-btn launch">Launch Claude</span><span class="tb-btn claude">CLAUDE.md</span><span class="tb-btn status">📊 Status</span><span class="tb-btn fld">📁</span></div>
+            </div>
+            <div class="a-tile">
+              <span class="cb"></span>
+              <div class="t-name"><span class="fldr">📁</span><b>tax-helper-2026</b><span class="ibadge">i</span><span class="mdpill">CLAUDE.md</span></div>
+              <div class="t-meta">Modified: 2 hours ago<br>Created: May 28, 2026</div>
+              <div class="t-btns"><span class="tb-btn launch">Launch Claude</span><span class="tb-btn claude">CLAUDE.md</span><span class="tb-btn status">📊 Status</span><span class="tb-btn fld">📁</span></div>
+            </div>
+            <div class="a-tile">
+              <span class="cb"></span>
+              <div class="t-name"><span class="fldr">📁</span><b>recipe-box</b><span class="ibadge">i</span></div>
+              <div class="t-meta">Modified: 4 hours ago<br>Created: Mar 6, 2026</div>
+              <div class="t-sub">Subprojects: 1</div>
+              <div class="t-btns"><span class="tb-btn launch">Launch Claude</span><span class="tb-btn claude">CLAUDE.md</span><span class="tb-btn status">📊 Status</span><span class="tb-btn fld">📁</span></div>
+            </div>
+            <div class="a-tile">
+              <span class="cb"></span>
+              <div class="t-name"><span class="fldr">📁</span><b>portfolio-site</b><span class="ibadge">i</span><span class="mdpill">CLAUDE.md</span></div>
+              <div class="t-meta">Modified: 1 day ago<br>Created: May 31, 2026</div>
+              <div class="t-btns"><span class="tb-btn launch">Launch Claude</span><span class="tb-btn claude">CLAUDE.md</span><span class="tb-btn status">📊 Status</span><span class="tb-btn fld">📁</span></div>
+            </div>
+            <div class="a-tile">
+              <span class="cb"></span>
+              <div class="t-name"><span class="fldr">📁</span><b>birthday-invites</b><span class="ibadge">i</span></div>
+              <div class="t-meta">Modified: 4 days ago<br>Created: May 22, 2026</div>
+              <div class="t-btns"><span class="tb-btn launch">Launch Claude</span><span class="tb-btn claude">CLAUDE.md</span><span class="tb-btn status">📊 Status</span><span class="tb-btn fld">📁</span></div>
+            </div>
+            <div class="a-tile">
+              <span class="cb"></span>
+              <div class="t-name"><span class="fldr">📁</span><b>book-tracker</b><span class="ibadge">i</span><span class="mdpill">CLAUDE.md</span></div>
+              <div class="t-meta">Modified: 5 days ago<br>Created: Mar 10, 2026</div>
+              <div class="t-btns"><span class="tb-btn launch">Launch Claude</span><span class="tb-btn claude">CLAUDE.md</span><span class="tb-btn status">📊 Status</span><span class="tb-btn fld">📁</span></div>
+            </div>
+          </div>
+          <div class="a-fade"></div>
         </div>
       </div>
-      <div class="float f1">📊 <b>live</b> status reports</div>
-      <div class="float f2"><b>Synapse</b> remembers everything</div>
+      <div class="float f1">🚀 <b>one click</b> to launch</div>
+      <div class="float f2"><b>memory blend</b> across projects</div>
     </div>
   </div>
 </header>
 
-<!-- ============ HEADLINE CAPABILITY + SYNAPSE ============ -->
-<section class="band" id="setup">
+<!-- ============ BREAKDOWN: every button explained ============ -->
+<section class="band" id="tiles">
   <div class="wrap">
     <div class="reveal">
-      <span class="kicker">The part that changes everything</span>
-      <h2>It sets the whole thing up — so you can just <em>start</em>.</h2>
-      <p class="section-lede">The hardest part of any project is the blank page: which folder, which terminal, what was I even doing? The dashboard quietly handles all of it.</p>
+      <span class="kicker">Every tile, explained</span>
+      <h2>No menus to learn — just <em>buttons that make sense</em>.</h2>
+      <p class="section-lede">Each project sits on its own tile with everything you need one click away. Here’s exactly what each button does.</p>
+    </div>
+
+    <div class="breakdown">
+      <div class="bd-item reveal">
+        <div class="bd-chip"><span class="tb-btn launch">Launch Claude</span></div>
+        <div class="bd-text">
+          <h4>Launch Claude</h4>
+          <p>Opens a terminal <b>right inside this project’s folder</b> and starts Claude Code — already caught up on where you left off. No typing paths, no wrong directory.</p>
+        </div>
+      </div>
+      <div class="bd-item reveal">
+        <div class="bd-chip"><span class="tb-btn claude">CLAUDE.md</span></div>
+        <div class="bd-text">
+          <h4>CLAUDE.md</h4>
+          <p>Opens <b>this project’s instructions</b> — the standing notes Claude follows for this specific project. Edit it to tell Claude how you like things done.</p>
+        </div>
+      </div>
+      <div class="bd-item reveal">
+        <div class="bd-chip"><span class="tb-btn status">📊 Status</span></div>
+        <div class="bd-text">
+          <h4>Status</h4>
+          <p>Opens the project’s <b>status report</b> — a friendly checklist of what’s done, what’s in progress, and what’s next. (More on this just below.)</p>
+        </div>
+      </div>
+      <div class="bd-item reveal">
+        <div class="bd-chip"><span class="tb-btn fld" style="font-size:18px">📁</span></div>
+        <div class="bd-text">
+          <h4>Open folder</h4>
+          <p>Opens the project’s folder in <b>Windows File Explorer</b>, so you can grab a file, drop something in, or just see what’s in there.</p>
+        </div>
+      </div>
+      <div class="bd-item reveal">
+        <div class="bd-chip"><span class="bd-ibadge">i</span></div>
+        <div class="bd-text">
+          <h4>The (i) summary</h4>
+          <p><b>Auto-writes a one-line description</b> of what the project is — so a wall of folders becomes a list you can actually read at a glance.</p>
+        </div>
+      </div>
+      <div class="bd-item reveal">
+        <div class="bd-chip"><span class="tb-btn" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#cdd5e6">☑ select</span></div>
+        <div class="bd-text">
+          <h4>Quick select</h4>
+          <p>Tick the box to pick projects out — handy for <b>archiving a few at once</b> when you’re tidying up.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar-break reveal">
+      <h4>And across the top:</h4>
+      <div class="tbk-grid">
+        <div class="tbk"><span class="chip2 pink">+ New Project</span><span>Creates a <b>brand-new project folder</b>, set up and ready for Claude — with its memory already in place.</span></div>
+        <div class="tbk"><span class="chip2 dim">Sort</span><span>Order projects by <b>Last Modified, Date Created, or Name</b>.</span></div>
+        <div class="tbk"><span class="chip2 dim">Archived</span><span><b>Tuck finished projects away</b> — flip between Active, Archived, and All anytime.</span></div>
+        <div class="tbk"><span class="chip2 dim">Search</span><span>Find any project <b>by name or by what it’s about</b>.</span></div>
+        <div class="tbk"><span class="chip2 dim">Save to Memory</span><span>Snapshot where everything stands so Claude <b>never loses the thread</b>.</span></div>
+        <div class="tbk"><span class="chip2 dim">Global CLAUDE.md</span><span>Open the <b>master instructions</b> Claude uses across every project.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STATUS REPORT SPOTLIGHT ============ -->
+<section class="band" id="report">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="kicker">The 📊 Status button</span>
+      <h2>See what’s done — and what’s <em>next</em>.</h2>
+      <p class="section-lede">Claude keeps notes as it works. The status report turns those notes into a clean, clickable checklist you can actually read — and update yourself.</p>
     </div>
 
     <div class="hero-feature">
       <div class="reveal">
         <div class="hf-point">
-          <div class="pic">📂</div>
+          <div class="pic">✅</div>
           <div>
-            <h3>Opens in the right place — every time</h3>
-            <p>Click a project and Claude Code launches in <b>its own terminal, already in the correct folder</b>, caught up on exactly where you left off. Starting fresh? It <b>creates the project folder and sets everything up for you</b> — no paths to type, no “wait, where did I put that?”</p>
+            <h3>A checklist you can tap through</h3>
+            <p>Click any item to cycle it — <b>once for in progress</b>, again for <b>done</b>, a third time to clear. Every section keeps its own little progress bar. <span style="opacity:.8">(Try it on the report →)</span></p>
           </div>
         </div>
         <div class="hf-point">
+          <div class="pic">📝</div>
+          <div>
+            <h3>Notes, decisions &amp; done — all in one place</h3>
+            <p>Scroll the report for the fuller picture: what’s been <b>finished</b>, the <b>decisions</b> you’ve made, and a notes box that <b>saves itself</b> as you type.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Animated, scrollable Status Report mock -->
+      <div class="hero-mock reveal">
+        <div class="window surface-dark">
+          <div class="win-bar">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span class="win-title">Status Report — salon-website</span>
+          </div>
+          <div class="win-wrap">
+            <div class="win-body report-scroll" id="reportScroll">
+              <div class="rep-head">
+                <div class="rep-title">salon-website</div>
+                <span class="rep-pill">Status Report</span>
+              </div>
+              <div class="legend">
+                <strong style="color:var(--muted);font-weight:600;">Click to cycle:</strong>
+                <span class="chip"><span class="sq amber"></span>in progress</span>
+                <span class="chip"><span class="sq sage"></span>done</span>
+                <span class="chip"><span class="sq empty"></span>clear</span>
+              </div>
+              <div class="sec-label">➡ Up next</div>
+              <ul class="check" id="demoCheck">
+                <li data-s="0"><span class="box"></span><span class="label">Draft the new homepage copy</span></li>
+                <li data-s="0"><span class="box"></span><span class="label">Pick a warm color palette</span></li>
+                <li data-s="0"><span class="box"></span><span class="label">Wire up the booking form</span></li>
+                <li data-s="0"><span class="box"></span><span class="label">Build the contact page</span></li>
+                <li data-s="0"><span class="box"></span><span class="label">Connect the domain name</span></li>
+                <li data-s="0"><span class="box"></span><span class="label">Publish to the web</span></li>
+              </ul>
+              <div class="prog">
+                <span class="ptext">Progress</span>
+                <div class="bar"><div class="fill" id="demoFill"></div></div>
+                <span class="ptext" id="demoText">0 / 6 done</span>
+              </div>
+              <div class="sec-label">✅ Done so far</div>
+              <ul class="done">
+                <li>Set up the project folder &amp; first draft</li>
+                <li>Chose the booking provider</li>
+                <li>Wrote the “About the salon” section</li>
+              </ul>
+              <div class="sec-label">🧠 Decisions</div>
+              <div class="decisions">
+                <p><b>Warm, calm look</b> — creams &amp; terracotta, not loud neon.</p>
+                <p><b>Booking first</b> — the “Book now” button follows you down the page.</p>
+              </div>
+              <div class="sec-label">📝 My notes</div>
+              <div class="notes-box">Ask Claude to add a gallery once the photos are back from the shoot. Domain renews in March.</div>
+            </div>
+            <div class="scroll-fade"><span class="chev">scroll ⌄</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SYNAPSE / MEMORY BLEND ============ -->
+<section class="band" id="setup">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="kicker">Memory, blended</span>
+      <h2>Every project remembers — and they <em>share</em>.</h2>
+      <p class="section-lede">The quiet superpower: your projects don’t start cold. Each one keeps its own memory, and they’re all woven together.</p>
+    </div>
+
+    <div class="hero-feature">
+      <div class="reveal">
+        <div class="hf-point">
           <div class="pic">🕸️</div>
           <div>
-            <h3>A shared memory across every project — <span class="synapse-name">Synapse</span></h3>
-            <p>An Obsidian-style web of memory woven right into your code. Every project quietly remembers itself — and they’re all <b>linked together</b>. So Claude can borrow a detail from one project while working in another, and your projects can <b>build on each other</b> instead of starting cold each time.</p>
+            <h3>A <span class="synapse-name">memory blend</span> across every project — meet Synapse</h3>
+            <p>An Obsidian-style web of memory woven right into your code. Every project keeps its own notes, and <b>Synapse blends them together</b> — so Claude can borrow a detail from one project while working in another, and your projects <b>build on each other</b> instead of starting from scratch.</p>
+          </div>
+        </div>
+        <div class="hf-point">
+          <div class="pic">🧠</div>
+          <div>
+            <h3>“Where were we?” just works</h3>
+            <p>Because the memory lives right next to the code, you can come back weeks later, ask where you left off, and <b>pick up mid-thought</b>.</p>
           </div>
         </div>
       </div>
@@ -490,35 +749,25 @@
 <section class="band" id="features">
   <div class="wrap">
     <div class="reveal">
-      <span class="kicker">What else it does</span>
-      <h2>Built to make Claude Code feel <em>effortless</em>.</h2>
-      <p class="section-lede">No setup, no jargon. Point it at the folder where your projects live, and everything just shows up — ready to open, ready to work.</p>
+      <span class="kicker">The little things</span>
+      <h2>Made to feel <em>effortless</em>.</h2>
+      <p class="section-lede">No setup, no jargon. Point it at the folder where your projects live, and everything just shows up.</p>
     </div>
-    <div class="features">
-      <div class="card reveal">
-        <div class="ic">🚀</div>
-        <h3>One click to launch</h3>
-        <p>Every project becomes a tile. Click it and Claude Code opens right there, in its own terminal, already pointed at the right folder. No typing paths, no remembering where things live.</p>
-      </div>
-      <div class="card reveal">
-        <div class="ic">📊</div>
-        <h3>See what Claude’s been doing</h3>
-        <p>Each project gets a living status report. Tick items off as you go — one click for <span style="color:var(--amber)">in progress</span>, another for <span style="color:var(--sage)">done</span> — and watch each section’s progress fill in.</p>
-        <div class="mini-check">
-          <div class="mini-row done"><span class="mb"></span><span>Set up the project</span></div>
-          <div class="mini-row prog"><span class="mb"></span><span>Design the home page</span></div>
-          <div class="mini-row"><span class="mb"></span><span>Go live</span></div>
-        </div>
-      </div>
-      <div class="card reveal">
-        <div class="ic">🧠</div>
-        <h3>A memory that sticks</h3>
-        <p>Come back next week and say “where were we?” — and because of <span class="synapse-name" style="color:var(--coral-br)">Synapse</span>, Claude actually knows. Every project keeps its own up-to-date notes, automatically.</p>
-      </div>
+    <div class="features three">
       <div class="card reveal">
         <div class="ic">✨</div>
         <h3>Updates itself</h3>
         <p>When there’s a new version, the app tells you and updates with a single click — it downloads, installs, and reopens on its own. You’ll never hunt for a download link again.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic">🧭</div>
+        <h3>No command line needed</h3>
+        <p>If you can use a folder, you can use this. It’s built for people who are brand-new to Claude Code — every action is a clearly labeled button.</p>
+      </div>
+      <div class="card reveal">
+        <div class="ic">🔓</div>
+        <h3>Free &amp; open source</h3>
+        <p>No subscription, nothing to sign up for, no account. The whole thing is on GitHub for anyone to read, fork, or improve.</p>
       </div>
     </div>
   </div>
@@ -595,6 +844,13 @@
 (function () {
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var root = document.documentElement;
+
+  /* ---------- App-window tile reveal ---------- */
+  var appwin = document.getElementById('appwin');
+  if (appwin) {
+    if (reduce) { appwin.classList.add('lit'); appwin.querySelectorAll('.a-tile').forEach(function(t){ t.style.opacity='1'; t.style.transform='none'; }); }
+    else { setTimeout(function () { appwin.classList.add('lit'); }, 350); }
+  }
 
   /* ---------- Theme toggle ---------- */
   var tbtn = document.getElementById('themeToggle');
