@@ -408,7 +408,10 @@
   .foot-in .brand b { font-size: 15px; }
   .foot-links { display: flex; gap: 22px; font-size: 14px; color: var(--muted); }
   .foot-links a:hover { color: var(--text); }
-  .disclaimer { margin-top: 22px; color: var(--faint); font-size: 12.5px; max-width: 70ch; line-height: 1.6; }
+  .made-by { margin-top: 24px; font-size: 15.5px; color: var(--muted); }
+  .made-by b { color: var(--coral-deep); font-weight: 600; font-family: var(--display); font-style: italic; font-size: 17px; }
+  :root[data-theme="dark"] .made-by b { color: var(--coral-br); }
+  .disclaimer { margin-top: 10px; color: var(--faint); font-size: 12.5px; max-width: 72ch; line-height: 1.6; }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.1ms !important; }
@@ -905,7 +908,8 @@
         <a href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener">GitHub</a>
       </div>
     </div>
-    <p class="disclaimer">An independent, community-made tool for people who use Claude Code. Claude and Claude Code are products of Anthropic — this project is not affiliated with or endorsed by Anthropic. “Synapse” is the friendly name for the app’s project-memory system. Made with care for friends getting started.</p>
+    <p class="made-by">Built by <b>Impera Business Solutions</b></p>
+    <p class="disclaimer">Impera Business Solutions created the Claude Project Dashboard — an independent tool for people who use Claude Code. Claude and Claude Code are products of Anthropic; this project is not affiliated with or endorsed by Anthropic. “Synapse” is our friendly name for the app’s project-memory system.</p>
   </div>
 </footer>
 
