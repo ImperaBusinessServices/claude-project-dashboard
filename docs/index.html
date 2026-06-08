@@ -471,7 +471,6 @@
     <div class="nav-links">
       <a class="lnk" href="#tiles">How it works</a>
       <a class="lnk" href="#report">Status report</a>
-      <a class="lnk" href="#work">Watch it work</a>
       <a class="lnk" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener">GitHub</a>
       <span class="nav-ver" id="navVer">v2.2.2</span>
       <button class="toggle" id="themeToggle" aria-label="Toggle light / dark">
@@ -488,7 +487,7 @@
   <div class="wrap">
     <div class="hero-copy">
       <span class="eyebrow intro d1"><span class="pulse"></span> For everyone getting started with Claude Code</span>
-      <h1 class="intro d2">All your Claude Code projects, in <span class="accent">one place</span>.</h1>
+      <h1 class="intro d2">All your Claude Code Terminal projects, in <span class="accent">one place</span>.</h1>
       <p class="lede intro d3">The Claude Project Dashboard turns your scattered project folders into clean tiles. Click one and Claude Code opens right there — in the correct folder, exactly where you left off.</p>
       <div class="cta-row intro d4">
         <a class="btn btn-primary btn-xl" id="heroDownload" href="#download">
@@ -905,33 +904,6 @@
   </div>
 </section>
 
-<!-- ============ WATCH IT WORK ============ -->
-<section class="band" id="work">
-  <div class="wrap">
-    <div class="reveal">
-      <span class="kicker">Watch it work</span>
-      <h2>Watch an idea become a <em>project</em>.</h2>
-      <p class="section-lede">This is the whole point of Claude Code — you describe what you want in plain English, and it builds it. The dashboard gives all that work a tidy home.</p>
-    </div>
-    <div class="work-grid">
-      <div class="terminal surface-dark reveal">
-        <div class="win-bar">
-          <span class="win-title">Windows Terminal — claude · salon-website</span>
-          <span class="win-ctrls"><span>&#9472;</span><span>&#9633;</span><span class="x">&#10005;</span></span>
-        </div>
-        <div class="term-body" id="term"></div>
-      </div>
-      <div class="mini-dash surface-dark reveal">
-        <div class="md-head"><span>Your projects</span><span id="mdCount">2 projects</span></div>
-        <div class="md-tiles" id="mdTiles">
-          <div class="md-tile"><div class="nm">📁 tax-helper</div><div class="em">opened 2d ago</div></div>
-          <div class="md-tile"><div class="nm">📁 family-recipes</div><div class="em">opened yesterday</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ============ DOWNLOAD ============ -->
 <section class="band" id="download">
   <div class="wrap">
@@ -1049,66 +1021,6 @@
     }, { threshold: 0.16 });
     reveals.forEach(function (el) { ro.observe(el); });
   } else { reveals.forEach(function (el) { el.classList.add('in'); }); }
-
-  /* ---------- Terminal typewriter + tile birth ---------- */
-  var term = document.getElementById('term');
-  var script = [
-    { t: 'user', text: 'claude, build me a simple one-page site for my salon' },
-    { t: 'gap' },
-    { t: 'step', text: 'Setting up a new project folder, salon-website…' },
-    { t: 'step', text: 'Writing the homepage, booking form, and contact page…' },
-    { t: 'step', text: 'Saving notes to Synapse so I remember where we are…' },
-    { t: 'gap' },
-    { t: 'ok',   text: '✓ Done — opening it in your browser.' },
-    { t: 'dim',  text: 'A new tile just appeared in your dashboard →' },
-    { t: 'spawn' }
-  ];
-  function typeLine(node, str, speed, done) {
-    var i = 0, caret = document.createElement('span'); caret.className = 'caret'; node.appendChild(caret);
-    (function tick() {
-      if (i < str.length) { caret.insertAdjacentText('beforebegin', str.charAt(i)); i++; setTimeout(tick, speed + (str.charAt(i - 1) === ' ' ? 18 : 0)); }
-      else { caret.remove(); if (done) done(); }
-    })();
-  }
-  function spawnTile() {
-    var tiles = document.getElementById('mdTiles');
-    var el = document.createElement('div'); el.className = 'md-tile born';
-    el.innerHTML = '<div class="nm">📁 salon-website <span class="badge">new</span></div><div class="em">just now · created by Claude</div>';
-    tiles.insertBefore(el, tiles.firstChild);
-    document.getElementById('mdCount').textContent = '3 projects';
-  }
-  function resetMini() {
-    var born = document.getElementById('mdTiles').querySelector('.born'); if (born) born.remove();
-    document.getElementById('mdCount').textContent = '2 projects';
-  }
-  function runTerminal() {
-    term.innerHTML = ''; var idx = 0;
-    function next() {
-      if (idx >= script.length) { if (!reduce) setTimeout(function () { resetMini(); runTerminal(); }, 4200); return; }
-      var item = script[idx++];
-      if (item.t === 'gap') { var g = document.createElement('div'); g.style.height = '10px'; term.appendChild(g); return next(); }
-      if (item.t === 'spawn') { spawnTile(); return; }
-      var line = document.createElement('div'); line.className = 'term-line ' + item.t;
-      if (item.t === 'user') {
-        var pfx = document.createElement('span'); pfx.className = 'pfx'; pfx.textContent = '› '; line.appendChild(pfx);
-        term.appendChild(line); typeLine(line, item.text, 34, function () { setTimeout(next, 480); });
-      } else {
-        if (item.t === 'step') { var pin = document.createElement('span'); pin.className = 'pin'; pin.textContent = '● '; line.appendChild(pin); }
-        term.appendChild(line); var span = document.createElement('span'); line.appendChild(span);
-        typeLine(span, item.text, 14, function () { setTimeout(next, item.t === 'ok' ? 360 : 240); });
-      }
-      term.scrollTop = term.scrollHeight;
-    }
-    next();
-  }
-  var workSection = document.getElementById('work');
-  if ('IntersectionObserver' in window) {
-    var started = false;
-    var to = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) { if (e.isIntersecting && !started) { started = true; runTerminal(); to.disconnect(); } });
-    }, { threshold: 0.3 });
-    to.observe(workSection);
-  } else { runTerminal(); }
 
   /* ---------- Hydrate version + download links from latest release ---------- */
   try {
