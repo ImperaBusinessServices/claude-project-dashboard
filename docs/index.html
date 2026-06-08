@@ -227,6 +227,34 @@
   @keyframes btnpulse { 0%,100%{box-shadow:0 3px 10px -2px rgba(59,130,246,0.5)} 50%{box-shadow:0 3px 22px 0 rgba(59,130,246,0.8)} }
   .a-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 60px; pointer-events: none; background: linear-gradient(to bottom, transparent, var(--a-bg)); }
 
+  /* interactive: hint, New Project dialog, terminal, highlights */
+  .demo-hint { position: absolute; z-index: 3; top: 20px; left: 50%; transform: translateX(-50%); font-family: var(--mono); font-size: 11.5px; color: #dce8ff; background: rgba(30,55,100,0.5); border: 1px solid rgba(120,170,255,0.35); padding: 6px 14px; border-radius: 100px; white-space: nowrap; }
+  @media (max-width: 600px){ .demo-hint { display: none; } }
+  .a-sort .sb, .a-seg span, .a-btn.pink, .tb-btn, .ibadge { cursor: pointer; }
+  .app-modal, .app-term { position: absolute; inset: 0; z-index: 6; display: none; }
+  .app-modal.show, .app-term.show { display: block; }
+  .app-modal { background: rgba(15,25,45,0.5); animation: ovfade .2s ease; }
+  .app-term { background: rgba(8,12,22,0.42); animation: ovfade .2s ease; }
+  @keyframes ovfade { from{opacity:0} to{opacity:1} }
+  .np-card { position: absolute; left: 50%; top: 47%; transform: translate(-50%,-50%); width: min(360px, 80%); background: var(--a-card); border: 1px solid var(--a-line); border-radius: 14px; padding: 22px 22px 18px; box-shadow: 0 30px 70px -18px rgba(0,0,0,0.5); animation: nppop .25s cubic-bezier(.2,.8,.2,1); }
+  @keyframes nppop { from{opacity:0; transform: translate(-50%,-44%) scale(.95)} to{opacity:1; transform: translate(-50%,-50%) scale(1)} }
+  .np-card h4 { margin: 0 0 14px; font-family: var(--display); font-size: 20px; color: var(--a-text); font-weight: 600; }
+  .np-card label { font-size: 12px; color: var(--a-muted); font-weight: 600; }
+  .np-input { margin: 6px 0 18px; background: var(--a-input); border: 1px solid var(--a-accent); border-radius: 9px; padding: 10px 12px; font-family: var(--mono); font-size: 14px; color: var(--a-text); min-height: 40px; display: flex; align-items: center; }
+  .np-caret { display: inline-block; width: 8px; height: 16px; background: var(--a-accent); margin-left: 1px; animation: blink 1s steps(2) infinite; }
+  .np-btns { display: flex; justify-content: flex-end; gap: 9px; }
+  .np-cancel, .np-create { padding: 9px 15px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+  .np-cancel { border: 1px solid var(--a-line); background: var(--a-btn-bg); color: var(--a-btn-text); }
+  .np-create { background: var(--a-accent); color: #fff; box-shadow: 0 4px 12px -3px var(--a-accent-glow); }
+  .at-inner { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(560px, 92%); background: #0a0f1e; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; overflow: hidden; box-shadow: 0 30px 70px -18px rgba(0,0,0,0.6); animation: nppop .25s cubic-bezier(.2,.8,.2,1); }
+  .at-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #0e1428; border-bottom: 1px solid rgba(255,255,255,0.08); font-family: var(--mono); font-size: 11.5px; color: #8a93a8; }
+  .at-bar .at-x { cursor: pointer; }
+  .at-body { padding: 14px 16px; font-family: var(--mono); font-size: 13px; line-height: 1.7; color: #cdd6e6; min-height: 116px; }
+  .at-body .u { color: #e8eefb; } .at-body .ok { color: #5fd39a; } .at-body .step { color: #9fb0c8; } .at-body .step .pin { color: #6fa8ff; }
+  .a-tile.born2 { animation: born .6s cubic-bezier(.2,.8,.2,1); border-color: rgba(59,130,246,0.6); box-shadow: 0 0 0 3px rgba(59,130,246,0.14); }
+  .bd-flash { animation: bdflash 1.7s ease; }
+  @keyframes bdflash { 0%,100%{ box-shadow: none; } 18%{ box-shadow: 0 0 0 3px rgba(216,118,74,0.55); } 65%{ box-shadow: 0 0 0 3px rgba(216,118,74,0.2); } }
+
   /* ---------- Hero (legacy two-col kept for other sections) ---------- */
   .hero-grid { display: grid; grid-template-columns: 1.02fr 1.12fr; gap: 52px; align-items: center; }
   @media (max-width: 940px) { .hero-grid { grid-template-columns: 1fr; gap: 40px; } }
@@ -479,6 +507,7 @@
     <!-- The real app, recreated (demo project names, not real clients) -->
     <div class="app-showcase intro d3">
       <div class="app-glow"></div>
+      <div class="demo-hint">✨ This preview is live — try the sort buttons or “+ New Project”</div>
       <div class="appwin" id="appwin">
         <div class="a-titlebar">
           <span class="tb-l"><img src="favicon.svg" alt="">Claude Project Dashboard</span>
@@ -546,6 +575,22 @@
           </div>
           <div class="a-fade"></div>
         </div>
+
+        <!-- interactive: New Project dialog + terminal (overlay the window) -->
+        <div class="app-modal" id="npModal">
+          <div class="np-card">
+            <h4>New Project</h4>
+            <label>Project name</label>
+            <div class="np-input"><span id="npText"></span><span class="np-caret"></span></div>
+            <div class="np-btns"><span class="np-cancel" id="npCancel">Cancel</span><span class="np-create" id="npCreate">Create project</span></div>
+          </div>
+        </div>
+        <div class="app-term" id="npTerm">
+          <div class="at-inner">
+            <div class="at-bar"><span>Windows Terminal — claude · garden-blog</span><span class="at-x" id="ntClose">✕</span></div>
+            <div class="at-body" id="ntBody"></div>
+          </div>
+        </div>
       </div>
       <div class="float f1">🚀 <b>one click</b> to launch</div>
       <div class="float f2"><b>memory blend</b> across projects</div>
@@ -563,35 +608,35 @@
     </div>
 
     <div class="breakdown">
-      <div class="bd-item reveal">
+      <div class="bd-item reveal" id="bd-launch">
         <div class="bd-chip"><span class="tb-btn launch">Launch Claude</span></div>
         <div class="bd-text">
           <h4>Launch Claude</h4>
           <p>Opens a terminal <b>right inside this project’s folder</b> and starts Claude Code — already caught up on where you left off. No typing paths, no wrong directory.</p>
         </div>
       </div>
-      <div class="bd-item reveal">
+      <div class="bd-item reveal" id="bd-claude">
         <div class="bd-chip"><span class="tb-btn claude">CLAUDE.md</span></div>
         <div class="bd-text">
           <h4>CLAUDE.md</h4>
           <p>Opens <b>this project’s instructions</b> — the standing notes Claude follows for this specific project. Edit it to tell Claude how you like things done.</p>
         </div>
       </div>
-      <div class="bd-item reveal">
+      <div class="bd-item reveal" id="bd-status">
         <div class="bd-chip"><span class="tb-btn status">📊 Status</span></div>
         <div class="bd-text">
           <h4>Status</h4>
           <p>Opens the project’s <b>status report</b> — a friendly checklist of what’s done, what’s in progress, and what’s next. (More on this just below.)</p>
         </div>
       </div>
-      <div class="bd-item reveal">
+      <div class="bd-item reveal" id="bd-folder">
         <div class="bd-chip"><span class="tb-btn fld" style="font-size:18px">📁</span></div>
         <div class="bd-text">
           <h4>Open folder</h4>
           <p>Opens the project’s folder in <b>Windows File Explorer</b>, so you can grab a file, drop something in, or just see what’s in there.</p>
         </div>
       </div>
-      <div class="bd-item reveal">
+      <div class="bd-item reveal" id="bd-info">
         <div class="bd-chip"><span class="bd-ibadge">i</span></div>
         <div class="bd-text">
           <h4>The (i) summary</h4>
@@ -1079,6 +1124,160 @@
       })
       .catch(function () {});
   } catch (e) {}
+})();
+</script>
+
+<!-- Interactive app preview -->
+<script>
+(function () {
+  var appwin = document.getElementById('appwin');
+  if (!appwin) return;
+  var tilesEl = appwin.querySelector('.a-tiles');
+
+  /* ----- sorting ----- */
+  function modMinutes(t) {
+    var m;
+    if (/just now/i.test(t)) return 0;
+    if ((m = t.match(/(\d+)\s*hour/))) return parseInt(m[1], 10) * 60;
+    if ((m = t.match(/(\d+)\s*day/))) return parseInt(m[1], 10) * 1440;
+    return 99999;
+  }
+  function key(tile, k) {
+    var meta = tile.querySelector('.t-meta').textContent;
+    if (k === 'name') return tile.querySelector('.t-name b').textContent.trim().toLowerCase();
+    if (k === 'mod') return modMinutes(meta);
+    var m = meta.match(/Created:\s*([^\n]+)/);
+    var v = m ? Date.parse(m[1]) : NaN;
+    return isNaN(v) ? 9e15 : v; // "just now" sorts to top for created (desc)
+  }
+  function sortBy(k) {
+    var arr = [].slice.call(tilesEl.querySelectorAll('.a-tile'));
+    arr.sort(function (a, b) {
+      if (k === 'name') return key(a, 'name') < key(b, 'name') ? -1 : 1;
+      if (k === 'mod') return key(a, 'mod') - key(b, 'mod');
+      return key(b, 'cre') - key(a, 'cre');
+    });
+    arr.forEach(function (t) { tilesEl.appendChild(t); });
+    tilesEl.style.transition = 'opacity .15s'; tilesEl.style.opacity = '0.35';
+    setTimeout(function () { tilesEl.style.opacity = '1'; }, 140);
+  }
+  appwin.querySelectorAll('.a-sort .sb').forEach(function (sb) {
+    sb.addEventListener('click', function () {
+      appwin.querySelectorAll('.a-sort .sb').forEach(function (x) { x.classList.remove('on'); });
+      sb.classList.add('on');
+      var t = sb.textContent.toLowerCase();
+      sortBy(t.indexOf('name') >= 0 ? 'name' : t.indexOf('created') >= 0 ? 'cre' : 'mod');
+    });
+  });
+
+  /* ----- Active / Archived / All ----- */
+  var empty = document.createElement('div');
+  empty.style.cssText = 'display:none;padding:34px 20px;text-align:center;color:var(--a-faint);font-size:14px;';
+  empty.textContent = 'No archived projects yet.';
+  tilesEl.parentNode.insertBefore(empty, tilesEl.nextSibling);
+  appwin.querySelectorAll('.a-seg span').forEach(function (s) {
+    s.addEventListener('click', function () {
+      appwin.querySelectorAll('.a-seg span').forEach(function (x) { x.classList.remove('on'); });
+      s.classList.add('on');
+      var archived = /archived/i.test(s.textContent);
+      tilesEl.style.display = archived ? 'none' : 'grid';
+      empty.style.display = archived ? 'block' : 'none';
+    });
+  });
+
+  /* ----- tile buttons -> scroll to explanation ----- */
+  function flashTo(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.remove('bd-flash'); void el.offsetWidth; el.classList.add('bd-flash');
+  }
+  function wireTile(tile) {
+    var map = { '.tb-btn.launch': 'bd-launch', '.tb-btn.claude': 'bd-claude', '.tb-btn.fld': 'bd-folder', '.ibadge': 'bd-info' };
+    Object.keys(map).forEach(function (sel) {
+      var b = tile.querySelector(sel);
+      if (b) b.addEventListener('click', function (e) { e.stopPropagation(); flashTo(map[sel]); });
+    });
+    var st = tile.querySelector('.tb-btn.status');
+    if (st) st.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var r = document.getElementById('report'); if (r) r.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+  appwin.querySelectorAll('.a-tile').forEach(wireTile);
+
+  /* ----- + New Project: dialog -> type -> terminal -> new tile ----- */
+  var npBtn = appwin.querySelector('.a-btn.pink');
+  var modal = document.getElementById('npModal');
+  var term = document.getElementById('npTerm');
+  var npText = document.getElementById('npText');
+  var ntBody = document.getElementById('ntBody');
+  var running = false, jobTimers = [];
+  function clearJob() { jobTimers.forEach(clearTimeout); jobTimers = []; }
+  function type(el, str, sp, done) {
+    var i = 0;
+    (function tick() {
+      if (i < str.length) { el.textContent += str.charAt(i++); jobTimers.push(setTimeout(tick, sp)); }
+      else if (done) jobTimers.push(setTimeout(done, 0));
+    })();
+  }
+  function close() { clearJob(); modal.classList.remove('show'); term.classList.remove('show'); running = false; }
+  document.getElementById('npCancel').addEventListener('click', close);
+  document.getElementById('ntClose').addEventListener('click', close);
+  document.getElementById('npCreate').addEventListener('click', function () { /* let the scripted flow drive it */ });
+
+  function runTerminal() {
+    ntBody.innerHTML = '';
+    var lines = [
+      { c: 'u', t: '> claude   (new project · garden-blog)' },
+      { c: 'gap' },
+      { c: 'step', t: 'Creating the project folder…' },
+      { c: 'step', t: 'Setting up its memory (brain/) so Claude remembers…' },
+      { c: 'step', t: 'Opening Claude Code in the new folder…' },
+      { c: 'gap' },
+      { c: 'ok', t: '✓ Ready — Claude is set up and waiting for you.' }
+    ];
+    var i = 0;
+    (function nx() {
+      if (i >= lines.length) { jobTimers.push(setTimeout(finish, 1100)); return; }
+      var L = lines[i++];
+      if (L.c === 'gap') { var g = document.createElement('div'); g.style.height = '8px'; ntBody.appendChild(g); return nx(); }
+      var d = document.createElement('div'); d.className = L.c;
+      if (L.c === 'step') { var pin = document.createElement('span'); pin.className = 'pin'; pin.textContent = '● '; d.appendChild(pin); }
+      var sp = document.createElement('span'); d.appendChild(sp); ntBody.appendChild(d);
+      type(sp, L.t, L.c === 'u' ? 26 : 13, function () { jobTimers.push(setTimeout(nx, L.c === 'ok' ? 200 : 150)); });
+    })();
+  }
+  function finish() {
+    term.classList.remove('show');
+    var tile = document.createElement('div');
+    tile.className = 'a-tile born2';
+    tile.style.opacity = '1'; tile.style.transform = 'none';
+    tile.innerHTML = '<span class="cb"></span>' +
+      '<div class="t-name"><span class="fldr">📁</span><b>garden-blog</b><span class="ibadge">i</span><span class="mdpill">CLAUDE.md</span></div>' +
+      '<div class="t-meta">Modified: just now<br>Created: just now</div>' +
+      '<div class="t-btns"><span class="tb-btn launch">Launch Claude</span><span class="tb-btn claude">CLAUDE.md</span><span class="tb-btn status">📊 Status</span><span class="tb-btn fld">📁</span></div>';
+    tilesEl.insertBefore(tile, tilesEl.firstChild);
+    wireTile(tile);
+    var cnt = appwin.querySelector('.a-count');
+    if (cnt) { var n = parseInt(cnt.textContent, 10) || 12; cnt.textContent = (n + 1) + ' projects'; }
+    running = false;
+  }
+  if (npBtn) npBtn.addEventListener('click', function () {
+    if (running) return; running = true;
+    clearJob();
+    npText.textContent = '';
+    modal.classList.add('show');
+    jobTimers.push(setTimeout(function () {
+      type(npText, 'garden-blog', 70, function () {
+        jobTimers.push(setTimeout(function () {
+          modal.classList.remove('show');
+          term.classList.add('show');
+          runTerminal();
+        }, 700));
+      });
+    }, 380));
+  });
 })();
 </script>
 </body>
