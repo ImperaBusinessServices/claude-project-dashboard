@@ -25,6 +25,8 @@
       justify-content: space-between;
       border-bottom: 2px solid #e94560;
       flex-shrink: 0;
+      flex-wrap: wrap;
+      row-gap: 12px;
     }
 
     .header h1 {
@@ -60,8 +62,8 @@
       gap: 4px;
       margin: 0 18px;
       min-width: 230px;
-      max-width: 300px;
-      flex: 0 1 auto;
+      max-width: 320px;
+      flex: 1 1 230px;
       cursor: help;
     }
     .usage-widget.visible { display: flex; }
@@ -108,9 +110,6 @@
       font-size: 9px;
       white-space: nowrap;
       font-variant-numeric: tabular-nums;
-    }
-    @media (max-width: 1140px) {
-      .usage-widget { display: none !important; }
     }
 
     /* Buttons */
@@ -754,7 +753,6 @@
     <div class="header-actions">
       <button class="btn btn-ghost" onclick="showAbout()">Settings</button>
       <button class="btn btn-ghost" onclick="openGlobalClaudeMd()" title="Opens your global CLAUDE.md — personal preferences and rules that apply to ALL projects.">Global CLAUDE.md</button>
-      <button class="btn btn-ghost" onclick="minimizeToTray()" title="Tuck the app away into the system tray (the little icons next to the clock). Click the tray icon to bring it back. Hover the tray icon to see your Claude usage.">Hide to Tray</button>
       <button class="btn btn-primary" onclick="showCreateModal()">+ New Project</button>
     </div>
   </div>
@@ -803,7 +801,6 @@
         <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.3.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
           <li><strong>Claude usage bars in the header</strong> — see how much of your Claude plan you've used (<span style="color:#4ade80;">Session</span> and <span style="color:#4ade80;">Week</span>), same numbers as Claude's own /usage screen. Each bar has a countdown to when that limit resets (like "&#8635; 2h 14m"). Bars turn <span style="color:#f5b97d;">amber past 70%</span> and <span style="color:#e94560;">red past 90%</span>. If you're not signed in to Claude, the bars simply stay hidden. Choose how often they refresh below.</li>
-          <li><strong>Hide to Tray</strong> — new header button tucks the app into the system tray (next to the clock). Hover the tray icon to see your usage; click it to bring the app back.</li>
           <li><strong>About is now Settings</strong> — same place, clearer name.</li>
           <li><strong>Removed "Save to Memory"</strong> — the brain/ memory system made it redundant: Claude saves project memory automatically now.</li>
         </ul>
@@ -1399,7 +1396,6 @@
     function openTerminal(path) { window.api.openTerminal(path); }
     function openClaudeMd(path) { window.api.openClaudeMd(path); }
     function openGlobalClaudeMd() { window.api.openGlobalClaudeMd(); }
-    function minimizeToTray() { window.api.minimizeToTray(); }
     function openExplorer(path) { window.api.openExplorer(path); }
 
     // ---- Status Report (v2.0) ----
@@ -2095,10 +2091,12 @@
 
     async function refreshUsage() {
       try {
-        lastUsage = await window.api.getUsage();
-      } catch (e) {
-        lastUsage = null;
-      }
+        const res = await window.api.getUsage();
+        // Keep showing the last good numbers through transient failures
+        // (rate limits, brief network blips). Only a success replaces data;
+        // the widget stays hidden only if we've NEVER had a success.
+        if (res && res.success) lastUsage = res;
+      } catch (e) {}
       renderUsage();
     }
 

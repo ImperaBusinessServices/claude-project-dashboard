@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -1372,7 +1372,6 @@ ipcMain.handle('get-usage', async () => {
       sevenDay: bucket(data.seven_day),
       sevenDayOpus: bucket(data.seven_day_opus)
     };
-    updateTrayTooltip(result);
     if (process.env.USAGE_DEBUG) console.log('[usage] ok keys=' + Object.keys(data).join(',') + ' parsed=' + JSON.stringify(result));
     return result;
   } catch (err) {
@@ -1389,48 +1388,6 @@ ipcMain.handle('set-usage-refresh-seconds', async (event, sec) => {
   const s = { ...settings, usageRefreshSeconds: Number(sec) || 0 };
   saveSettings(s);
   return s.usageRefreshSeconds;
-});
-
-// ---- System tray ("Hide to Tray") ----
-// The tray icon is only created the first time the user hides the app.
-// Clicking it (or its Show item) brings the window back; its tooltip carries
-// the latest usage numbers so a hidden app still answers "how much is left?".
-
-let tray = null;
-
-function showFromTray() {
-  if (mainWindow) {
-    mainWindow.show();
-    mainWindow.focus();
-  }
-}
-
-function ensureTray() {
-  if (tray) return tray;
-  tray = new Tray(path.join(__dirname, 'icon.ico'));
-  tray.setToolTip('Claude Project Dashboard');
-  tray.on('click', showFromTray);
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Show Dashboard', click: showFromTray },
-    { type: 'separator' },
-    { label: 'Quit', click: () => app.quit() }
-  ]));
-  return tray;
-}
-
-function updateTrayTooltip(usage) {
-  if (!tray) return;
-  const parts = ['Claude Project Dashboard'];
-  if (usage && usage.fiveHour) parts.push('Session: ' + usage.fiveHour.pct + '% used');
-  if (usage && usage.sevenDay) parts.push('Week: ' + usage.sevenDay.pct + '% used');
-  if (usage && usage.sevenDayOpus) parts.push('Opus week: ' + usage.sevenDayOpus.pct + '% used');
-  try { tray.setToolTip(parts.join('\n')); } catch (e) {}
-}
-
-ipcMain.handle('minimize-to-tray', async () => {
-  ensureTray();
-  if (mainWindow) mainWindow.hide();
-  return true;
 });
 
 // ---- Check for updates (via GitHub Releases API) ----

@@ -34,7 +34,6 @@ contextBridge.exposeInMainWorld('api', {
   getUsage: () => ipcRenderer.invoke('get-usage'),
   getUsageRefreshSeconds: () => ipcRenderer.invoke('get-usage-refresh-seconds'),
   setUsageRefreshSeconds: (sec) => ipcRenderer.invoke('set-usage-refresh-seconds', sec),
-  minimizeToTray: () => ipcRenderer.invoke('minimize-to-tray'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadAndInstallUpdate: (downloadUrl, version) => ipcRenderer.invoke('download-and-install-update', downloadUrl, version),
   onUpdateDownloadProgress: (cb) => {
