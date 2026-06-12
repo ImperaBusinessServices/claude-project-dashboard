@@ -53,6 +53,66 @@
       gap: 8px;
     }
 
+    /* Claude plan usage widget (header) */
+    .usage-widget {
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0 18px;
+      min-width: 230px;
+      max-width: 300px;
+      flex: 0 1 auto;
+      cursor: help;
+    }
+    .usage-widget.visible { display: flex; }
+    .usage-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+    }
+    .usage-row .usage-label {
+      color: rgba(255,255,255,0.55);
+      width: 44px;
+      flex-shrink: 0;
+      text-align: right;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .usage-row .usage-bar {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .usage-row .usage-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 3px;
+      background: #4ade80;
+      transition: width 0.4s;
+    }
+    .usage-row .usage-fill.warn { background: #f5b97d; }
+    .usage-row .usage-fill.hot { background: #e94560; }
+    .usage-row .usage-pct {
+      color: rgba(255,255,255,0.7);
+      width: 32px;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .usage-row .usage-reset {
+      color: rgba(255,255,255,0.4);
+      width: 58px;
+      flex-shrink: 0;
+      font-size: 9px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    @media (max-width: 1140px) {
+      .usage-widget { display: none !important; }
+    }
+
     /* Buttons */
     .btn {
       padding: 8px 16px;
@@ -690,10 +750,11 @@
       <span class="logo">C</span>
       Claude Project Dashboard
     </h1>
+    <div class="usage-widget" id="usageWidget" title="Your Claude plan usage — same numbers as Claude's own /usage screen. Updates every minute."></div>
     <div class="header-actions">
-      <button class="btn btn-ghost" onclick="showAbout()">About</button>
-      <button class="btn btn-ghost" onclick="copyMemoryPrompt()" id="memoryBtn" title="Copies a prompt to your clipboard. Paste it into your Claude terminal to save the current session to memory.">Save to Memory</button>
+      <button class="btn btn-ghost" onclick="showAbout()">Settings</button>
       <button class="btn btn-ghost" onclick="openGlobalClaudeMd()" title="Opens your global CLAUDE.md — personal preferences and rules that apply to ALL projects.">Global CLAUDE.md</button>
+      <button class="btn btn-ghost" onclick="minimizeToTray()" title="Tuck the app away into the system tray (the little icons next to the clock). Click the tray icon to bring it back. Hover the tray icon to see your Claude usage.">Hide to Tray</button>
       <button class="btn btn-primary" onclick="showCreateModal()">+ New Project</button>
     </div>
   </div>
@@ -731,19 +792,30 @@
   <!-- About Modal -->
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 520px; max-height: 90vh; overflow-y: auto;">
-      <h2>About Claude Project Dashboard <span style="font-size: 12px; color: #888; font-weight: normal;">v2.2.2</span> <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="margin-left: 10px; font-size: 11px; padding: 3px 9px; vertical-align: middle;">Check for updates</button> <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; vertical-align: middle; text-decoration: none;">View on GitHub</a></h2>
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.3.0</span></h2>
+        <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
+        <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
+      </div>
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.2.2:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.3.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>Smarter status reports</strong> — every project's 📊 Status report now has three-way check-off items: click once for <span style="color:#f5b97d;">in progress</span>, again for <span style="color:#4ade80;">done</span>, a third time to clear. Each section gets its own progress bar ("3 / 8 done · 2 in progress"), and a legend up top explains the clicks. Your notes scratchpad and check-offs still save automatically.</li>
-          <li><strong>Applies to everyone automatically</strong> — existing installs upgrade their report template the next time a status report is opened or refreshed. (Reset it any time from the toggle below if you've hand-edited yours.)</li>
+          <li><strong>Claude usage bars in the header</strong> — see how much of your Claude plan you've used (<span style="color:#4ade80;">Session</span> and <span style="color:#4ade80;">Week</span>), same numbers as Claude's own /usage screen. Each bar has a countdown to when that limit resets (like "&#8635; 2h 14m"). Bars turn <span style="color:#f5b97d;">amber past 70%</span> and <span style="color:#e94560;">red past 90%</span>. If you're not signed in to Claude, the bars simply stay hidden. Choose how often they refresh below.</li>
+          <li><strong>Hide to Tray</strong> — new header button tucks the app into the system tray (next to the clock). Hover the tray icon to see your usage; click it to bring the app back.</li>
+          <li><strong>About is now Settings</strong> — same place, clearer name.</li>
+          <li><strong>Removed "Save to Memory"</strong> — the brain/ memory system made it redundant: Claude saves project memory automatically now.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.2.2:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>Smarter status reports</strong> — three-way check-off items: click once for <span style="color:#f5b97d;">in progress</span>, again for <span style="color:#4ade80;">done</span>, a third time to clear. Each section gets its own progress bar, and existing installs upgrade their report template automatically.</li>
+            </ul>
+
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.2.1:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>"View on GitHub" link</strong> — quick way to see the source, file an issue, or browse past releases. Sits next to "Check for updates" up top.</li>
@@ -808,6 +880,21 @@
               <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">Type a one-line description for each project. Hover the <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(179,136,255,0.2);color:#b388ff;border:1px solid rgba(179,136,255,0.4);font-size:9px;font-weight:700;vertical-align:middle;">i</span> badge on a tile to read it. You can also right-click any tile to edit just that one (or have Claude try to auto-generate).</div>
             </div>
             <button class="btn btn-secondary btn-small" onclick="hideAbout(); showSummariesTable();" style="flex-shrink:0;">Edit Summaries</button>
+          </div>
+        </div>
+
+      <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; padding-right: 14px;">
+              <strong style="color: #b388ff; font-size: 13px;">Claude usage bars</strong>
+              <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">The Session / Week bars in the header showing how much of your Claude plan you've used. Pick how often they update — or turn them off.</div>
+            </div>
+            <select id="usageIntervalSelect" onchange="changeUsageInterval(this.value)" style="flex-shrink: 0; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none; cursor: pointer;">
+              <option value="30">Every 30 seconds</option>
+              <option value="60">Every minute</option>
+              <option value="300">Every 5 minutes</option>
+              <option value="0">Off (hide the bars)</option>
+            </select>
           </div>
         </div>
 
@@ -1042,7 +1129,7 @@
         — four small notes Claude can use to remember what you're working on.
         <br><br>
         Want Claude to read &amp; update those notes automatically? This adds a small section to your
-        global <strong style="color:#b388ff;">~/.claude/CLAUDE.md</strong> file. You can change this later in About.
+        global <strong style="color:#b388ff;">~/.claude/CLAUDE.md</strong> file. You can change this later in Settings.
       </div>
       <div class="modal-buttons">
         <button class="btn btn-ghost" onclick="dismissMemoryPrompt(false)">Not now</button>
@@ -1178,7 +1265,7 @@
 
       if (sorted.length === 0) {
         const msg = searching
-          ? `No projects match "${currentSearch}". Try a different keyword, or fill in summaries via About → Edit Summaries.`
+          ? `No projects match "${currentSearch}". Try a different keyword, or fill in summaries via Settings → Edit Summaries.`
           : currentView === 'archived'
           ? 'No archived projects. Check a project card to archive it.'
           : currentView === 'active'
@@ -1312,13 +1399,7 @@
     function openTerminal(path) { window.api.openTerminal(path); }
     function openClaudeMd(path) { window.api.openClaudeMd(path); }
     function openGlobalClaudeMd() { window.api.openGlobalClaudeMd(); }
-    function copyMemoryPrompt() {
-      const prompt = 'Review this project\'s current state and update your memory file. Note the project structure, key files, what\'s been built, any patterns or decisions made, and current status.';
-      navigator.clipboard.writeText(prompt);
-      const btn = document.getElementById('memoryBtn');
-      btn.textContent = 'Copied!';
-      setTimeout(() => { btn.textContent = 'Save to Memory'; }, 2000);
-    }
+    function minimizeToTray() { window.api.minimizeToTray(); }
     function openExplorer(path) { window.api.openExplorer(path); }
 
     // ---- Status Report (v2.0) ----
@@ -1522,6 +1603,10 @@
       const memoryInstalled = await window.api.getMemoryProtocolInstalled();
       document.getElementById('memoryToggle').checked = memoryInstalled;
       updateMemoryVisual(memoryInstalled);
+      try {
+        const sec = await window.api.getUsageRefreshSeconds();
+        document.getElementById('usageIntervalSelect').value = String(sec);
+      } catch (e) {}
     }
     function hideAbout() { document.getElementById('aboutModal').classList.remove('active'); }
     function showShortcuts() { document.getElementById('shortcutsModal').classList.add('active'); }
@@ -1939,6 +2024,110 @@
         if (box) { box.focus(); box.select(); }
       }
     });
+
+    // ---- Claude plan usage widget (v2.3.0) ----
+    // Polls the main process every 60s. If anything fails (not logged in to
+    // Claude, token expired, endpoint changed), the widget just stays hidden.
+
+    function usageTimeLeft(resetsAt) {
+      if (!resetsAt) return '';
+      const ms = new Date(resetsAt) - new Date();
+      if (isNaN(ms) || ms <= 0) return '';
+      const h = Math.floor(ms / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      if (h >= 48) return 'resets in ' + Math.round(h / 24) + ' days';
+      if (h > 0) return 'resets in ' + h + 'h ' + m + 'm';
+      return 'resets in ' + m + 'm';
+    }
+
+    // Short countdown for the bar row itself, e.g. "2h 14m" or "3d 4h"
+    function usageCountdownShort(resetsAt) {
+      if (!resetsAt) return '';
+      const ms = new Date(resetsAt) - new Date();
+      if (isNaN(ms) || ms <= 0) return '';
+      const d = Math.floor(ms / 86400000);
+      const h = Math.floor((ms % 86400000) / 3600000);
+      const m = Math.floor((ms % 3600000) / 60000);
+      if (d > 0) return d + 'd ' + h + 'h';
+      if (h > 0) return h + 'h ' + m + 'm';
+      return m + 'm';
+    }
+
+    function usageRowHtml(label, b) {
+      const cls = b.pct >= 90 ? ' hot' : b.pct >= 70 ? ' warn' : '';
+      const left = usageCountdownShort(b.resetsAt);
+      return `
+        <div class="usage-row">
+          <span class="usage-label">${label}</span>
+          <div class="usage-bar"><div class="usage-fill${cls}" style="width:${b.pct}%"></div></div>
+          <span class="usage-pct">${b.pct}%</span>
+          <span class="usage-reset">${left ? '&#8635; ' + left : ''}</span>
+        </div>`;
+    }
+
+    let lastUsage = null;
+
+    function renderUsage() {
+      const w = document.getElementById('usageWidget');
+      const res = lastUsage;
+      if (!res || !res.success || (!res.fiveHour && !res.sevenDay)) {
+        w.classList.remove('visible');
+        return;
+      }
+      let html = '';
+      const tips = [];
+      if (res.fiveHour) {
+        html += usageRowHtml('Session', res.fiveHour);
+        tips.push('Session: ' + res.fiveHour.pct + '% used' + (usageTimeLeft(res.fiveHour.resetsAt) ? ' · ' + usageTimeLeft(res.fiveHour.resetsAt) : ''));
+      }
+      if (res.sevenDay) {
+        html += usageRowHtml('Week', res.sevenDay);
+        tips.push('Week: ' + res.sevenDay.pct + '% used' + (usageTimeLeft(res.sevenDay.resetsAt) ? ' · ' + usageTimeLeft(res.sevenDay.resetsAt) : ''));
+      }
+      if (res.sevenDayOpus) {
+        html += usageRowHtml('Opus', res.sevenDayOpus);
+        tips.push('Opus week: ' + res.sevenDayOpus.pct + '% used' + (usageTimeLeft(res.sevenDayOpus.resetsAt) ? ' · ' + usageTimeLeft(res.sevenDayOpus.resetsAt) : ''));
+      }
+      w.innerHTML = html;
+      w.title = 'Your Claude plan usage — same numbers as Claude\'s /usage screen. The countdown shows when each limit resets.\n' + tips.join('\n');
+      w.classList.add('visible');
+    }
+
+    async function refreshUsage() {
+      try {
+        lastUsage = await window.api.getUsage();
+      } catch (e) {
+        lastUsage = null;
+      }
+      renderUsage();
+    }
+
+    // Keep the countdown ticking even when polling is set to a slow interval
+    setInterval(function() { if (lastUsage) renderUsage(); }, 60000);
+    let usageTimer = null;
+
+    function applyUsageInterval(sec) {
+      sec = parseInt(sec, 10) || 0;
+      if (usageTimer) { clearInterval(usageTimer); usageTimer = null; }
+      if (sec <= 0) {
+        document.getElementById('usageWidget').classList.remove('visible');
+        return;
+      }
+      usageTimer = setInterval(refreshUsage, sec * 1000);
+      refreshUsage();
+    }
+
+    async function changeUsageInterval(sec) {
+      const saved = await window.api.setUsageRefreshSeconds(parseInt(sec, 10) || 0);
+      applyUsageInterval(saved);
+    }
+
+    async function initUsage() {
+      let sec = 60;
+      try { sec = await window.api.getUsageRefreshSeconds(); } catch (e) {}
+      applyUsageInterval(sec);
+    }
+    initUsage();
 
     // Load on start
     refreshFolders();

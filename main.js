@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -138,8 +138,8 @@ function findSubProjects(dir, results, depth) {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 900,
-    height: 700,
+    width: 1200,
+    height: 720,
     minWidth: 700,
     minHeight: 500,
     icon: path.join(__dirname, 'icon.ico'),
@@ -1327,6 +1327,110 @@ ipcMain.handle('reset-status-template', async () => {
   } catch (err) {
     return { success: false, error: err.message };
   }
+});
+
+// ---- Claude plan usage (the %-remaining bars, like Claude's own /usage screen) ----
+// Reads the local Claude Code OAuth token and queries the same internal endpoint
+// Claude's own apps use. The endpoint is undocumented — if it changes, the widget
+// silently hides rather than erroring at the user. Approach credit:
+// CodeZeno/Claude-Code-Usage-Monitor (MIT) — reimplemented in Node, not copied.
+
+const CLAUDE_CREDENTIALS_PATH = path.join(HOME, '.claude', '.credentials.json');
+const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
+
+function getClaudeAccessToken() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(CLAUDE_CREDENTIALS_PATH, 'utf-8'));
+    const oauth = raw.claudeAiOauth || raw;
+    if (!oauth || !oauth.accessToken) return null;
+    return {
+      token: oauth.accessToken,
+      expired: !!(oauth.expiresAt && Date.now() > oauth.expiresAt)
+    };
+  } catch (e) { return null; }
+}
+
+ipcMain.handle('get-usage', async () => {
+  const cred = getClaudeAccessToken();
+  if (!cred) return { success: false, reason: 'no-token' };
+  try {
+    const raw = await httpsGet(USAGE_URL, {
+      'Authorization': 'Bearer ' + cred.token,
+      'anthropic-beta': 'oauth-2025-04-20'
+    });
+    const data = JSON.parse(raw);
+    function bucket(b) {
+      if (!b || typeof b.utilization !== 'number') return null;
+      return {
+        pct: Math.max(0, Math.min(100, Math.round(b.utilization))),
+        resetsAt: b.resets_at || null
+      };
+    }
+    const result = {
+      success: true,
+      fiveHour: bucket(data.five_hour),
+      sevenDay: bucket(data.seven_day),
+      sevenDayOpus: bucket(data.seven_day_opus)
+    };
+    updateTrayTooltip(result);
+    if (process.env.USAGE_DEBUG) console.log('[usage] ok keys=' + Object.keys(data).join(',') + ' parsed=' + JSON.stringify(result));
+    return result;
+  } catch (err) {
+    if (process.env.USAGE_DEBUG) console.log('[usage] FAIL ' + (err.message || err) + ' expired=' + cred.expired);
+    return { success: false, reason: 'api', error: err.message || String(err), expired: cred.expired };
+  }
+});
+
+// Refresh interval for the usage bars (seconds; 0 = off). Default 60.
+ipcMain.handle('get-usage-refresh-seconds', async () => {
+  return (typeof settings.usageRefreshSeconds === 'number') ? settings.usageRefreshSeconds : 60;
+});
+ipcMain.handle('set-usage-refresh-seconds', async (event, sec) => {
+  const s = { ...settings, usageRefreshSeconds: Number(sec) || 0 };
+  saveSettings(s);
+  return s.usageRefreshSeconds;
+});
+
+// ---- System tray ("Hide to Tray") ----
+// The tray icon is only created the first time the user hides the app.
+// Clicking it (or its Show item) brings the window back; its tooltip carries
+// the latest usage numbers so a hidden app still answers "how much is left?".
+
+let tray = null;
+
+function showFromTray() {
+  if (mainWindow) {
+    mainWindow.show();
+    mainWindow.focus();
+  }
+}
+
+function ensureTray() {
+  if (tray) return tray;
+  tray = new Tray(path.join(__dirname, 'icon.ico'));
+  tray.setToolTip('Claude Project Dashboard');
+  tray.on('click', showFromTray);
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Show Dashboard', click: showFromTray },
+    { type: 'separator' },
+    { label: 'Quit', click: () => app.quit() }
+  ]));
+  return tray;
+}
+
+function updateTrayTooltip(usage) {
+  if (!tray) return;
+  const parts = ['Claude Project Dashboard'];
+  if (usage && usage.fiveHour) parts.push('Session: ' + usage.fiveHour.pct + '% used');
+  if (usage && usage.sevenDay) parts.push('Week: ' + usage.sevenDay.pct + '% used');
+  if (usage && usage.sevenDayOpus) parts.push('Opus week: ' + usage.sevenDayOpus.pct + '% used');
+  try { tray.setToolTip(parts.join('\n')); } catch (e) {}
+}
+
+ipcMain.handle('minimize-to-tray', async () => {
+  ensureTray();
+  if (mainWindow) mainWindow.hide();
+  return true;
 });
 
 // ---- Check for updates (via GitHub Releases API) ----
