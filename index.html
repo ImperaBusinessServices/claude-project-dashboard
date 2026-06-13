@@ -801,7 +801,7 @@
         <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.3.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
           <li><strong>Claude usage bars in the header</strong> — see how much of your Claude plan you've used (<span style="color:#4ade80;">Session</span> and <span style="color:#4ade80;">Week</span>), same numbers as Claude's own /usage screen. Each bar has a countdown to when that limit resets (like "&#8635; 2h 14m"). Bars turn <span style="color:#f5b97d;">amber past 70%</span> and <span style="color:#e94560;">red past 90%</span>. If you're not signed in to Claude, the bars simply stay hidden. Choose how often they refresh below.</li>
-          <li><strong>Live usage meter in the system tray</strong> — optional. Turn it on below and a little ring gauge sits next to your clock, filling and changing color with your Session usage. Click it for a popup with both bars and reset countdowns. With it on, closing the window keeps the meter running in the background (quit from the tray icon's right-click menu).</li>
+          <li><strong>Live usage meter in the system tray</strong> — optional. Turn it on below and a little dual gauge sits next to your clock: the outer ring is your Session usage, the filled center is your Week, each going amber then red on its own. Click it for a popup with both bars and reset countdowns. With it on, closing the window keeps the meter running in the background (quit from the tray icon's right-click menu).</li>
           <li><strong>About is now Settings</strong> — same place, clearer name.</li>
           <li><strong>Removed "Save to Memory"</strong> — the brain/ memory system made it redundant: Claude saves project memory automatically now.</li>
         </ul>
@@ -911,7 +911,7 @@
             </div>
           </div>
           <div style="font-size: 11px; color: #888; margin-top: 8px; line-height: 1.5;">
-            The tray icon is a tiny ring that fills with your <strong style="color:#b388ff;">Session</strong> usage and turns amber then red as it climbs.
+            The tray icon packs both meters into one circle: the <strong style="color:#b388ff;">outer ring</strong> is your Session usage and the <strong style="color:#b388ff;">filled center</strong> is your Week — each turns amber then red on its own as it climbs.
             With this on, closing the window <strong>keeps the app running in the tray</strong> (like a background meter) — quit fully by right-clicking the tray icon.
           </div>
         </div>
@@ -2133,20 +2133,37 @@
     // ---- Tray meter icon (drawn here, shipped to the main process) ----
     let trayOn = false;
 
-    function drawTrayGauge(pct) {
+    function trayColor(p) { return p >= 90 ? '#e94560' : p >= 70 ? '#f5b97d' : '#4ade80'; }
+    function trayClamp(p) { return Math.max(0, Math.min(100, p)); }
+
+    // Outer ring = Session, center filled pie = Week. Both color-code
+    // green/amber/red independently by their own level.
+    function drawTrayGauge(sessionPct, weekPct) {
       const s = 32;
       const c = document.createElement('canvas');
       c.width = s; c.height = s;
       const ctx = c.getContext('2d');
       const cx = s / 2, cy = s / 2, lw = 5, r = (s / 2) - lw / 2 - 1;
-      const color = pct >= 90 ? '#e94560' : pct >= 70 ? '#f5b97d' : '#4ade80';
+      const start = -Math.PI / 2;
+      // Outer ring — Session
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.lineWidth = lw; ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.stroke();
-      const start = -Math.PI / 2;
       ctx.beginPath();
-      ctx.arc(cx, cy, r, start, start + (Math.PI * 2) * (Math.max(0, Math.min(100, pct)) / 100));
-      ctx.lineWidth = lw; ctx.strokeStyle = color; ctx.lineCap = 'round'; ctx.stroke();
+      ctx.arc(cx, cy, r, start, start + (Math.PI * 2) * (trayClamp(sessionPct) / 100));
+      ctx.lineWidth = lw; ctx.strokeStyle = trayColor(sessionPct); ctx.lineCap = 'round'; ctx.stroke();
+      // Center pie — Week
+      if (weekPct != null) {
+        const rr = r - lw - 2;
+        if (rr > 1) {
+          ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fill();
+          ctx.beginPath(); ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, rr, start, start + (Math.PI * 2) * (trayClamp(weekPct) / 100));
+          ctx.closePath();
+          ctx.fillStyle = trayColor(weekPct); ctx.fill();
+        }
+      }
       return c.toDataURL('image/png');
     }
 
@@ -2156,7 +2173,8 @@
         window.api.setTrayIcon('', 'Claude usage — waiting…');
         return;
       }
-      const dataUrl = drawTrayGauge(lastUsage.fiveHour.pct);
+      const weekPct = lastUsage.sevenDay ? lastUsage.sevenDay.pct : null;
+      const dataUrl = drawTrayGauge(lastUsage.fiveHour.pct, weekPct);
       const parts = [];
       if (lastUsage.fiveHour) parts.push('Session ' + lastUsage.fiveHour.pct + '%' + (usageTimeLeft(lastUsage.fiveHour.resetsAt) ? ' · ' + usageTimeLeft(lastUsage.fiveHour.resetsAt) : ''));
       if (lastUsage.sevenDay) parts.push('Week ' + lastUsage.sevenDay.pct + '%' + (usageTimeLeft(lastUsage.sevenDay.resetsAt) ? ' · ' + usageTimeLeft(lastUsage.sevenDay.resetsAt) : ''));
