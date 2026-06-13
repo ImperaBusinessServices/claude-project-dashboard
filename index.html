@@ -791,7 +791,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 520px; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.3.0</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.3.1</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -2099,12 +2099,23 @@
     }
 
     let lastUsage = null;
+    let usageReason = null;   // why the last poll had no data: 'no-token' | 'api' | null
 
     function renderUsage() {
       const w = document.getElementById('usageWidget');
       const res = lastUsage;
       if (!res || !res.success || (!res.fiveHour && !res.sevenDay)) {
-        w.classList.remove('visible');
+        // No numbers yet. If the reason is "not signed in to Claude", hide.
+        // Otherwise (rate limit / network / first load) show a quiet placeholder
+        // so the header never looks broken — it fills in when data arrives.
+        if (usageReason === 'no-token') {
+          w.classList.remove('visible');
+        } else {
+          w.innerHTML = '<div class="usage-row" style="opacity:.7"><span class="usage-label">Usage</span>'
+            + '<span style="font-size:10px;color:rgba(255,255,255,0.5)">checking…</span></div>';
+          w.title = 'Checking your Claude usage…';
+          w.classList.add('visible');
+        }
         return;
       }
       let html = '';
@@ -2136,10 +2147,11 @@
         // (rate limits, brief network blips). Only a success replaces data;
         // the widget stays hidden only if we've NEVER had a success.
         if (res && res.success) lastUsage = res;
+        usageReason = (res && res.success) ? null : (res ? (res.reason || 'api') : 'api');
         // Feed the tray + flyout from this single poller (avoids a 2nd poller
         // hammering the rate-limited endpoint).
         window.api.usageUpdate(res && res.success ? res : lastUsage);
-      } catch (e) {}
+      } catch (e) { usageReason = 'api'; }
       renderUsage();
       updateTrayIcon();
 
