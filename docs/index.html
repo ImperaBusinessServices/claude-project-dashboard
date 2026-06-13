@@ -941,6 +941,39 @@
   </div>
 </section>
 
+<!-- ============ EMAIL CAPTURE GATE ============ -->
+<style>
+  .egate { position: fixed; inset: 0; z-index: 300; display: none; align-items: center; justify-content: center; background: rgba(20,14,8,0.55); backdrop-filter: blur(4px); padding: 20px; }
+  .egate.open { display: flex; }
+  .egate-card { position: relative; width: 450px; max-width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 18px; padding: 32px 30px 26px; box-shadow: var(--card-shadow); text-align: center; }
+  .egate-card h3 { font-family: var(--display); font-size: 25px; line-height: 1.15; margin: 0 0 9px; color: var(--text); }
+  .egate-card .sub { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0 0 18px; }
+  .egate-form { display: flex; flex-direction: column; gap: 11px; }
+  .egate-form input { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); color: var(--text); font-size: 15.5px; font-family: var(--sans); outline: none; transition: border-color .2s; }
+  .egate-form input:focus { border-color: var(--coral-br); box-shadow: 0 0 0 3px rgba(216,118,74,0.15); }
+  .egate-err { color: #d9534f; font-size: 12.5px; min-height: 15px; text-align: left; }
+  .egate-fine { margin-top: 13px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  .egate-skip { margin-top: 11px; font-size: 12.5px; }
+  .egate-skip a { color: var(--muted); text-decoration: underline; cursor: pointer; }
+  .egate-skip a:hover { color: var(--text); }
+  .egate-close { position: absolute; top: 12px; right: 14px; font-size: 22px; line-height: 1; color: var(--muted); cursor: pointer; background: none; border: none; padding: 4px; }
+  .egate-close:hover { color: var(--text); }
+</style>
+<div class="egate" id="emailGate" aria-hidden="true">
+  <div class="egate-card">
+    <button class="egate-close" id="egateClose" aria-label="Close">&times;</button>
+    <h3>Grab your free download</h3>
+    <p class="sub">Pop in your email and we’ll send you the download link plus the occasional Claude Code tip. No spam, unsubscribe anytime.</p>
+    <form class="egate-form" id="egateForm">
+      <input type="email" id="egateEmail" placeholder="you@example.com" autocomplete="email" required>
+      <div class="egate-err" id="egateErr"></div>
+      <button type="submit" class="btn btn-primary btn-xl" id="egateSubmit" style="width:100%;justify-content:center;">Email me the download</button>
+    </form>
+    <div class="egate-skip"><a id="egateSkip">No thanks, just download →</a></div>
+    <p class="egate-fine">We’ll only use your email to send the download and occasional updates about the Dashboard.</p>
+  </div>
+</div>
+
 <!-- ============ FOOTER ============ -->
 <footer>
   <div class="wrap">
@@ -1045,6 +1078,7 @@
         var asset = (rel.assets || []).find(function (a) { return /setup.*\.exe$/i.test(a.name); }) || (rel.assets || []).find(function (a) { return /\.exe$/i.test(a.name); });
         var url = asset ? asset.browser_download_url : (rel.html_url || '#');
         ['navDownload', 'heroDownload', 'mainDownload'].forEach(function (id) { var n = document.getElementById(id); if (n) n.setAttribute('href', url); });
+        if (window.__setDownloadUrl) window.__setDownloadUrl(url);
       })
       .catch(function () {});
   } catch (e) {}
@@ -1201,6 +1235,78 @@
         }, 700));
       });
     }, 380));
+  });
+})();
+</script>
+
+<!-- ============ EMAIL CAPTURE GATE ============ -->
+<script>
+(function () {
+  // ── To turn email capture ON, paste your Web3Forms access key below. ──
+  // Get a free key in ~1 min: go to web3forms.com, enter your email, copy the
+  // key it sends you. Until a real key is set, the buttons just download
+  // normally (so the page never breaks).
+  var WEB3FORMS_KEY = 'PASTE_WEB3FORMS_ACCESS_KEY_HERE';
+  var CAPTURE_ON = WEB3FORMS_KEY && WEB3FORMS_KEY.indexOf('PASTE_') !== 0;
+
+  var FALLBACK_DL = 'https://github.com/ImperaBusinessServices/claude-project-dashboard/releases/latest';
+  var dlUrl = FALLBACK_DL;
+  window.__setDownloadUrl = function (u) { if (u) dlUrl = u; };
+
+  var gate = document.getElementById('emailGate');
+  var form = document.getElementById('egateForm');
+  var input = document.getElementById('egateEmail');
+  var err = document.getElementById('egateErr');
+  var submitBtn = document.getElementById('egateSubmit');
+  if (!gate || !form) return;
+
+  function done() { try { return localStorage.getItem('cpd_email_done') === '1'; } catch (e) { return false; } }
+  function startDownload() { window.location.href = dlUrl; }
+  function openGate(e) {
+    if (!CAPTURE_ON || done()) return;        // let the normal download proceed
+    if (e) e.preventDefault();
+    err.textContent = '';
+    gate.classList.add('open');
+    setTimeout(function () { input.focus(); }, 50);
+  }
+  function closeGate() { gate.classList.remove('open'); }
+
+  ['navDownload', 'heroDownload', 'mainDownload'].forEach(function (id) {
+    var n = document.getElementById(id);
+    if (n) n.addEventListener('click', openGate);
+  });
+  var closeBtn = document.getElementById('egateClose');
+  if (closeBtn) closeBtn.addEventListener('click', closeGate);
+  var skip = document.getElementById('egateSkip');
+  if (skip) skip.addEventListener('click', function (e) { e.preventDefault(); closeGate(); startDownload(); });
+  gate.addEventListener('click', function (e) { if (e.target === gate) closeGate(); });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = (input.value || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Please enter a valid email.'; return; }
+    err.textContent = '';
+    submitBtn.disabled = true;
+    var orig = submitBtn.textContent;
+    submitBtn.textContent = 'One sec…';
+    try { localStorage.setItem('cpd_email_done', '1'); } catch (e2) {}
+    var payload = {
+      access_key: WEB3FORMS_KEY,
+      subject: 'New Dashboard download — ' + email,
+      from_name: 'Claude Project Dashboard',
+      email: email,
+      page: location.href
+    };
+    fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (r) { return r.json(); })
+      .catch(function () {})
+      .then(function () {
+        submitBtn.textContent = 'Thanks! Downloading…';
+        setTimeout(function () { closeGate(); submitBtn.disabled = false; submitBtn.textContent = orig; startDownload(); }, 800);
+      });
   });
 })();
 </script>
