@@ -185,6 +185,14 @@
   .a-brand { display: flex; align-items: center; gap: 11px; }
   .a-brand .clogo { width: 30px; height: 30px; border-radius: 8px; background: var(--a-accent); color: var(--on-accent); display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 17px; box-shadow: 0 3px 10px var(--a-accent-glow); }
   .a-brand b { font-size: 18px; color: var(--a-hdr-text); letter-spacing: -0.01em; }
+  .a-usage { display: flex; flex-direction: column; gap: 5px; min-width: 215px; position: relative; }
+  .a-usage .u-row { display: flex; align-items: center; gap: 8px; font-size: 10px; }
+  .a-usage .u-lbl { width: 46px; text-align: right; color: var(--a-muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 700; }
+  .a-usage .u-bar { flex: 1; height: 6px; background: var(--a-chip); border-radius: 3px; overflow: hidden; }
+  .a-usage .u-fill { height: 100%; border-radius: 3px; background: var(--a-status); }
+  .a-usage .u-pct { width: 30px; color: var(--a-hdr-text); font-variant-numeric: tabular-nums; font-weight: 700; }
+  .a-usage .u-rst { width: 58px; color: var(--a-muted); font-size: 9px; white-space: nowrap; }
+  .a-usage .u-new { position: absolute; top: -13px; left: 46px; font-size: 8.5px; font-weight: 800; letter-spacing: .5px; color: var(--on-accent); background: var(--a-accent2); padding: 1px 6px; border-radius: 6px; box-shadow: 0 2px 6px var(--a-accent2-soft); }
   .a-actions { display: flex; gap: 9px; flex-wrap: wrap; }
   .a-btn { font-family: var(--sans); font-size: 12.5px; font-weight: 600; padding: 8px 13px; border-radius: 9px; border: 1px solid var(--a-btn-edge); background: var(--a-btn-bg); color: var(--a-btn-text); white-space: nowrap; }
   .a-btn.pink { background: var(--a-accent); border-color: transparent; color: var(--on-accent); box-shadow: 0 4px 12px -3px var(--a-accent-glow); }
@@ -472,7 +480,7 @@
       <a class="lnk" href="#tiles">How it works</a>
       <a class="lnk" href="#report">Status report</a>
       <a class="lnk" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener">GitHub</a>
-      <span class="nav-ver" id="navVer">v2.2.2</span>
+      <span class="nav-ver" id="navVer">v2.3.0</span>
       <button class="toggle" id="themeToggle" aria-label="Toggle light / dark">
         <svg class="i-moon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
         <svg class="i-sun" width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -489,6 +497,7 @@
       <span class="eyebrow intro d1"><span class="pulse"></span> For everyone getting started with Claude Code</span>
       <h1 class="intro d2">All your Claude Code Terminal projects, in <span class="accent">one place</span>.</h1>
       <p class="lede intro d3">The Claude Project Dashboard turns your scattered project folders into clean tiles. Click one and Claude Code opens right there — in the correct folder, exactly where you left off.</p>
+      <p class="intro d3" style="max-width:58ch;margin:16px auto 0;font-size:14.5px;color:var(--text);line-height:1.6;"><span style="display:inline-block;background:var(--coral-deep);color:#fff6ef;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:100px;margin-right:9px;vertical-align:middle;">NEW · v2.3.0</span>A live <strong>Claude usage meter</strong> right at the top — see how much of your Session and Weekly limits you’ve used, with reset countdowns. Optional <strong>system-tray gauge</strong> too.</p>
       <div class="cta-row intro d4">
         <a class="btn btn-primary btn-xl" id="heroDownload" href="#download">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -514,9 +523,13 @@
         </div>
         <div class="a-header">
           <div class="a-brand"><span class="clogo">C</span><b>Claude Project Dashboard</b></div>
+          <div class="a-usage" title="Your Claude plan usage — same numbers as Claude's own /usage screen">
+            <span class="u-new">NEW</span>
+            <div class="u-row"><span class="u-lbl">Session</span><span class="u-bar"><span class="u-fill" style="width:24%"></span></span><span class="u-pct">24%</span><span class="u-rst">↻ 3h 41m</span></div>
+            <div class="u-row"><span class="u-lbl">Week</span><span class="u-bar"><span class="u-fill" style="width:12%"></span></span><span class="u-pct">12%</span><span class="u-rst">↻ 4d</span></div>
+          </div>
           <div class="a-actions">
-            <span class="a-btn">About</span>
-            <span class="a-btn">Save to Memory</span>
+            <span class="a-btn">Settings</span>
             <span class="a-btn">Global CLAUDE.md</span>
             <span class="a-btn pink">+ New Project</span>
           </div>
@@ -658,7 +671,6 @@
         <div class="tbk"><span class="chip2 dim">Sort</span><span>Order projects by <b>Last Modified, Date Created, or Name</b>.</span></div>
         <div class="tbk"><span class="chip2 dim">Archived</span><span><b>Tuck finished projects away</b> — flip between Active, Archived, and All anytime.</span></div>
         <div class="tbk"><span class="chip2 dim">Search</span><span>Find any project <b>by name or by what it’s about</b>.</span></div>
-        <div class="tbk"><span class="chip2 dim">Save to Memory</span><span>Snapshot where everything stands so Claude <b>never loses the thread</b>.</span></div>
         <div class="tbk"><span class="chip2 dim">Global CLAUDE.md</span><span>Open the <b>master instructions</b> Claude uses across every project.</span></div>
       </div>
     </div>
@@ -922,7 +934,7 @@
       <p>Free, open source, and a tiny ~92&nbsp;MB. Works on Windows 10 and 11.</p>
       <a class="btn btn-primary btn-xl" id="mainDownload" href="https://github.com/ImperaBusinessServices/claude-project-dashboard/releases/latest">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Download for Windows <span id="btnVer" style="opacity:.75;font-weight:500">v2.2.2</span>
+        Download for Windows <span id="btnVer" style="opacity:.75;font-weight:500">v2.3.0</span>
       </a>
       <div class="smartscreen">Prefer the source? <a href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="color:var(--coral-br)">Browse it on GitHub →</a></div>
     </div>
