@@ -161,6 +161,13 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
 
+  // Open target="_blank" / external links in the user's real browser instead
+  // of a bare Electron window.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https?:\/\//i.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
   // Close-to-tray: when the tray meter is on, the X button hides the window
   // (the app keeps running in the tray, Zeno-style) instead of quitting.
   mainWindow.on('close', (e) => {
@@ -434,6 +441,11 @@ ipcMain.handle('open-global-claude-md', async () => {
 // Open folder in file explorer
 ipcMain.handle('open-explorer', async (event, folderPath) => {
   shell.openPath(folderPath);
+});
+
+// Open an external URL in the user's default browser
+ipcMain.handle('open-external', async (event, url) => {
+  if (typeof url === 'string' && /^https?:\/\//i.test(url)) shell.openExternal(url);
 });
 
 // Test beep sound

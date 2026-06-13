@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('api', {
   openClaudeMd: (path) => ipcRenderer.invoke('open-claude-md', path),
   openGlobalClaudeMd: () => ipcRenderer.invoke('open-global-claude-md'),
   openExplorer: (path) => ipcRenderer.invoke('open-explorer', path),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
   getSettings: () => ipcRenderer.invoke('get-settings'),
   chooseFolder: () => ipcRenderer.invoke('choose-folder'),
   toggleArchive: (path) => ipcRenderer.invoke('toggle-archive', path),

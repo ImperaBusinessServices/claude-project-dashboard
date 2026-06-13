@@ -802,6 +802,7 @@
         <ul style="margin-left: 18px; margin-bottom: 14px;">
           <li><strong>Claude usage bars in the header</strong> — see how much of your Claude plan you've used (<span style="color:#4ade80;">Session</span> and <span style="color:#4ade80;">Week</span>), same numbers as Claude's own /usage screen. Each bar has a countdown to when that limit resets (like "&#8635; 2h 14m"). Bars turn <span style="color:#f5b97d;">amber past 70%</span> and <span style="color:#e94560;">red past 90%</span>. If you're not signed in to Claude, the bars simply stay hidden. Choose how often they refresh below.</li>
           <li><strong>Live usage meter in the system tray</strong> — optional. Turn it on below and a little dual gauge sits next to your clock: the outer ring is your Session usage, the filled center is your Week, each going amber then red on its own. Click it for a popup with both bars and reset countdowns. With it on, closing the window keeps the meter running in the background (quit from the tray icon's right-click menu).</li>
+          <li><strong>Optional taskbar meter (Zeno)</strong> — if you want an always-on readout docked right in your Windows taskbar, Settings now has a one-click link to a free companion app that does exactly that.</li>
           <li><strong>About is now Settings</strong> — same place, clearer name.</li>
           <li><strong>Removed "Save to Memory"</strong> — the brain/ memory system made it redundant: Claude saves project memory automatically now.</li>
         </ul>
@@ -913,6 +914,16 @@
           <div style="font-size: 11px; color: #888; margin-top: 8px; line-height: 1.5;">
             The tray icon packs both meters into one circle: the <strong style="color:#b388ff;">outer ring</strong> is your Session usage and the <strong style="color:#b388ff;">filled center</strong> is your Week — each turns amber then red on its own as it climbs.
             With this on, closing the window <strong>keeps the app running in the tray</strong> (like a background meter) — quit fully by right-clicking the tray icon.
+          </div>
+        </div>
+
+      <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; padding-right: 14px;">
+              <strong style="color: #b388ff; font-size: 13px;">Want a bigger meter right in your taskbar?</strong>
+              <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">There's a free little app called <strong>Claude Code Usage Monitor</strong> that shows your Session &amp; Week usage as an always-on readout docked in your Windows taskbar. It runs alongside this app. The button opens its download page in your browser — grab <code style="color:#b388ff;">claude-code-usage-monitor.exe</code> and run it.</div>
+            </div>
+            <button class="btn btn-secondary btn-small" onclick="window.api.openExternal('https://github.com/CodeZeno/Claude-Code-Usage-Monitor/releases/latest')" style="flex-shrink:0;">Get it (free)</button>
           </div>
         </div>
 
