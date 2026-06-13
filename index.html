@@ -2126,9 +2126,12 @@
       w.classList.add('visible');
     }
 
+    let usageRetry = null;
+
     async function refreshUsage() {
+      let res = null;
       try {
-        const res = await window.api.getUsage();
+        res = await window.api.getUsage();
         // Keep showing the last good numbers through transient failures
         // (rate limits, brief network blips). Only a success replaces data;
         // the widget stays hidden only if we've NEVER had a success.
@@ -2139,6 +2142,17 @@
       } catch (e) {}
       renderUsage();
       updateTrayIcon();
+
+      // Cold start: if we have no data yet AND the failure looks transient
+      // (rate limit / network — NOT "you're not signed in"), retry soon instead
+      // of waiting the full refresh interval, so the meter appears within seconds
+      // rather than vanishing until the next poll.
+      const transient = !lastUsage && (!res || res.reason !== 'no-token');
+      if (transient) {
+        if (!usageRetry) usageRetry = setTimeout(() => { usageRetry = null; refreshUsage(); }, 8000);
+      } else if (usageRetry) {
+        clearTimeout(usageRetry); usageRetry = null;
+      }
     }
 
     // ---- Tray meter icon (drawn here, shipped to the main process) ----
@@ -2218,6 +2232,7 @@
     function applyUsageInterval(sec) {
       sec = parseInt(sec, 10) || 0;
       if (usageTimer) { clearInterval(usageTimer); usageTimer = null; }
+      if (usageRetry) { clearTimeout(usageRetry); usageRetry = null; }
       if (sec <= 0) {
         document.getElementById('usageWidget').classList.remove('visible');
         return;
