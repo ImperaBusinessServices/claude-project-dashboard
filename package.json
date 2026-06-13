@@ -33,6 +33,7 @@
       "main.js",
       "preload.js",
       "index.html",
+      "tray-flyout.html",
       "icon.ico"
     ]
   },

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
@@ -45,6 +45,12 @@ ${MEMORY_PROTOCOL_END}`;
 
 let mainWindow;
 let settings = loadSettings();
+
+// Tray meter state (the optional Zeno-style live icon + click-popup)
+let tray = null;
+let flyoutWindow = null;
+let latestUsage = null;   // last good usage payload, cached from the renderer
+let isQuitting = false;   // true once we're really quitting (not close-to-tray)
 
 function loadSettings() {
   try {
@@ -154,10 +160,129 @@ function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
+
+  // Close-to-tray: when the tray meter is on, the X button hides the window
+  // (the app keeps running in the tray, Zeno-style) instead of quitting.
+  mainWindow.on('close', (e) => {
+    if (!isQuitting && settings.trayEnabled) {
+      e.preventDefault();
+      mainWindow.hide();
+      if (!settings.trayBalloonShown && tray) {
+        try {
+          tray.displayBalloon({
+            title: 'Still running',
+            content: 'The usage meter is here in your tray. Click it to reopen the dashboard, or right-click to quit.'
+          });
+        } catch (err) {}
+        saveSettings({ ...settings, trayBalloonShown: true });
+      }
+    }
+  });
 }
 
-app.whenReady().then(createWindow);
-app.on('window-all-closed', () => app.quit());
+app.whenReady().then(() => {
+  createWindow();
+  if (settings.trayEnabled) createTray();
+});
+app.on('before-quit', () => { isQuitting = true; });
+// Only quit on all-windows-closed when the tray meter isn't keeping us alive.
+app.on('window-all-closed', () => { if (!settings.trayEnabled) app.quit(); });
+
+// ---- Tray meter (live system-tray usage icon + click-popup flyout) ----
+
+function showMainWindow() {
+  if (!mainWindow) { createWindow(); return; }
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+function createTray() {
+  if (tray) return;
+  tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icon.ico')));
+  tray.setToolTip('Claude usage — waiting…');
+  tray.on('click', (event, bounds) => toggleFlyout(bounds));
+  tray.on('right-click', () => {
+    tray.popUpContextMenu(Menu.buildFromTemplate([
+      { label: 'Open Dashboard', click: showMainWindow },
+      { type: 'separator' },
+      { label: 'Quit', click: () => { isQuitting = true; app.quit(); } }
+    ]));
+  });
+  // Ask the renderer to draw the current gauge right away (if it has data)
+  if (mainWindow) mainWindow.webContents.send('tray-render-now');
+}
+
+function destroyTray() {
+  if (flyoutWindow) { try { flyoutWindow.close(); } catch (e) {} flyoutWindow = null; }
+  if (tray) { try { tray.destroy(); } catch (e) {} tray = null; }
+}
+
+function createFlyout() {
+  flyoutWindow = new BrowserWindow({
+    width: 300, height: 230,
+    show: false, frame: false, resizable: false, movable: false,
+    transparent: true, skipTaskbar: true, alwaysOnTop: true, fullscreenable: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+  flyoutWindow.loadFile('tray-flyout.html');
+  flyoutWindow.on('blur', () => { if (flyoutWindow && !flyoutWindow.webContents.isDevToolsFocused()) flyoutWindow.hide(); });
+}
+
+function toggleFlyout(bounds) {
+  if (!flyoutWindow) createFlyout();
+  if (flyoutWindow.isVisible()) { flyoutWindow.hide(); return; }
+  const w = 300, h = 230;
+  const pt = screen.getCursorScreenPoint();
+  const display = screen.getDisplayNearestPoint(pt);
+  const wa = display.workArea;
+  // Center over the tray icon if we have its bounds, else over the cursor
+  let cx = (bounds && bounds.width) ? (bounds.x + bounds.width / 2) : pt.x;
+  let x = Math.round(cx - w / 2);
+  let y = wa.y + wa.height - h - 6;        // just above the taskbar
+  x = Math.min(Math.max(wa.x + 4, x), wa.x + wa.width - w - 4);
+  flyoutWindow.setBounds({ x, y, width: w, height: h });
+  flyoutWindow.webContents.send('tray-usage', latestUsage);
+  flyoutWindow.show();
+  flyoutWindow.focus();
+}
+
+// Renderer pushes each fresh usage payload here so the tray + flyout stay in sync
+// without adding a second poller (the endpoint rate-limits easily).
+ipcMain.on('usage-update', (event, data) => {
+  if (data && data.success) latestUsage = data;
+  if (flyoutWindow && flyoutWindow.isVisible()) {
+    flyoutWindow.webContents.send('tray-usage', latestUsage);
+  }
+});
+
+ipcMain.on('set-tray-icon', (event, dataUrl, tooltip) => {
+  if (process.env.USAGE_DEBUG) console.log('[tray] set-icon dataUrlLen=' + (dataUrl ? dataUrl.length : 0) + ' tip=' + JSON.stringify(tooltip));
+  if (!tray) return;
+  try {
+    if (dataUrl) tray.setImage(nativeImage.createFromDataURL(dataUrl));
+    if (tooltip) tray.setToolTip(tooltip);
+  } catch (e) {}
+});
+
+ipcMain.handle('get-cached-usage', async () => latestUsage);
+ipcMain.handle('show-main-window', async () => { showMainWindow(); if (flyoutWindow) flyoutWindow.hide(); });
+ipcMain.handle('quit-app', async () => { isQuitting = true; app.quit(); });
+
+ipcMain.handle('get-tray-enabled', async () => !!settings.trayEnabled);
+ipcMain.handle('set-tray-enabled', async (event, enabled) => {
+  saveSettings({ ...settings, trayEnabled: !!enabled });
+  if (enabled) {
+    createTray();
+  } else {
+    destroyTray();
+    if (mainWindow && !mainWindow.isVisible()) showMainWindow();
+  }
+  return !!settings.trayEnabled;
+});
 
 // Get settings
 ipcMain.handle('get-settings', async () => {

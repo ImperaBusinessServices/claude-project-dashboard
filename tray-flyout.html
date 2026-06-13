@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Usage</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: transparent; overflow: hidden; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 8px;
+    -webkit-user-select: none; user-select: none;
+  }
+  .panel {
+    background: #161b22;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  }
+  .ptitle {
+    font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.6px;
+    margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .ptitle .dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; }
+  .ptitle .dot.stale { background: #8b949e; }
+  .frow { margin-bottom: 12px; }
+  .frow-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .frow-name { font-size: 13px; color: #e6edf3; font-weight: 600; }
+  .frow-pct { font-size: 13px; color: #e6edf3; font-variant-numeric: tabular-nums; }
+  .fbar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+  .ffill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .ffill.green { background: #4ade80; }
+  .ffill.amber { background: #f5b97d; }
+  .ffill.red { background: #e94560; }
+  .frow-reset { font-size: 11px; color: #8b949e; margin-top: 4px; }
+  .empty { font-size: 12px; color: #8b949e; padding: 6px 0 10px; }
+  .foot {
+    margin-top: 12px; padding-top: 11px; border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; gap: 8px;
+  }
+  .foot button {
+    flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+    color: #c9d1d9; font-size: 12px; padding: 7px; border-radius: 6px; cursor: pointer;
+    font-family: inherit; transition: background 0.15s;
+  }
+  .foot button:hover { background: rgba(255,255,255,0.14); color: #fff; }
+  .foot button.primary { background: #e94560; border-color: #e94560; color: #fff; }
+  .foot button.primary:hover { background: #f25974; }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <div class="ptitle"><span>Claude plan usage</span><span class="dot" id="freshDot"></span></div>
+    <div id="frows"><div class="empty">Waiting for usage…</div></div>
+    <div class="foot">
+      <button class="primary" onclick="window.api.openMainWindow()">Open Dashboard</button>
+      <button onclick="window.api.quitApp()">Quit</button>
+    </div>
+  </div>
+
+<script>
+  function cdShort(resetsAt) {
+    if (!resetsAt) return '';
+    const ms = new Date(resetsAt) - new Date();
+    if (isNaN(ms) || ms <= 0) return '';
+    const d = Math.floor(ms / 86400000);
+    const h = Math.floor((ms % 86400000) / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    if (d > 0) return d + 'd ' + h + 'h';
+    if (h > 0) return h + 'h ' + m + 'm';
+    return m + 'm';
+  }
+  function rowHtml(name, b) {
+    const cls = b.pct >= 90 ? 'red' : b.pct >= 70 ? 'amber' : 'green';
+    const left = cdShort(b.resetsAt);
+    return '<div class="frow">'
+      + '<div class="frow-top"><span class="frow-name">' + name + '</span><span class="frow-pct">' + b.pct + '%</span></div>'
+      + '<div class="fbar"><div class="ffill ' + cls + '" style="width:' + b.pct + '%"></div></div>'
+      + (left ? '<div class="frow-reset">&#8635; resets in ' + left + '</div>' : '')
+      + '</div>';
+  }
+  function render(u) {
+    const host = document.getElementById('frows');
+    const dot = document.getElementById('freshDot');
+    if (!u || !u.success || (!u.fiveHour && !u.sevenDay)) {
+      host.innerHTML = '<div class="empty">Usage isn\'t available right now. Make sure you\'re signed in to Claude.</div>';
+      dot.classList.add('stale');
+      return;
+    }
+    dot.classList.remove('stale');
+    let html = '';
+    if (u.fiveHour) html += rowHtml('Session', u.fiveHour);
+    if (u.sevenDay) html += rowHtml('Week', u.sevenDay);
+    if (u.sevenDayOpus) html += rowHtml('Opus (week)', u.sevenDayOpus);
+    host.innerHTML = html;
+  }
+  window.api.onTrayUsage(render);
+  // Pull whatever main already cached, so the panel is populated the instant it opens
+  window.api.getCachedUsage().then(render).catch(function(){});
+  // Keep countdowns ticking while the panel is open
+  setInterval(function() { window.api.getCachedUsage().then(render).catch(function(){}); }, 30000);
+</script>
+</body>
+</html>

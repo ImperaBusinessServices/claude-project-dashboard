@@ -34,6 +34,17 @@ contextBridge.exposeInMainWorld('api', {
   getUsage: () => ipcRenderer.invoke('get-usage'),
   getUsageRefreshSeconds: () => ipcRenderer.invoke('get-usage-refresh-seconds'),
   setUsageRefreshSeconds: (sec) => ipcRenderer.invoke('set-usage-refresh-seconds', sec),
+  // Tray meter
+  getTrayEnabled: () => ipcRenderer.invoke('get-tray-enabled'),
+  setTrayEnabled: (enabled) => ipcRenderer.invoke('set-tray-enabled', enabled),
+  usageUpdate: (data) => ipcRenderer.send('usage-update', data),
+  setTrayIcon: (dataUrl, tooltip) => ipcRenderer.send('set-tray-icon', dataUrl, tooltip),
+  onTrayRenderNow: (cb) => { const l = () => cb(); ipcRenderer.on('tray-render-now', l); return () => ipcRenderer.removeListener('tray-render-now', l); },
+  // Flyout window
+  getCachedUsage: () => ipcRenderer.invoke('get-cached-usage'),
+  onTrayUsage: (cb) => { const l = (_e, d) => cb(d); ipcRenderer.on('tray-usage', l); return () => ipcRenderer.removeListener('tray-usage', l); },
+  openMainWindow: () => ipcRenderer.invoke('show-main-window'),
+  quitApp: () => ipcRenderer.invoke('quit-app'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadAndInstallUpdate: (downloadUrl, version) => ipcRenderer.invoke('download-and-install-update', downloadUrl, version),
   onUpdateDownloadProgress: (cb) => {
