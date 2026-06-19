@@ -52,6 +52,17 @@ let flyoutWindow = null;
 let latestUsage = null;   // last good usage payload, cached from the renderer
 let isQuitting = false;   // true once we're really quitting (not close-to-tray)
 
+// Single-instance lock: if a copy of the app is already running (e.g. hidden in
+// the tray with the meter on), don't start a second one — just resurface the
+// existing window. Without this, every launch spawned a fresh process and a
+// fresh tray icon, so opening/closing repeatedly piled up duplicate meters.
+const gotInstanceLock = app.requestSingleInstanceLock();
+if (!gotInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => showMainWindow());
+}
+
 function loadSettings() {
   try {
     if (fs.existsSync(SETTINGS_PATH)) {
@@ -187,10 +198,12 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
-  createWindow();
-  if (settings.trayEnabled) createTray();
-});
+if (gotInstanceLock) {
+  app.whenReady().then(() => {
+    createWindow();
+    if (settings.trayEnabled) createTray();
+  });
+}
 app.on('before-quit', () => { isQuitting = true; });
 // Only quit on all-windows-closed when the tray meter isn't keeping us alive.
 app.on('window-all-closed', () => { if (!settings.trayEnabled) app.quit(); });
@@ -199,6 +212,7 @@ app.on('window-all-closed', () => { if (!settings.trayEnabled) app.quit(); });
 
 function showMainWindow() {
   if (!mainWindow) { createWindow(); return; }
+  if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
 }
