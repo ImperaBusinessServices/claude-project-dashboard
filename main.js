@@ -25,9 +25,10 @@ const MEMORY_PROTOCOL_TEMPLATE = `${MEMORY_PROTOCOL_BEGIN}
 
 Each project may contain a \`brain/\` folder for persistent context across Claude Code sessions:
 - \`STATE.md\` — what's in flight right now
-- \`next.md\` — one line: what to do next if Claude wakes up cold
+- \`next.md\` — a checklist of what's next. Mark each item \`- [ ]\` not started, \`- [~]\` in progress, \`- [x]\` done. The status report renders these and you can tick them off as you finish — so keep them current.
 - \`changelog.md\` — append-only log: YYYY-MM-DD — what changed, with file paths
 - \`decisions.md\` — decisions with a one-line Why
+- \`links.md\` (optional) — for a project with several live pages/things: one bullet per link, \`- [Name](https://url) — short description\`. Shown pinned at the top of the status report.
 
 ### Triggers
 - **"WWW?"** / **"where were we?"** → read \`./brain/STATE.md\`, \`./brain/next.md\`, and the last 20 lines of \`./brain/changelog.md\`. Tell the user where we are and what's next. If no \`brain/\` folder, say "no project memory here yet — want me to start one?" and bootstrap on yes.
@@ -378,7 +379,7 @@ function scaffoldBrain(projectPath, projectName) {
   fs.mkdirSync(brainDir, { recursive: true });
   const files = {
     'STATE.md': `# ${projectName} — STATE\n\n<!-- What's in flight right now. Updated as work progresses. -->\n`,
-    'next.md': `# next\n\n<!-- One sentence: what to do next if Claude wakes up cold. -->\n`,
+    'next.md': `# next\n\n<!-- Checklist of what's next. Markers: [ ] = not started, [~] = in progress, [x] = done. The status report shows these and Claude/you can tick them off. -->\n\n- [ ] First task goes here\n`,
     'changelog.md': `# changelog\n\n<!-- Append-only log: YYYY-MM-DD — what changed, file paths. -->\n`,
     'decisions.md': `# decisions\n\n<!-- Project decisions with a one-line Why. -->\n`
   };
@@ -975,6 +976,12 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   .legend .dot.amber { background: var(--amber); }
   .legend .dot.green { background: var(--done); }
   .legend .dot.empty { background: transparent; border: 1px solid var(--muted); }
+  .legend-sub { flex-basis: 100%; margin-top: 2px; opacity: 0.85; }
+  .links-card ul { list-style: none; padding-left: 0; margin: 4px 0; }
+  .links-card li { padding: 7px 2px; border-bottom: 1px solid var(--border); }
+  .links-card li:last-child { border-bottom: none; }
+  .links-card a { color: var(--purple); font-weight: 600; text-decoration: none; }
+  .links-card a:hover { text-decoration: underline; }
   .progress-text { white-space: nowrap; }
   code {
     background: var(--panel-2); padding: 2px 6px; border-radius: 4px;
@@ -1018,7 +1025,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-<!-- CMSR-TEMPLATE-VERSION: 2 -->
+<!-- CMSR-TEMPLATE-VERSION: 3 -->
 <div class="wrap" data-project-key="{{projectKey}}">
 
   <header class="report-head">
@@ -1034,7 +1041,10 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     <span class="chip"><span class="dot amber"></span>1 click = in progress</span>
     <span class="chip"><span class="dot green"></span>2 clicks = done</span>
     <span class="chip"><span class="dot empty"></span>3 clicks = clear</span>
+    <div class="legend-sub">Claude can tick these off too — it updates the list in this project's <code>brain/next.md</code>, and the changes show after you Refresh.</div>
   </div>
+
+  {{linksSection}}
 
   <section class="card">
     <h2>🎯 Objective</h2>
@@ -1124,17 +1134,37 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     var label = li.querySelector('label');
     if (!cb || !label) return;
     var key = storagePrefix + 'cb-' + hashId(label.textContent.trim());
-    var state = 0;
+    // mdState = the state Claude wrote in brain/next.md: 0 = not started
+    // ([ ]), 1 = in progress ([~]), 2 = done ([x]). Your in-browser clicks are
+    // remembered on top of that, but when Claude changes the file the file wins
+    // (so a task Claude finishes shows as done even if you'd clicked it before).
+    var mdState = parseInt(li.getAttribute('data-md-state') || '0', 10) || 0;
+    var state = mdState;
     try {
-      var stored = localStorage.getItem(key);
-      if (stored === '1' || stored === '2') state = parseInt(stored, 10);
+      var raw = localStorage.getItem(key);
+      if (raw !== null) {
+        var rec;
+        if (raw === '0' || raw === '1' || raw === '2') {
+          rec = { u: parseInt(raw, 10), b: mdState };  // migrate old numeric format
+        } else {
+          try { rec = JSON.parse(raw); } catch (e) { rec = null; }
+        }
+        if (rec && typeof rec.u === 'number') {
+          if (rec.b !== mdState) {
+            state = mdState;  // next.md changed since your last click — file wins
+            localStorage.setItem(key, JSON.stringify({ u: mdState, b: mdState }));
+          } else {
+            state = rec.u;
+          }
+        }
+      }
     } catch (e) {}
     applyState(li, cb, state);
 
     cb.addEventListener('click', function(e) {
       e.preventDefault();
       state = (state + 1) % 3;
-      try { localStorage.setItem(key, String(state)); } catch (e) {}
+      try { localStorage.setItem(key, JSON.stringify({ u: state, b: mdState })); } catch (e) {}
       applyState(li, cb, state);
       updateAllProgress();
     });
@@ -1180,7 +1210,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 
 // Bump this when DEFAULT_STATUS_TEMPLATE gains features every report should get.
 // Must match the CMSR-TEMPLATE-VERSION marker embedded in the template.
-const STATUS_TEMPLATE_VERSION = 2;
+const STATUS_TEMPLATE_VERSION = 3;
 
 function ensureStatusTemplate() {
   try {
@@ -1269,17 +1299,20 @@ function mdToHtml(md, opts) {
       continue;
     }
 
-    var cb = line.match(/^\s*[-*]\s+\[([ xX])\]\s+(.+)$/);
+    // Checkbox markers: [ ] not started, [~] / [/] / [-] in progress, [x] done.
+    var cb = line.match(/^\s*[-*]\s+\[([ xX~/-])\]\s+(.+)$/);
     if (cb) {
       flushPara();
-      var checked = /[xX]/.test(cb[1]);
+      var mark = cb[1];
+      var mdState = /[xX]/.test(mark) ? 2 : (/[~/-]/.test(mark) ? 1 : 0);
       if (opts.checkboxes) {
         if (!inChecklist) { closeList(); out.push('<ul class="checklist">'); inChecklist = true; }
         var id = 'cb' + (out.length + i);
-        out.push('<li><input type="checkbox" id="' + id + '"' + (checked ? ' checked' : '') + '><label for="' + id + '">' + inlineMd(cb[2]) + '</label></li>');
+        out.push('<li data-md-state="' + mdState + '"><input type="checkbox" id="' + id + '"' + (mdState === 2 ? ' checked' : '') + '><label for="' + id + '">' + inlineMd(cb[2]) + '</label></li>');
       } else {
         if (!inUl) { closeList(); out.push('<ul>'); inUl = true; }
-        out.push('<li class="static-cb">' + (checked ? '☑' : '☐') + ' ' + inlineMd(cb[2]) + '</li>');
+        var glyph = mdState === 2 ? '☑' : (mdState === 1 ? '◧' : '☐');
+        out.push('<li class="static-cb">' + glyph + ' ' + inlineMd(cb[2]) + '</li>');
       }
       continue;
     }
@@ -1379,7 +1412,8 @@ function buildStatusReportHtml(projectPath, projectName) {
     state: stripBrainTitle(readBrainFile(projectPath, 'STATE.md')),
     next: stripBrainTitle(readBrainFile(projectPath, 'next.md')),
     changelog: stripBrainTitle(readBrainFile(projectPath, 'changelog.md')),
-    decisions: stripBrainTitle(readBrainFile(projectPath, 'decisions.md'))
+    decisions: stripBrainTitle(readBrainFile(projectPath, 'decisions.md')),
+    links: stripBrainTitle(readBrainFile(projectPath, 'links.md'))
   };
   var summaries = settings.summaries || {};
   var fallbackSummary = summaries[projectPath] ? summaries[projectPath].text : null;
@@ -1391,6 +1425,16 @@ function buildStatusReportHtml(projectPath, projectName) {
   var nextHtml = mdToHtml(brain.next, { checkboxes: true });
   var decisionsHtml = mdToHtml(brain.decisions);
 
+  // Optional "Links" card pinned at the top — only rendered when brain/links.md
+  // has real content (projects building several pages/things keep their URLs
+  // there, e.g. 188-AIOS).
+  var linksSection = '';
+  var linksMd = (brain.links || '').replace(/<!--[\s\S]*?-->/g, '').trim();
+  if (linksMd) {
+    linksSection = '<section class="card links-card">\n    <h2>🔗 Key links</h2>\n    '
+      + mdToHtml(brain.links) + '\n  </section>';
+  }
+
   var now = new Date();
   var updatedAt = now.toISOString().slice(0, 10) + ' ' + now.toTimeString().slice(0, 5);
   var projectKey = encodeProjectPath(projectPath);
@@ -1400,6 +1444,7 @@ function buildStatusReportHtml(projectPath, projectName) {
     .replace(/\{\{projectName\}\}/g, escapeHtml(projectName))
     .replace(/\{\{updatedAt\}\}/g, escapeHtml(updatedAt))
     .replace(/\{\{projectKey\}\}/g, escapeHtml(projectKey))
+    .replace(/\{\{linksSection\}\}/g, linksSection)
     .replace(/\{\{objective\}\}/g, objectiveHtml)
     .replace(/\{\{done\}\}/g, doneHtml)
     .replace(/\{\{next\}\}/g, nextHtml)

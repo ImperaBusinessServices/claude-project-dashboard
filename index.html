@@ -791,21 +791,27 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 520px; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.3.2</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.4.0</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.3.2:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.4.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>No more duplicate tray meters</strong> — with the usage meter on, closing the window keeps the app running in the tray. Opening it again used to start a <em>second</em> copy and add another meter, so it piled up. Now the app only ever runs one copy: launching it again just brings the window back to the front.</li>
+          <li><strong>Claude can tick off your status-report checklist</strong> — the click-to-cycle checklist (yellow → done → clear) now lives in the project's memory, so when Claude finishes a task it can mark it done and you'll see it after a Refresh. You still click items yourself exactly as before.</li>
+          <li><strong>New "Links" box at the top of a report</strong> — for projects building several things at once (different web pages, etc.), Claude can keep a list of links with a one-line description each, pinned to the top of the status report. It only shows up when there are links to show.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.3.2:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>No more duplicate tray meters</strong> — with the usage meter on, closing the window keeps the app running in the tray. Opening it again used to start a <em>second</em> copy and add another meter, so it piled up. Now the app only ever runs one copy: launching it again just brings the window back to the front.</li>
+            </ul>
+
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.3.0:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>Claude usage bars in the header</strong> — see how much of your Claude plan you've used (<span style="color:#4ade80;">Session</span> and <span style="color:#4ade80;">Week</span>), same numbers as Claude's own /usage screen. Each bar has a countdown to when that limit resets (like "&#8635; 2h 14m"). Bars turn <span style="color:#f5b97d;">amber past 70%</span> and <span style="color:#e94560;">red past 90%</span>. If you're not signed in to Claude, the bars simply stay hidden. Choose how often they refresh below.</li>
