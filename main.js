@@ -1036,48 +1036,62 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   }
   header.report-head h1 { margin: 0 0 4px 0; font-size: 26px; }
   .meta { color: var(--muted); font-size: 12px; }
-  section.card {
+  .card {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 18px 22px;
     margin-bottom: 16px;
   }
-  section.card h2 {
+  .card h2 {
     color: var(--accent);
     margin: 0 0 12px 0;
     font-size: 16px;
     border-bottom: 1px solid var(--border);
     padding-bottom: 8px;
   }
-  section.card h3 { font-size: 14px; margin: 14px 0 6px; color: var(--purple); }
-  section.card h4 { font-size: 13px; margin: 12px 0 4px; color: var(--text); }
-  section.card p { margin: 6px 0; }
-  section.card .empty { color: var(--muted); font-style: italic; }
-  section.card ul, section.card ol { padding-left: 20px; margin: 6px 0; }
-  section.card ul.checklist { list-style: none; padding-left: 0; }
-  section.card ul.checklist li {
+  /* Collapsible card headers (every section is a <details class="card">) */
+  details.card > summary {
+    color: var(--accent); font-size: 16px; font-weight: 600;
+    cursor: pointer; user-select: none; list-style: none; outline: none;
+    border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  details.card > summary::-webkit-details-marker { display: none; }
+  details.card > summary::before {
+    content: '▾'; font-size: 12px; color: var(--muted); transition: transform 0.15s;
+    display: inline-block; width: 12px;
+  }
+  details.card:not([open]) > summary::before { content: '▸'; }
+  details.card:not([open]) > summary { margin-bottom: 0; border-bottom: none; }
+  .card h3 { font-size: 14px; margin: 14px 0 6px; color: var(--purple); }
+  .card h4 { font-size: 13px; margin: 12px 0 4px; color: var(--text); }
+  .card p { margin: 6px 0; }
+  .card .empty { color: var(--muted); font-style: italic; }
+  .card ul, .card ol { padding-left: 20px; margin: 6px 0; }
+  .card ul.checklist { list-style: none; padding-left: 0; }
+  .card ul.checklist li {
     padding: 5px 8px; display: flex; align-items: flex-start; gap: 10px;
     border-left: 3px solid transparent; border-radius: 4px;
     transition: background 0.15s, border-color 0.15s;
   }
-  section.card ul.checklist input[type="checkbox"] {
+  .card ul.checklist input[type="checkbox"] {
     margin-top: 5px; width: 16px; height: 16px; accent-color: var(--accent);
     cursor: pointer; flex-shrink: 0;
   }
-  section.card ul.checklist label { cursor: pointer; flex: 1; }
+  .card ul.checklist label { cursor: pointer; flex: 1; }
   /* Quad-state: 1 = in progress (amber), 2 = done/awaiting your OK (blue),
      3 = approved & closed (green + strikethrough). */
-  section.card ul.checklist li[data-state="1"] {
+  .card ul.checklist li[data-state="1"] {
     background: var(--amber-soft); border-left-color: var(--amber);
   }
-  section.card ul.checklist li[data-state="1"] input[type="checkbox"] { accent-color: var(--amber); }
-  section.card ul.checklist li[data-state="2"] {
+  .card ul.checklist li[data-state="1"] input[type="checkbox"] { accent-color: var(--amber); }
+  .card ul.checklist li[data-state="2"] {
     background: var(--pending-soft); border-left-color: var(--pending);
   }
-  section.card ul.checklist li[data-state="2"] input[type="checkbox"] { accent-color: var(--pending); }
-  section.card ul.checklist li[data-state="3"] input[type="checkbox"] { accent-color: var(--done); }
-  section.card ul.checklist li[data-state="3"] label {
+  .card ul.checklist li[data-state="2"] input[type="checkbox"] { accent-color: var(--pending); }
+  .card ul.checklist li[data-state="3"] input[type="checkbox"] { accent-color: var(--done); }
+  .card ul.checklist li[data-state="3"] label {
     color: var(--muted); text-decoration: line-through;
   }
   .tag {
@@ -1085,7 +1099,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   }
   li[data-state="2"] .tag { color: var(--pending); opacity: 1; }
   li[data-state="3"] .tag { color: var(--done); opacity: 1; text-decoration: none; }
-  section.card li.static-cb { list-style: none; padding: 3px 0; }
+  .card li.static-cb { list-style: none; padding: 3px 0; }
   .legend {
     background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
     padding: 10px 16px; margin-bottom: 16px; font-size: 12px; color: var(--muted);
@@ -1147,7 +1161,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-<!-- CMSR-TEMPLATE-VERSION: 4 -->
+<!-- CMSR-TEMPLATE-VERSION: 5 -->
 <div class="wrap" data-project-key="{{projectKey}}" data-project-path="{{projectPath}}" data-sync-port="{{syncPort}}" data-sync-token="{{syncToken}}">
 
   <header class="report-head">
@@ -1169,33 +1183,33 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 
   {{linksSection}}
 
-  <section class="card">
-    <h2>🎯 Objective</h2>
-    {{objective}}
-  </section>
+  <details class="card" open>
+    <summary>🎯 Objective</summary>
+    <div class="card-body">{{objective}}</div>
+  </details>
 
-  <section class="card">
-    <h2>✅ Done so far</h2>
-    {{done}}
-  </section>
+  <details class="card" open>
+    <summary>✅ Done so far</summary>
+    <div class="card-body">{{done}}</div>
+  </details>
 
-  <section class="card">
-    <h2>➡️ Up next</h2>
-    {{next}}
-  </section>
+  <details class="card" open>
+    <summary>➡️ Up next</summary>
+    <div class="card-body">{{next}}</div>
+  </details>
 
-  <section class="card">
-    <h2>📝 My notes</h2>
-    <textarea class="notes" id="notesArea" placeholder="Scratchpad — your typing autosaves to this browser..."></textarea>
-    <div class="save-status" id="notesStatus"></div>
-  </section>
+  <details class="card" open>
+    <summary>📝 My notes</summary>
+    <div class="card-body">
+      <textarea class="notes" id="notesArea" placeholder="Scratchpad — your typing autosaves to this browser..."></textarea>
+      <div class="save-status" id="notesStatus"></div>
+    </div>
+  </details>
 
-  <section class="card">
-    <details class="decisions-toggle">
-      <summary>🧠 Decisions</summary>
-      <div style="margin-top: 10px;">{{decisions}}</div>
-    </details>
-  </section>
+  <details class="card">
+    <summary>🧠 Decisions</summary>
+    <div class="card-body">{{decisions}}</div>
+  </details>
 
   <footer class="report-foot">
     Generated from this project's <code>brain/</code> folder.<br>
@@ -1320,16 +1334,33 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     });
   });
 
+  // Collapsible sections: remember which ones you collapsed (the report rebuilds
+  // from brain/ each time you open it, so without this your choices would reset).
+  document.querySelectorAll('details.card').forEach(function(d) {
+    var sum = d.querySelector('summary');
+    if (!sum) return;
+    var skey = storagePrefix + 'sec-' + hashId(sum.textContent.trim());
+    try {
+      var sv = localStorage.getItem(skey);
+      if (sv === 'closed') d.open = false;
+      else if (sv === 'open') d.open = true;
+    } catch (e) {}
+    d.addEventListener('toggle', function() {
+      try { localStorage.setItem(skey, d.open ? 'open' : 'closed'); } catch (e) {}
+    });
+  });
+
   // Per-card progress: one bar per card that contains a checklist, counting
   // only the items inside that card.
-  var cards = document.querySelectorAll('section.card');
+  var cards = document.querySelectorAll('.card');
   cards.forEach(function(card) {
     if (card.querySelectorAll('ul.checklist li').length === 0) return;
+    var body = card.querySelector('.card-body') || card;
     var bar = document.createElement('div');
     bar.className = 'progress';
     bar.innerHTML = '<div class="progress-bar"><div class="progress-fill"></div></div>'
                   + '<span class="progress-text"></span>';
-    card.appendChild(bar);
+    body.appendChild(bar);
   });
 
   function updateAllProgress() {
@@ -1362,7 +1393,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 
 // Bump this when DEFAULT_STATUS_TEMPLATE gains features every report should get.
 // Must match the CMSR-TEMPLATE-VERSION marker embedded in the template.
-const STATUS_TEMPLATE_VERSION = 4;
+const STATUS_TEMPLATE_VERSION = 5;
 
 function ensureStatusTemplate() {
   try {
@@ -1585,8 +1616,8 @@ function buildStatusReportHtml(projectPath, projectName) {
   var linksSection = '';
   var linksMd = (brain.links || '').replace(/<!--[\s\S]*?-->/g, '').trim();
   if (linksMd) {
-    linksSection = '<section class="card links-card">\n    <h2>🔗 Key links</h2>\n    '
-      + mdToHtml(brain.links) + '\n  </section>';
+    linksSection = '<details class="card links-card" open>\n    <summary>🔗 Key links</summary>\n    <div class="card-body">'
+      + mdToHtml(brain.links) + '</div>\n  </details>';
   }
 
   var now = new Date();
@@ -1640,17 +1671,19 @@ ipcMain.handle('generate-status-report', async (event, folderPath) => {
 
 ipcMain.handle('open-status-report', async (event, folderPath) => {
   var reportPath = path.join(folderPath, 'brain', STATUS_REPORT_FILENAME);
-  if (!fs.existsSync(reportPath)) {
-    // Self-heal: the file may have been deleted (or the tile's cached state is
-    // stale). Rebuild it from brain/ rather than silently doing nothing.
-    if (!hasBrainFolder(folderPath)) {
-      return { success: false, error: 'Report does not exist' };
-    }
+  // Always rebuild from brain/ on open, so the report reflects the latest
+  // next.md (including tasks Claude updated) and carries this launch's live sync
+  // token. Also self-heals if the file was deleted (e.g. by OneDrive sync).
+  if (hasBrainFolder(folderPath)) {
     try {
       writeStatusReport(folderPath, path.basename(folderPath));
     } catch (err) {
-      return { success: false, error: err.message };
+      if (!fs.existsSync(reportPath)) return { success: false, error: err.message };
+      // else fall through and open whatever's already there
     }
+  }
+  if (!fs.existsSync(reportPath)) {
+    return { success: false, error: 'Report does not exist' };
   }
   shell.openPath(reportPath);
   return { success: true };
