@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 const https = require('https');
 const { exec, spawn } = require('child_process');
 
@@ -25,7 +26,7 @@ const MEMORY_PROTOCOL_TEMPLATE = `${MEMORY_PROTOCOL_BEGIN}
 
 Each project may contain a \`brain/\` folder for persistent context across Claude Code sessions:
 - \`STATE.md\` — what's in flight right now
-- \`next.md\` — a checklist of what's next. Mark each item \`- [ ]\` not started, \`- [~]\` in progress, \`- [x]\` done. The status report renders these and you can tick them off as you finish — so keep them current.
+- \`next.md\` — a checklist of what's next. Mark each item \`- [ ]\` not started, \`- [~]\` in progress, \`- [?]\` done & awaiting the user's OK, \`- [x]\` approved & closed. **Claude marks finished work \`[?]\` (never \`[x]\`)** — only the user gives final approval by closing it. The status report renders these and the user can tick them off too (their clicks sync back here while the dashboard is open), so keep them current.
 - \`changelog.md\` — append-only log: YYYY-MM-DD — what changed, with file paths
 - \`decisions.md\` — decisions with a one-line Why
 - \`links.md\` (optional) — for a project with several live pages/things: one bullet per link, \`- [Name](https://url) — short description\`. Shown pinned at the top of the status report.
@@ -52,6 +53,12 @@ let tray = null;
 let flyoutWindow = null;
 let latestUsage = null;   // last good usage payload, cached from the renderer
 let isQuitting = false;   // true once we're really quitting (not close-to-tray)
+
+// Two-way status-report sync: a tiny loopback HTTP server the browser report
+// pings (via sendBeacon) when you click a task, so we can write the new state
+// back into that project's brain/next.md. 127.0.0.1 only — never exposed.
+let syncServer = null;
+let syncPort = null;
 
 // Single-instance lock: if a copy of the app is already running (e.g. hidden in
 // the tray with the meter on), don't start a second one — just resurface the
@@ -203,11 +210,88 @@ if (gotInstanceLock) {
   app.whenReady().then(() => {
     createWindow();
     if (settings.trayEnabled) createTray();
+    startSyncServer();
   });
 }
 app.on('before-quit', () => { isQuitting = true; });
 // Only quit on all-windows-closed when the tray meter isn't keeping us alive.
 app.on('window-all-closed', () => { if (!settings.trayEnabled) app.quit(); });
+
+// ---- Two-way status-report sync server (loopback only) ----
+// Flip the marker on one task line in a project's brain/next.md:
+// state 0 -> [ ], 1 -> [~], 2 -> [?], 3 -> [x]. Matches the task by its exact
+// source text so it survives the file being re-ordered. Only ever touches that
+// single file, and only a single character on a matching line.
+function applyTaskStateToNextMd(projectPath, taskText, state) {
+  try {
+    if (!projectPath || typeof projectPath !== 'string') return false;
+    var norm = path.normalize(projectPath);
+    if (norm.indexOf('..') !== -1) return false;
+    var marker = ({ 0: ' ', 1: '~', 2: '?', 3: 'x' })[state];
+    if (marker === undefined) return false;
+    var nextPath = path.join(norm, 'brain', 'next.md');
+    if (!fs.existsSync(nextPath)) return false;
+    var want = String(taskText || '').trim();
+    if (!want) return false;
+    var lines = fs.readFileSync(nextPath, 'utf-8').split(/\r?\n/);
+    var changed = false;
+    for (var i = 0; i < lines.length; i++) {
+      var m = lines[i].match(/^(\s*[-*]\s+\[)[ xX~/?-](\]\s+)(.*)$/);
+      if (m && m[3].trim() === want) {
+        lines[i] = m[1] + marker + m[2] + m[3];
+        changed = true;
+        break;
+      }
+    }
+    if (!changed) return false;
+    fs.writeFileSync(nextPath, lines.join('\n'));
+    return true;
+  } catch (e) { return false; }
+}
+
+function startSyncServer() {
+  if (syncServer) return;
+  var server = http.createServer(function (req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+    if (req.method !== 'POST' || (req.url || '').split('?')[0] !== '/task') {
+      res.writeHead(404); res.end(); return;
+    }
+    var chunks = [], size = 0;
+    req.on('data', function (c) {
+      size += c.length;
+      if (size > 65536) { req.destroy(); return; }
+      chunks.push(c);
+    });
+    req.on('end', function () {
+      var ok = false;
+      try {
+        var data = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+        ok = applyTaskStateToNextMd(data.project, data.task, data.state);
+        if (process.env.USAGE_DEBUG) console.log('[sync] ' + JSON.stringify(data.task) + ' -> ' + data.state + ' ok=' + ok);
+      } catch (e) {}
+      try { res.writeHead(ok ? 204 : 400); res.end(); } catch (e) {}
+    });
+    req.on('error', function () { try { res.writeHead(400); res.end(); } catch (e) {} });
+  });
+  var candidates = [47615, 47616, 47617, 47618, 47619];
+  var idx = 0;
+  server.on('error', function (e) {
+    if (e && e.code === 'EADDRINUSE' && idx < candidates.length) {
+      server.listen(candidates[idx++], '127.0.0.1');
+    } else {
+      syncServer = null; syncPort = null;
+    }
+  });
+  server.on('listening', function () {
+    syncServer = server;
+    syncPort = server.address().port;
+    if (process.env.USAGE_DEBUG) console.log('[sync] listening on 127.0.0.1:' + syncPort);
+  });
+  server.listen(candidates[idx++], '127.0.0.1');
+}
 
 // ---- Tray meter (live system-tray usage icon + click-popup flyout) ----
 
@@ -379,7 +463,7 @@ function scaffoldBrain(projectPath, projectName) {
   fs.mkdirSync(brainDir, { recursive: true });
   const files = {
     'STATE.md': `# ${projectName} — STATE\n\n<!-- What's in flight right now. Updated as work progresses. -->\n`,
-    'next.md': `# next\n\n<!-- Checklist of what's next. Markers: [ ] = not started, [~] = in progress, [x] = done. The status report shows these and Claude/you can tick them off. -->\n\n- [ ] First task goes here\n`,
+    'next.md': `# next\n\n<!-- Checklist of what's next. Markers: [ ] = not started, [~] = in progress, [?] = done, awaiting Keith's OK, [x] = approved & closed. Claude marks finished work [?] (never [x]); only Keith closes with [x]. The status report shows and edits these. -->\n\n- [ ] First task goes here\n`,
     'changelog.md': `# changelog\n\n<!-- Append-only log: YYYY-MM-DD — what changed, file paths. -->\n`,
     'decisions.md': `# decisions\n\n<!-- Project decisions with a one-line Why. -->\n`
   };
@@ -901,6 +985,8 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     --done: #4ade80;
     --amber: #f5b97d;
     --amber-soft: rgba(245,185,125,0.12);
+    --pending: #60a5fa;
+    --pending-soft: rgba(96,165,250,0.14);
     --border: rgba(255,255,255,0.1);
   }
   * { box-sizing: border-box; }
@@ -955,15 +1041,25 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     cursor: pointer; flex-shrink: 0;
   }
   section.card ul.checklist label { cursor: pointer; flex: 1; }
-  /* Tri-state: 1 = in progress (amber), 2 = done (green + strikethrough) */
+  /* Quad-state: 1 = in progress (amber), 2 = done/awaiting your OK (blue),
+     3 = approved & closed (green + strikethrough). */
   section.card ul.checklist li[data-state="1"] {
     background: var(--amber-soft); border-left-color: var(--amber);
   }
   section.card ul.checklist li[data-state="1"] input[type="checkbox"] { accent-color: var(--amber); }
-  section.card ul.checklist li[data-state="2"] input[type="checkbox"] { accent-color: var(--done); }
-  section.card ul.checklist li[data-state="2"] label {
+  section.card ul.checklist li[data-state="2"] {
+    background: var(--pending-soft); border-left-color: var(--pending);
+  }
+  section.card ul.checklist li[data-state="2"] input[type="checkbox"] { accent-color: var(--pending); }
+  section.card ul.checklist li[data-state="3"] input[type="checkbox"] { accent-color: var(--done); }
+  section.card ul.checklist li[data-state="3"] label {
     color: var(--muted); text-decoration: line-through;
   }
+  .tag {
+    font-size: 11px; font-weight: 600; margin-left: 6px; opacity: 0; white-space: nowrap;
+  }
+  li[data-state="2"] .tag { color: var(--pending); opacity: 1; }
+  li[data-state="3"] .tag { color: var(--done); opacity: 1; text-decoration: none; }
   section.card li.static-cb { list-style: none; padding: 3px 0; }
   .legend {
     background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
@@ -974,6 +1070,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   .legend .chip { display: inline-flex; align-items: center; gap: 6px; }
   .legend .dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
   .legend .dot.amber { background: var(--amber); }
+  .legend .dot.blue { background: var(--pending); }
   .legend .dot.green { background: var(--done); }
   .legend .dot.empty { background: transparent; border: 1px solid var(--muted); }
   .legend-sub { flex-basis: 100%; margin-top: 2px; opacity: 0.85; }
@@ -1025,8 +1122,8 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-<!-- CMSR-TEMPLATE-VERSION: 3 -->
-<div class="wrap" data-project-key="{{projectKey}}">
+<!-- CMSR-TEMPLATE-VERSION: 4 -->
+<div class="wrap" data-project-key="{{projectKey}}" data-project-path="{{projectPath}}" data-sync-port="{{syncPort}}">
 
   <header class="report-head">
     <div>
@@ -1038,10 +1135,11 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 
   <div class="legend">
     <b>Tip:</b> click any checkbox to cycle it ·
-    <span class="chip"><span class="dot amber"></span>1 click = in progress</span>
-    <span class="chip"><span class="dot green"></span>2 clicks = done</span>
-    <span class="chip"><span class="dot empty"></span>3 clicks = clear</span>
-    <div class="legend-sub">Claude can tick these off too — it updates the list in this project's <code>brain/next.md</code>, and the changes show after you Refresh.</div>
+    <span class="chip"><span class="dot amber"></span>1 = in progress</span>
+    <span class="chip"><span class="dot blue"></span>2 = done, waiting your OK</span>
+    <span class="chip"><span class="dot green"></span>3 = approved &amp; closed</span>
+    <span class="chip"><span class="dot empty"></span>4 = clear</span>
+    <div class="legend-sub">Claude marks things "done, waiting your OK"; only your click closes them. Your clicks save back to <code>brain/next.md</code> while the dashboard is open, so Claude sees them too.</div>
   </div>
 
   {{linksSection}}
@@ -1085,7 +1183,26 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 (function() {
   var wrap = document.querySelector('.wrap');
   var projectKey = wrap ? wrap.getAttribute('data-project-key') : 'default';
+  var projectPath = wrap ? wrap.getAttribute('data-project-path') : '';
+  var syncPort = wrap ? wrap.getAttribute('data-sync-port') : '';
   var storagePrefix = 'crepo-' + projectKey + '-';
+
+  // Two-way sync: when you click a task, tell the dashboard app so it can save
+  // the new state into brain/next.md (so Claude sees what you've done/approved).
+  // Fire-and-forget over localhost; only works while the dashboard is running,
+  // and silently no-ops otherwise (your click still saves in this browser).
+  var TAGS = { 0: '', 1: '', 2: 'waiting for your OK', 3: 'approved' };
+  function syncToApp(task, state) {
+    if (!syncPort || !projectPath || !task) return;
+    var url = 'http://127.0.0.1:' + syncPort + '/task';
+    var body = JSON.stringify({ project: projectPath, task: task, state: state });
+    try {
+      if (navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }))) return;
+    } catch (e) {}
+    try {
+      fetch(url, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: body });
+    } catch (e) {}
+  }
 
   // Notes autosave (debounced)
   var notesArea = document.getElementById('notesArea');
@@ -1110,8 +1227,9 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     }, 800);
   });
 
-  // Tri-state check items: persist by label text (stable across regenerations).
-  // State 0 = not started, 1 = in progress, 2 = done.
+  // Quad-state check items, keyed by the task's source text (stable across
+  // regenerations). 0 = not started, 1 = in progress, 2 = done/awaiting your OK,
+  // 3 = approved & closed.
   function hashId(s) {
     var h = 0, i, c;
     for (i = 0; i < s.length; i++) { c = s.charCodeAt(i); h = ((h << 5) - h) + c; h |= 0; }
@@ -1120,10 +1238,12 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 
   function applyState(li, cb, state) {
     li.setAttribute('data-state', String(state));
+    var tag = li.querySelector('.tag');
+    if (tag) tag.textContent = TAGS[state] || '';
     // A prevented checkbox click makes the browser revert checked/indeterminate
     // after the handler runs, so set them on the next tick.
     setTimeout(function() {
-      cb.checked = (state === 2);
+      cb.checked = (state === 2 || state === 3);
       cb.indeterminate = (state === 1);
     }, 0);
   }
@@ -1133,18 +1253,21 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     var cb = li.querySelector('input[type="checkbox"]');
     var label = li.querySelector('label');
     if (!cb || !label) return;
-    var key = storagePrefix + 'cb-' + hashId(label.textContent.trim());
-    // mdState = the state Claude wrote in brain/next.md: 0 = not started
-    // ([ ]), 1 = in progress ([~]), 2 = done ([x]). Your in-browser clicks are
-    // remembered on top of that, but when Claude changes the file the file wins
-    // (so a task Claude finishes shows as done even if you'd clicked it before).
+    // data-task = the exact source line text from next.md (used for the storage
+    // key AND for telling the app which task to update).
+    var task = li.getAttribute('data-task') || label.textContent.trim();
+    var key = storagePrefix + 'cb-' + hashId(task);
+    // mdState = the state Claude wrote in brain/next.md: [ ]=0, [~]=1,
+    // [?]=2 (done, awaiting your OK), [x]=3 (approved/closed). Your clicks are
+    // remembered on top; when the file changes (Claude or your own synced click)
+    // the file wins.
     var mdState = parseInt(li.getAttribute('data-md-state') || '0', 10) || 0;
     var state = mdState;
     try {
       var raw = localStorage.getItem(key);
       if (raw !== null) {
         var rec;
-        if (raw === '0' || raw === '1' || raw === '2') {
+        if (raw === '0' || raw === '1' || raw === '2' || raw === '3') {
           rec = { u: parseInt(raw, 10), b: mdState };  // migrate old numeric format
         } else {
           try { rec = JSON.parse(raw); } catch (e) { rec = null; }
@@ -1163,9 +1286,10 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 
     cb.addEventListener('click', function(e) {
       e.preventDefault();
-      state = (state + 1) % 3;
+      state = (state + 1) % 4;
       try { localStorage.setItem(key, JSON.stringify({ u: state, b: mdState })); } catch (e) {}
       applyState(li, cb, state);
+      syncToApp(task, state);
       updateAllProgress();
     });
   });
@@ -1187,16 +1311,18 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
       var bar = card.querySelector('.progress');
       if (!bar) return;
       var lis = card.querySelectorAll('ul.checklist li');
-      var done = 0, prog = 0;
+      var closed = 0, awaiting = 0, prog = 0;
       lis.forEach(function(li) {
         var s = li.getAttribute('data-state');
-        if (s === '2') done++;
+        if (s === '3') closed++;
+        else if (s === '2') awaiting++;
         else if (s === '1') prog++;
       });
       var total = lis.length;
-      var pct = total ? Math.round((done / total) * 100) : 0;
+      var pct = total ? Math.round((closed / total) * 100) : 0;
       bar.querySelector('.progress-fill').style.width = pct + '%';
-      var txt = done + ' / ' + total + ' done';
+      var txt = closed + ' / ' + total + ' approved';
+      if (awaiting > 0) txt += ' · ' + awaiting + ' waiting your OK';
       if (prog > 0) txt += ' · ' + prog + ' in progress';
       bar.querySelector('.progress-text').textContent = txt;
     });
@@ -1210,7 +1336,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 
 // Bump this when DEFAULT_STATUS_TEMPLATE gains features every report should get.
 // Must match the CMSR-TEMPLATE-VERSION marker embedded in the template.
-const STATUS_TEMPLATE_VERSION = 3;
+const STATUS_TEMPLATE_VERSION = 4;
 
 function ensureStatusTemplate() {
   try {
@@ -1299,19 +1425,21 @@ function mdToHtml(md, opts) {
       continue;
     }
 
-    // Checkbox markers: [ ] not started, [~] / [/] / [-] in progress, [x] done.
-    var cb = line.match(/^\s*[-*]\s+\[([ xX~/-])\]\s+(.+)$/);
+    // Checkbox markers: [ ]=not started, [~]/[/]/[-]=in progress,
+    // [?]=done/awaiting your OK, [x]=approved & closed.
+    var cb = line.match(/^\s*[-*]\s+\[([ xX~/?-])\]\s+(.+)$/);
     if (cb) {
       flushPara();
       var mark = cb[1];
-      var mdState = /[xX]/.test(mark) ? 2 : (/[~/-]/.test(mark) ? 1 : 0);
+      var mdState = /[xX]/.test(mark) ? 3 : (mark === '?' ? 2 : (/[~/-]/.test(mark) ? 1 : 0));
       if (opts.checkboxes) {
         if (!inChecklist) { closeList(); out.push('<ul class="checklist">'); inChecklist = true; }
         var id = 'cb' + (out.length + i);
-        out.push('<li data-md-state="' + mdState + '"><input type="checkbox" id="' + id + '"' + (mdState === 2 ? ' checked' : '') + '><label for="' + id + '">' + inlineMd(cb[2]) + '</label></li>');
+        var checkedAttr = (mdState === 2 || mdState === 3) ? ' checked' : '';
+        out.push('<li data-md-state="' + mdState + '" data-task="' + escapeHtml(cb[2]) + '"><input type="checkbox" id="' + id + '"' + checkedAttr + '><label for="' + id + '">' + inlineMd(cb[2]) + '<span class="tag"></span></label></li>');
       } else {
         if (!inUl) { closeList(); out.push('<ul>'); inUl = true; }
-        var glyph = mdState === 2 ? '☑' : (mdState === 1 ? '◧' : '☐');
+        var glyph = mdState === 3 ? '☑' : (mdState === 2 ? '◩' : (mdState === 1 ? '◧' : '☐'));
         out.push('<li class="static-cb">' + glyph + ' ' + inlineMd(cb[2]) + '</li>');
       }
       continue;
@@ -1444,6 +1572,8 @@ function buildStatusReportHtml(projectPath, projectName) {
     .replace(/\{\{projectName\}\}/g, escapeHtml(projectName))
     .replace(/\{\{updatedAt\}\}/g, escapeHtml(updatedAt))
     .replace(/\{\{projectKey\}\}/g, escapeHtml(projectKey))
+    .replace(/\{\{projectPath\}\}/g, escapeHtml(projectPath))
+    .replace(/\{\{syncPort\}\}/g, escapeHtml(String(syncPort || '')))
     .replace(/\{\{linksSection\}\}/g, linksSection)
     .replace(/\{\{objective\}\}/g, objectiveHtml)
     .replace(/\{\{done\}\}/g, doneHtml)
