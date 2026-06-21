@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
+const crypto = require('crypto');
 const { exec, spawn } = require('child_process');
 
 const APP_VERSION = require('./package.json').version;
@@ -59,6 +60,10 @@ let isQuitting = false;   // true once we're really quitting (not close-to-tray)
 // back into that project's brain/next.md. 127.0.0.1 only — never exposed.
 let syncServer = null;
 let syncPort = null;
+// Random per-launch secret. Embedded only into the locally-generated report
+// files, and required on every sync request — so a random web page you visit
+// can't forge clicks into your next.md files even though the port is loopback.
+let syncToken = crypto.randomBytes(16).toString('hex');
 
 // Single-instance lock: if a copy of the app is already running (e.g. hidden in
 // the tray with the meter on), don't start a second one — just resurface the
@@ -222,6 +227,19 @@ app.on('window-all-closed', () => { if (!settings.trayEnabled) app.quit(); });
 // state 0 -> [ ], 1 -> [~], 2 -> [?], 3 -> [x]. Matches the task by its exact
 // source text so it survives the file being re-ordered. Only ever touches that
 // single file, and only a single character on a matching line.
+// A sync request may only target a folder inside the dashboard's project root
+// (junction-linked projects live under the root too, so this still covers them).
+function isAllowedProjectPath(projectPath) {
+  try {
+    if (!projectPath || typeof projectPath !== 'string') return false;
+    var root = settings.projectRoot;
+    if (!root) return false;
+    var normRoot = path.resolve(root).toLowerCase();
+    var normProj = path.resolve(projectPath).toLowerCase();
+    return normProj !== normRoot && normProj.indexOf(normRoot + path.sep) === 0;
+  } catch (e) { return false; }
+}
+
 function applyTaskStateToNextMd(projectPath, taskText, state) {
   try {
     if (!projectPath || typeof projectPath !== 'string') return false;
@@ -252,10 +270,11 @@ function applyTaskStateToNextMd(projectPath, taskText, state) {
 function startSyncServer() {
   if (syncServer) return;
   var server = http.createServer(function (req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+    // No CORS headers on purpose: the report fires the click and ignores the
+    // response, so cross-origin pages gain nothing — and we don't want to invite
+    // them to read it. Reject anything that isn't a loopback POST to /task.
+    var host = (req.headers.host || '').split(':')[0];
+    if (host !== '127.0.0.1' && host !== 'localhost') { res.writeHead(403); res.end(); return; }
     if (req.method !== 'POST' || (req.url || '').split('?')[0] !== '/task') {
       res.writeHead(404); res.end(); return;
     }
@@ -266,13 +285,19 @@ function startSyncServer() {
       chunks.push(c);
     });
     req.on('end', function () {
-      var ok = false;
+      var code = 400;
       try {
         var data = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
-        ok = applyTaskStateToNextMd(data.project, data.task, data.state);
-        if (process.env.USAGE_DEBUG) console.log('[sync] ' + JSON.stringify(data.task) + ' -> ' + data.state + ' ok=' + ok);
+        if (data.token !== syncToken) {
+          code = 403;  // forged request (a real report carries the launch token)
+        } else if (!isAllowedProjectPath(data.project)) {
+          code = 403;  // path outside the dashboard's project folder
+        } else {
+          code = applyTaskStateToNextMd(data.project, data.task, data.state) ? 204 : 400;
+        }
+        if (process.env.USAGE_DEBUG) console.log('[sync] ' + JSON.stringify(data.task) + ' -> ' + data.state + ' code=' + code);
       } catch (e) {}
-      try { res.writeHead(ok ? 204 : 400); res.end(); } catch (e) {}
+      try { res.writeHead(code); res.end(); } catch (e) {}
     });
     req.on('error', function () { try { res.writeHead(400); res.end(); } catch (e) {} });
   });
@@ -1123,7 +1148,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 </head>
 <body>
 <!-- CMSR-TEMPLATE-VERSION: 4 -->
-<div class="wrap" data-project-key="{{projectKey}}" data-project-path="{{projectPath}}" data-sync-port="{{syncPort}}">
+<div class="wrap" data-project-key="{{projectKey}}" data-project-path="{{projectPath}}" data-sync-port="{{syncPort}}" data-sync-token="{{syncToken}}">
 
   <header class="report-head">
     <div>
@@ -1185,6 +1210,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   var projectKey = wrap ? wrap.getAttribute('data-project-key') : 'default';
   var projectPath = wrap ? wrap.getAttribute('data-project-path') : '';
   var syncPort = wrap ? wrap.getAttribute('data-sync-port') : '';
+  var syncToken = wrap ? wrap.getAttribute('data-sync-token') : '';
   var storagePrefix = 'crepo-' + projectKey + '-';
 
   // Two-way sync: when you click a task, tell the dashboard app so it can save
@@ -1195,7 +1221,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   function syncToApp(task, state) {
     if (!syncPort || !projectPath || !task) return;
     var url = 'http://127.0.0.1:' + syncPort + '/task';
-    var body = JSON.stringify({ project: projectPath, task: task, state: state });
+    var body = JSON.stringify({ token: syncToken, project: projectPath, task: task, state: state });
     try {
       if (navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }))) return;
     } catch (e) {}
@@ -1574,6 +1600,7 @@ function buildStatusReportHtml(projectPath, projectName) {
     .replace(/\{\{projectKey\}\}/g, escapeHtml(projectKey))
     .replace(/\{\{projectPath\}\}/g, escapeHtml(projectPath))
     .replace(/\{\{syncPort\}\}/g, escapeHtml(String(syncPort || '')))
+    .replace(/\{\{syncToken\}\}/g, escapeHtml(String(syncToken || '')))
     .replace(/\{\{linksSection\}\}/g, linksSection)
     .replace(/\{\{objective\}\}/g, objectiveHtml)
     .replace(/\{\{done\}\}/g, doneHtml)
