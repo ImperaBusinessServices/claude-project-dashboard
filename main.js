@@ -1641,7 +1641,16 @@ ipcMain.handle('generate-status-report', async (event, folderPath) => {
 ipcMain.handle('open-status-report', async (event, folderPath) => {
   var reportPath = path.join(folderPath, 'brain', STATUS_REPORT_FILENAME);
   if (!fs.existsSync(reportPath)) {
-    return { success: false, error: 'Report does not exist' };
+    // Self-heal: the file may have been deleted (or the tile's cached state is
+    // stale). Rebuild it from brain/ rather than silently doing nothing.
+    if (!hasBrainFolder(folderPath)) {
+      return { success: false, error: 'Report does not exist' };
+    }
+    try {
+      writeStatusReport(folderPath, path.basename(folderPath));
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
   }
   shell.openPath(reportPath);
   return { success: true };
