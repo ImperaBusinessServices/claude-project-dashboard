@@ -463,6 +463,35 @@ ipcMain.handle('toggle-archive', async (event, folderPath) => {
   return settings.archived[folderPath] || false;
 });
 
+// Delete a project folder (send to Recycle Bin). Guarded: only archived projects
+// inside the configured projectRoot can be deleted, so an accidental click on an
+// active project can't wipe a folder. Uses shell.trashItem so it's recoverable.
+ipcMain.handle('delete-folder', async (event, folderPath) => {
+  try {
+    if (!folderPath || !fs.existsSync(folderPath)) {
+      return { success: false, error: 'Folder not found' };
+    }
+    // Must live inside the project root we scan.
+    const root = settings.projectRoot ? path.resolve(settings.projectRoot) : null;
+    const target = path.resolve(folderPath);
+    if (!root || target === root || !target.startsWith(root + path.sep)) {
+      return { success: false, error: 'Folder is outside the projects folder' };
+    }
+    // Must be archived first (UI only offers Delete on the Archived tab).
+    if (!settings.archived || !settings.archived[folderPath]) {
+      return { success: false, error: 'Archive the project before deleting it' };
+    }
+    await shell.trashItem(target);
+    // Clean up any settings that referenced this folder.
+    if (settings.archived) delete settings.archived[folderPath];
+    if (settings.summaries) delete settings.summaries[folderPath];
+    saveSettings(settings);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
 // Create new folder (with a CLAUDE.md so it's a proper project)
 ipcMain.handle('create-folder', async (event, folderName) => {
   const fullPath = path.join(settings.projectRoot, folderName);
