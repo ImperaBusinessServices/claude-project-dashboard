@@ -160,6 +160,13 @@
     }
     .btn-status.exists:hover { background: rgba(74,222,128,0.32); color: #fff; }
 
+    .btn-danger {
+      background: rgba(248,113,113,0.16);
+      color: #fca5a5;
+      border: 1px solid rgba(248,113,113,0.4);
+    }
+    .btn-danger:hover { background: rgba(248,113,113,0.32); color: #fff; }
+
     .btn-small {
       padding: 5px 10px;
       font-size: 12px;
@@ -1360,6 +1367,7 @@
             <button class="btn btn-secondary btn-small" onclick="openClaudeMd('${escapedPath}')">CLAUDE.md</button>
             <button class="btn btn-status btn-small${f.hasStatusReport ? ' exists' : ''}" onclick="handleStatusClick('${escapedPath}')" oncontextmenu="showCtxMenu(event, '${escapedPath}', 'status')" title="${f.hasStatusReport ? 'Open status report (right-click for more options)' : 'Create a status report for this project'}">📊 Status</button>
             <button class="btn btn-ghost btn-small btn-icon" onclick="openExplorer('${escapedPath}')">&#128194;</button>
+            ${f.archived ? `<button class="btn btn-danger btn-small" onclick="deleteFolder('${escapedPath}', '${escapeAttr(f.name).replace(/'/g, "\\'")}')" title="Delete this project folder (sends it to the Recycle Bin)">🗑 Delete</button>` : ''}
           </div>
         </div>`;
       }).join('');
@@ -1630,6 +1638,23 @@
       const folder = folders.find(f => f.path === realPath);
       if (folder) folder.archived = !folder.archived;
       renderFolders();
+    }
+    async function deleteFolder(escapedPath, name) {
+      const realPath = escapedPath.replace(/\\\\/g, '\\');
+      const warning =
+        '⚠️ Delete "' + name + '"?\n\n' +
+        'This deletes the ENTIRE project folder — all of its files, code, and brain/ notes.\n\n' +
+        'It will be sent to the Windows Recycle Bin (so you can recover it from there if needed), ' +
+        'but it will be gone from the dashboard.\n\n' +
+        'Are you sure?';
+      if (!confirm(warning)) return;
+      const res = await window.api.deleteFolder(realPath);
+      if (res && res.success) {
+        folders = folders.filter(f => f.path !== realPath);
+        renderFolders();
+      } else {
+        alert('Could not delete: ' + ((res && res.error) || 'unknown error'));
+      }
     }
     async function showAbout() {
       document.getElementById('aboutModal').classList.add('active');
