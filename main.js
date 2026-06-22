@@ -1059,8 +1059,8 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   }
   details.card > summary::-webkit-details-marker { display: none; }
   details.card > summary::before {
-    content: '▾'; font-size: 12px; color: var(--muted); transition: transform 0.15s;
-    display: inline-block; width: 12px;
+    content: '▾'; font-size: 20px; color: var(--muted); transition: transform 0.15s;
+    display: inline-block; width: 20px; line-height: 1;
   }
   details.card:not([open]) > summary::before { content: '▸'; }
   details.card:not([open]) > summary { margin-bottom: 0; border-bottom: none; }
@@ -1136,7 +1136,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     color: var(--accent); font-size: 16px; font-weight: 600; cursor: pointer;
     padding: 6px 0; user-select: none; list-style: none;
   }
-  details.decisions-toggle summary::before { content: '▶ '; font-size: 11px; transition: transform 0.2s; display: inline-block; }
+  details.decisions-toggle summary::before { content: '▶ '; font-size: 16px; transition: transform 0.2s; display: inline-block; }
   details.decisions-toggle[open] summary::before { content: '▼ '; }
   .refresh-link {
     background: transparent; border: 1px solid var(--border); color: var(--muted);
@@ -1161,7 +1161,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-<!-- CMSR-TEMPLATE-VERSION: 5 -->
+<!-- CMSR-TEMPLATE-VERSION: 6 -->
 <div class="wrap" data-project-key="{{projectKey}}" data-project-path="{{projectPath}}" data-sync-port="{{syncPort}}" data-sync-token="{{syncToken}}">
 
   <header class="report-head">
@@ -1393,7 +1393,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 
 // Bump this when DEFAULT_STATUS_TEMPLATE gains features every report should get.
 // Must match the CMSR-TEMPLATE-VERSION marker embedded in the template.
-const STATUS_TEMPLATE_VERSION = 5;
+const STATUS_TEMPLATE_VERSION = 6;
 
 function ensureStatusTemplate() {
   try {
