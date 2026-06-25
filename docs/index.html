@@ -987,6 +987,8 @@
     <p class="sub">Pop in your email and we’ll send you the download link plus the occasional Claude Code tip. No spam, unsubscribe anytime.</p>
     <form class="egate-form" id="egateForm">
       <input type="email" id="egateEmail" placeholder="you@example.com" autocomplete="email" required>
+      <!-- Honeypot spam trap: hidden from people, bots tend to fill it; Web3Forms rejects when checked -->
+      <input type="checkbox" name="botcheck" id="egateBot" tabindex="-1" autocomplete="off" style="display:none" aria-hidden="true">
       <div class="egate-err" id="egateErr"></div>
       <button type="submit" class="btn btn-primary btn-xl" id="egateSubmit" style="width:100%;justify-content:center;">Email me the download</button>
     </form>
@@ -1311,11 +1313,13 @@
     var orig = submitBtn.textContent;
     submitBtn.textContent = 'One sec…';
     try { localStorage.setItem('cpd_email_done', '1'); } catch (e2) {}
+    var botField = document.getElementById('egateBot');
     var payload = {
       access_key: WEB3FORMS_KEY,
       subject: 'New Dashboard download — ' + email,
       from_name: 'Claude Project Dashboard',
       email: email,
+      botcheck: !!(botField && botField.checked),
       page: location.href
     };
     fetch('https://api.web3forms.com/submit', {
