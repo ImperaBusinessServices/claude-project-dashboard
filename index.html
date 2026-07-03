@@ -86,7 +86,7 @@
       height: 6px;
       background: rgba(255,255,255,0.12);
       border-radius: 3px;
-      overflow: hidden;
+      position: relative;
     }
     .usage-row .usage-fill {
       height: 100%;
@@ -97,6 +97,18 @@
     }
     .usage-row .usage-fill.warn { background: #f5b97d; }
     .usage-row .usage-fill.hot { background: #e94560; }
+    /* "You are here" tick — how far through the time window we are (Session=5h, Week=7d) */
+    .usage-row .usage-marker {
+      position: absolute;
+      top: -2px;
+      height: 10px;
+      width: 2px;
+      margin-left: -1px;
+      background: #e94560;
+      border-radius: 1px;
+      box-shadow: 0 0 3px rgba(233,69,96,0.7);
+      pointer-events: none;
+    }
     .usage-row .usage-pct {
       color: rgba(255,255,255,0.7);
       width: 32px;
@@ -798,23 +810,27 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 520px; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.5.1</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.5.2</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.5.1:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.5.2:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>Checklist now has a 4th "approval" step</strong> — click a task to cycle it: <span style="color:#f5b97d;">in progress</span> → <span style="color:#60a5fa;">done, waiting your OK</span> → <span style="color:#4ade80;">approved &amp; closed</span> → clear. Claude can mark things "done, waiting your OK," but only your click gives final approval and closes it.</li>
-          <li><strong>Your check-offs now reach Claude</strong> — when you tick or approve items in a report, your changes are saved back into the project's memory while the dashboard is open, so Claude sees what you've done and approved. Two-way, not just one-way.</li>
-          <li><strong>Delete a project</strong> — archived projects now have a red 🗑 Delete button. It removes the whole project folder (sent to the Recycle Bin, so it's recoverable) after a clear warning. Only shows on the Archived tab, so you can't do it by accident.</li>
+          <li><strong>"You are here" tick on the usage bars</strong> — a small pink marker now shows how far through each time window you are. On the Session bar it slides across the 5 hours; on the Week bar, across the 7 days. Halfway through the window sits at the middle, so you can see at a glance how much time is left versus how much you've used. Also shows in the tray popup.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.5.1:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>Checklist now has a 4th "approval" step</strong> — click a task to cycle it: <span style="color:#f5b97d;">in progress</span> → <span style="color:#60a5fa;">done, waiting your OK</span> → <span style="color:#4ade80;">approved &amp; closed</span> → clear. Claude can mark things "done, waiting your OK," but only your click gives final approval and closes it.</li>
+              <li><strong>Your check-offs now reach Claude</strong> — when you tick or approve items in a report, your changes are saved back into the project's memory while the dashboard is open, so Claude sees what you've done and approved. Two-way, not just one-way.</li>
+              <li><strong>Delete a project</strong> — archived projects now have a red 🗑 Delete button. It removes the whole project folder (sent to the Recycle Bin, so it's recoverable) after a clear warning. Only shows on the Archived tab, so you can't do it by accident.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.4.0:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>Claude can tick off your status-report checklist</strong> — the click-to-cycle checklist now lives in the project's memory, so when Claude finishes a task it can mark it and you'll see it after a Refresh.</li>
@@ -2129,17 +2145,32 @@
       return m + 'm';
     }
 
-    function usageRowHtml(label, b) {
+    // How far through the current time window we are, as a 0-100% position for
+    // the "you are here" tick. Derived from the reset time and the window length.
+    function usageTimelinePct(resetsAt, windowMs) {
+      if (!resetsAt || !windowMs) return null;
+      const until = new Date(resetsAt) - new Date();
+      if (isNaN(until)) return null;
+      const frac = (windowMs - until) / windowMs;
+      return Math.max(0, Math.min(100, frac * 100));
+    }
+
+    function usageRowHtml(label, b, windowMs) {
       const cls = b.pct >= 90 ? ' hot' : b.pct >= 70 ? ' warn' : '';
       const left = usageCountdownShort(b.resetsAt);
+      const mark = usageTimelinePct(b.resetsAt, windowMs);
+      const marker = mark == null ? '' :
+        `<div class="usage-marker" style="left:${mark}%" title="You're ${Math.round(mark)}% through this window"></div>`;
       return `
         <div class="usage-row">
           <span class="usage-label">${label}</span>
-          <div class="usage-bar"><div class="usage-fill${cls}" style="width:${b.pct}%"></div></div>
+          <div class="usage-bar"><div class="usage-fill${cls}" style="width:${b.pct}%"></div>${marker}</div>
           <span class="usage-pct">${b.pct}%</span>
           <span class="usage-reset">${left ? '&#8635; ' + left : ''}</span>
         </div>`;
     }
+    const USAGE_WINDOW_5H = 5 * 3600000;      // Session window = 5 hours
+    const USAGE_WINDOW_7D = 7 * 86400000;     // Week window = 7 days
 
     let lastUsage = null;
     let usageReason = null;   // why the last poll had no data: 'no-token' | 'api' | null
@@ -2164,15 +2195,15 @@
       let html = '';
       const tips = [];
       if (res.fiveHour) {
-        html += usageRowHtml('Session', res.fiveHour);
+        html += usageRowHtml('Session', res.fiveHour, USAGE_WINDOW_5H);
         tips.push('Session: ' + res.fiveHour.pct + '% used' + (usageTimeLeft(res.fiveHour.resetsAt) ? ' · ' + usageTimeLeft(res.fiveHour.resetsAt) : ''));
       }
       if (res.sevenDay) {
-        html += usageRowHtml('Week', res.sevenDay);
+        html += usageRowHtml('Week', res.sevenDay, USAGE_WINDOW_7D);
         tips.push('Week: ' + res.sevenDay.pct + '% used' + (usageTimeLeft(res.sevenDay.resetsAt) ? ' · ' + usageTimeLeft(res.sevenDay.resetsAt) : ''));
       }
       if (res.sevenDayOpus) {
-        html += usageRowHtml('Opus', res.sevenDayOpus);
+        html += usageRowHtml('Opus', res.sevenDayOpus, USAGE_WINDOW_7D);
         tips.push('Opus week: ' + res.sevenDayOpus.pct + '% used' + (usageTimeLeft(res.sevenDayOpus.resetsAt) ? ' · ' + usageTimeLeft(res.sevenDayOpus.resetsAt) : ''));
       }
       w.innerHTML = html;
