@@ -30,7 +30,7 @@ Each project may contain a \`brain/\` folder for persistent context across Claud
 - \`next.md\` — a checklist of what's next. Mark each item \`- [ ]\` not started, \`- [~]\` in progress, \`- [?]\` done & awaiting the user's OK, \`- [x]\` approved & closed. **Claude marks finished work \`[?]\` (never \`[x]\`)** — only the user gives final approval by closing it. The status report renders these and the user can tick them off too (their clicks sync back here while the dashboard is open), so keep them current.
 - \`changelog.md\` — append-only log: YYYY-MM-DD — what changed, with file paths
 - \`decisions.md\` — decisions with a one-line Why
-- \`links.md\` (optional) — for a project with several live pages/things: one bullet per link, \`- [Name](https://url) — short description\`. Shown pinned at the top of the status report.
+- \`links.md\` — the project's important/live URLs, one bullet each: \`- [Name](https://url) — short description\`. Shown pinned at the top of the status report as tiles. **Keep it current**: whenever the project gains, moves, or retires a live page/URL, add or update the bullet here.
 
 ### Triggers
 - **"WWW?"** / **"where were we?"** → read \`./brain/STATE.md\`, \`./brain/next.md\`, and the last 20 lines of \`./brain/changelog.md\`. Tell the user where we are and what's next. If no \`brain/\` folder, say "no project memory here yet — want me to start one?" and bootstrap on yes.
@@ -39,6 +39,7 @@ Each project may contain a \`brain/\` folder for persistent context across Claud
 ### Update protocol (automatic — don't wait to be asked)
 - After every meaningful step → update \`./brain/STATE.md\` and append to \`./brain/changelog.md\` (with file paths of what changed).
 - On any decision that affects future work → append to \`./brain/decisions.md\` with a one-line **Why:**.
+- When a live page/URL is added, moved, or retired → add or update its bullet in \`./brain/links.md\`.
 - Before a natural pause → run the "save state" sweep.
 
 ### Date convention
@@ -517,9 +518,10 @@ function scaffoldBrain(projectPath, projectName) {
   fs.mkdirSync(brainDir, { recursive: true });
   const files = {
     'STATE.md': `# ${projectName} — STATE\n\n<!-- What's in flight right now. Updated as work progresses. -->\n`,
-    'next.md': `# next\n\n<!-- Checklist of what's next. Markers: [ ] = not started, [~] = in progress, [?] = done, awaiting Keith's OK, [x] = approved & closed. Claude marks finished work [?] (never [x]); only Keith closes with [x]. The status report shows and edits these. -->\n\n- [ ] First task goes here\n`,
+    'next.md': `# next\n\n<!-- Checklist of what's next. Markers: [ ] = not started, [~] = in progress, [?] = done, awaiting the user's OK, [x] = approved & closed. Claude marks finished work [?] (never [x]); only the user closes with [x]. The status report shows and edits these. -->\n\n- [ ] First task goes here\n`,
     'changelog.md': `# changelog\n\n<!-- Append-only log: YYYY-MM-DD — what changed, file paths. -->\n`,
-    'decisions.md': `# decisions\n\n<!-- Project decisions with a one-line Why. -->\n`
+    'decisions.md': `# decisions\n\n<!-- Project decisions with a one-line Why. -->\n`,
+    'links.md': `# Key links\n\n<!-- Optional. The project's important/live URLs; shown pinned at the top of the status report as tiles.\n     One bullet per link: - [Name](https://url) — short description\n     Delete this comment and add links once the project has pages/URLs worth surfacing. -->\n`
   };
   for (const [name, body] of Object.entries(files)) {
     fs.writeFileSync(path.join(brainDir, name), body);
@@ -1142,11 +1144,22 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   .legend .dot.green { background: var(--done); }
   .legend .dot.empty { background: transparent; border: 1px solid var(--muted); }
   .legend-sub { flex-basis: 100%; margin-top: 2px; opacity: 0.85; }
+  /* Tile grid: each link is its own little card with a bold name + description. */
+  .links-card .links { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin: 4px 0; }
+  .links-card .links a {
+    display: flex; flex-direction: column; gap: 3px; padding: 12px 14px;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: rgba(255,255,255,0.02); text-decoration: none; transition: 0.15s;
+  }
+  .links-card .links a:hover { border-color: var(--purple); background: rgba(179,136,255,0.08); }
+  .links-card .links a b { color: var(--purple); font-size: 14px; font-weight: 600; }
+  .links-card .links a small { color: var(--muted); font-size: 12px; line-height: 1.4; }
+  /* Fallback list style (used if a links.md line can't be parsed into a tile). */
   .links-card ul { list-style: none; padding-left: 0; margin: 4px 0; }
   .links-card li { padding: 7px 2px; border-bottom: 1px solid var(--border); }
   .links-card li:last-child { border-bottom: none; }
-  .links-card a { color: var(--purple); font-weight: 600; text-decoration: none; }
-  .links-card a:hover { text-decoration: underline; }
+  .links-card ul a { color: var(--purple); font-weight: 600; text-decoration: none; }
+  .links-card ul a:hover { text-decoration: underline; }
   .progress-text { white-space: nowrap; }
   code {
     background: var(--panel-2); padding: 2px 6px; border-radius: 4px;
@@ -1190,7 +1203,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 </style>
 </head>
 <body>
-<!-- CMSR-TEMPLATE-VERSION: 6 -->
+<!-- CMSR-TEMPLATE-VERSION: 7 -->
 <div class="wrap" data-project-key="{{projectKey}}" data-project-path="{{projectPath}}" data-sync-port="{{syncPort}}" data-sync-token="{{syncToken}}">
 
   <header class="report-head">
@@ -1218,13 +1231,13 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   </details>
 
   <details class="card" open>
-    <summary>✅ Done so far</summary>
-    <div class="card-body">{{done}}</div>
+    <summary>➡️ Up next</summary>
+    <div class="card-body">{{next}}</div>
   </details>
 
   <details class="card" open>
-    <summary>➡️ Up next</summary>
-    <div class="card-body">{{next}}</div>
+    <summary>✅ Done so far</summary>
+    <div class="card-body">{{done}}</div>
   </details>
 
   <details class="card" open>
@@ -1422,7 +1435,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 
 // Bump this when DEFAULT_STATUS_TEMPLATE gains features every report should get.
 // Must match the CMSR-TEMPLATE-VERSION marker embedded in the template.
-const STATUS_TEMPLATE_VERSION = 6;
+const STATUS_TEMPLATE_VERSION = 7;
 
 function ensureStatusTemplate() {
   try {
@@ -1621,6 +1634,33 @@ function stripBrainTitle(md) {
   return md.replace(/^\s*#\s+[^\n]+\n+/, '');
 }
 
+// Parse a brain/links.md body into a grid of link tiles. Each bullet should be
+// `- [Name](url) — description` (the dash before the description may be —, –, or
+// -, and is optional). Returns '' if no bullet parses, so the caller can fall
+// back to plain markdown rendering.
+function renderLinkTiles(md) {
+  if (!md) return '';
+  var body = md.replace(/<!--[\s\S]*?-->/g, '');
+  var lines = body.split(/\r?\n/);
+  var tiles = [];
+  var linkRe = /^[-*]\s*\[([^\]]+)\]\(([^)\s]+)\)\s*(?:[—–-]\s*(.*))?$/;
+  for (var i = 0; i < lines.length; i++) {
+    var m = lines[i].trim().match(linkRe);
+    if (!m) continue;
+    var name = m[1].trim();
+    var url = m[2].trim();
+    var desc = (m[3] || '').trim();
+    tiles.push(
+      '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener">'
+      + '<b>' + escapeHtml(name) + '</b>'
+      + (desc ? '<small>' + escapeHtml(desc) + '</small>' : '')
+      + '</a>'
+    );
+  }
+  if (!tiles.length) return '';
+  return '<div class="links">' + tiles.join('') + '</div>';
+}
+
 function buildStatusReportHtml(projectPath, projectName) {
   var brain = {
     state: stripBrainTitle(readBrainFile(projectPath, 'STATE.md')),
@@ -1641,12 +1681,14 @@ function buildStatusReportHtml(projectPath, projectName) {
 
   // Optional "Links" card pinned at the top — only rendered when brain/links.md
   // has real content (projects building several pages/things keep their URLs
-  // there, e.g. 188-AIOS).
+  // there, e.g. 188-AIOS). Each link renders as its own little tile (bold name
+  // + description); falls back to a plain list if a line can't be parsed.
   var linksSection = '';
   var linksMd = (brain.links || '').replace(/<!--[\s\S]*?-->/g, '').trim();
   if (linksMd) {
+    var linksHtml = renderLinkTiles(brain.links) || mdToHtml(brain.links);
     linksSection = '<details class="card links-card" open>\n    <summary>🔗 Key links</summary>\n    <div class="card-body">'
-      + mdToHtml(brain.links) + '</div>\n  </details>';
+      + linksHtml + '</div>\n  </details>';
   }
 
   var now = new Date();
