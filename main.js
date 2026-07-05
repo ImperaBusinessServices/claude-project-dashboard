@@ -1,17 +1,23 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Tray, Menu, nativeImage, screen, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
-const { exec, spawn } = require('child_process');
+const { exec, spawn, execFile, execFileSync } = require('child_process');
+
+// Platform helpers. The app started life Windows-only; these gate the
+// Windows-specific shell-outs (Windows Terminal, PowerShell, cmd) so the macOS
+// build takes a native path at each site instead.
+const IS_MAC = process.platform === 'darwin';
+const IS_WIN = process.platform === 'win32';
 
 const APP_VERSION = require('./package.json').version;
 const GITHUB_OWNER = 'ImperaBusinessServices';
 const GITHUB_REPO = 'claude-project-dashboard';
 const RELEASES_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases?per_page=30`;
 
-const HOME = process.env.USERPROFILE || process.env.HOME;
+const HOME = process.env.USERPROFILE || process.env.HOME || require('os').homedir();
 const SETTINGS_PATH = path.join(HOME, '.claude-manager-settings.json');
 const GLOBAL_CLAUDE_MD = path.join(HOME, '.claude', 'CLAUDE.md');
 const CLAUDE_SETTINGS_PATH = path.join(HOME, '.claude', 'settings.json');
@@ -199,12 +205,17 @@ function createWindow() {
     if (!isQuitting && settings.trayEnabled) {
       e.preventDefault();
       mainWindow.hide();
+      // macOS: also drop the dock icon so it reads as "minimized to the menu
+      // bar" (Zeno-style). showMainWindow restores it.
+      if (IS_MAC && app.dock) app.dock.hide();
       if (!settings.trayBalloonShown && tray) {
+        const title = 'Still running';
+        const body = 'The usage meter is here in your ' + (IS_MAC ? 'menu bar' : 'tray')
+          + '. Click it to reopen the dashboard, or right-click to quit.';
         try {
-          tray.displayBalloon({
-            title: 'Still running',
-            content: 'The usage meter is here in your tray. Click it to reopen the dashboard, or right-click to quit.'
-          });
+          // displayBalloon is Windows-only; macOS uses a native Notification.
+          if (IS_MAC) new Notification({ title, body }).show();
+          else tray.displayBalloon({ title, content: body });
         } catch (err) {}
         saveSettings({ ...settings, trayBalloonShown: true });
       }
@@ -221,7 +232,11 @@ if (gotInstanceLock) {
 }
 app.on('before-quit', () => { isQuitting = true; });
 // Only quit on all-windows-closed when the tray meter isn't keeping us alive.
-app.on('window-all-closed', () => { if (!settings.trayEnabled) app.quit(); });
+// On macOS the convention is to stay running after the last window closes
+// (the user quits with Cmd-Q), so don't auto-quit there.
+app.on('window-all-closed', () => { if (!IS_MAC && !settings.trayEnabled) app.quit(); });
+// macOS: clicking the dock icon when no window is showing should reopen it.
+app.on('activate', () => { showMainWindow(); });
 
 // ---- Two-way status-report sync server (loopback only) ----
 // Flip the marker on one task line in a project's brain/next.md:
@@ -235,8 +250,12 @@ function isAllowedProjectPath(projectPath) {
     if (!projectPath || typeof projectPath !== 'string') return false;
     var root = settings.projectRoot;
     if (!root) return false;
-    var normRoot = path.resolve(root).toLowerCase();
-    var normProj = path.resolve(projectPath).toLowerCase();
+    // Case-fold only on Windows (case-insensitive FS). Case-folding on macOS
+    // could treat two genuinely different folders differing only in case as the
+    // same, so keep exact case there.
+    var normRoot = path.resolve(root);
+    var normProj = path.resolve(projectPath);
+    if (IS_WIN) { normRoot = normRoot.toLowerCase(); normProj = normProj.toLowerCase(); }
     return normProj !== normRoot && normProj.indexOf(normRoot + path.sep) === 0;
   } catch (e) { return false; }
 }
@@ -322,6 +341,7 @@ function startSyncServer() {
 // ---- Tray meter (live system-tray usage icon + click-popup flyout) ----
 
 function showMainWindow() {
+  if (IS_MAC && app.dock) app.dock.show();
   if (!mainWindow) { createWindow(); return; }
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
@@ -330,7 +350,11 @@ function showMainWindow() {
 
 function createTray() {
   if (tray) return;
-  tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icon.ico')));
+  // Electron's nativeImage can't decode .ico on macOS (it returns an empty
+  // image and the menu-bar item would be invisible), so load a PNG there. The
+  // live canvas gauge replaces this idle image once usage data arrives.
+  const trayImgPath = path.join(__dirname, IS_MAC ? 'tray-icon.png' : 'icon.ico');
+  tray = new Tray(nativeImage.createFromPath(trayImgPath));
   tray.setToolTip('Claude usage — waiting…');
   tray.on('click', (event, bounds) => toggleFlyout(bounds));
   tray.on('right-click', () => {
@@ -374,7 +398,11 @@ function toggleFlyout(bounds) {
   // Center over the tray icon if we have its bounds, else over the cursor
   let cx = (bounds && bounds.width) ? (bounds.x + bounds.width / 2) : pt.x;
   let x = Math.round(cx - w / 2);
-  let y = wa.y + wa.height - h - 6;        // just above the taskbar
+  // Windows tray sits at the bottom; the macOS menu-bar icon sits at the top,
+  // so the flyout drops DOWN from the icon there instead of rising from a taskbar.
+  let y = IS_MAC
+    ? (bounds && bounds.height ? bounds.y + bounds.height : wa.y) + 4
+    : wa.y + wa.height - h - 6;
   x = Math.min(Math.max(wa.x + 4, x), wa.x + wa.width - w - 4);
   flyoutWindow.setBounds({ x, y, width: w, height: h });
   flyoutWindow.webContents.send('tray-usage', latestUsage);
@@ -552,7 +580,31 @@ function isProcessRunning(pid) {
 
 // Open folder in terminal and start Claude Code
 ipcMain.handle('open-terminal', async (event, folderPath) => {
-  // Check if we already launched a terminal for this project
+  const projectName = path.basename(folderPath);
+
+  if (IS_MAC) {
+    // macOS: open Terminal.app and run `claude` in the project folder via
+    // AppleScript. `do script` runs the command in a login shell, so `claude`
+    // is found on PATH (unlike a bare spawn from a GUI app). Running `do script`
+    // BEFORE `activate` avoids Terminal opening a stray empty window when it
+    // wasn't already running. `quoted form of` shell-escapes the path safely.
+    const asPath = String(folderPath).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const scriptLines = [
+      'tell application "Terminal"',
+      `  do script ("cd " & quoted form of "${asPath}" & " && claude")`,
+      '  activate',
+      'end tell'
+    ];
+    const args = [];
+    scriptLines.forEach(l => { args.push('-e', l); });
+    execFile('osascript', args, () => {});
+    return { alreadyOpen: false };
+  }
+
+  // Windows: reuse an already-open terminal for this project if its process is
+  // still alive, bringing that window to the foreground instead of opening a
+  // duplicate. (PID tracking is meaningful on Windows; on macOS the launcher
+  // exits immediately, so the mac path above simply opens a fresh tab.)
   const existing = launchedTerminals[folderPath];
   if (existing && isProcessRunning(existing)) {
     // Try to bring existing terminal window to front
@@ -566,7 +618,6 @@ ipcMain.handle('open-terminal', async (event, folderPath) => {
   }
 
   // Launch new terminal with project name as tab title
-  const projectName = path.basename(folderPath);
   const child = exec(`wt --title "${projectName}" --suppressApplicationTitle -d "${folderPath}" cmd /k claude`, (err) => {
     if (err) {
       const fallback = exec(`start cmd /k "cd /d ${folderPath} && claude"`);
@@ -605,7 +656,8 @@ ipcMain.handle('open-external', async (event, url) => {
 
 // Test beep sound
 ipcMain.handle('test-beep', async () => {
-  exec('powershell.exe -Command "[Console]::Beep(1000, 400)"');
+  if (IS_WIN) exec('powershell.exe -Command "[Console]::Beep(1000, 400)"');
+  else execFile('osascript', ['-e', 'beep']);   // macOS
 });
 
 // Get beep-on-prompt hook status
@@ -616,7 +668,7 @@ ipcMain.handle('get-beep-enabled', async () => {
     const notifs = data.hooks && data.hooks.Notification;
     if (!Array.isArray(notifs)) return false;
     return notifs.some(n =>
-      Array.isArray(n.hooks) && n.hooks.some(h => h.command && h.command.includes('Beep'))
+      Array.isArray(n.hooks) && n.hooks.some(h => h.command && /beep|afplay/i.test(h.command))
     );
   } catch (e) { return false; }
 });
@@ -633,9 +685,10 @@ ipcMain.handle('set-beep-enabled', async (event, enabled) => {
   if (!data.hooks) data.hooks = {};
   if (!Array.isArray(data.hooks.Notification)) data.hooks.Notification = [];
 
-  // Remove any existing beep hooks
+  // Remove any existing beep hooks (matches both the Windows PowerShell beep
+  // and the macOS osascript/afplay beep so the toggle stays consistent per-OS)
   data.hooks.Notification = data.hooks.Notification.filter(n =>
-    !(Array.isArray(n.hooks) && n.hooks.some(h => h.command && h.command.includes('Beep')))
+    !(Array.isArray(n.hooks) && n.hooks.some(h => h.command && /beep|afplay/i.test(h.command)))
   );
 
   if (enabled) {
@@ -643,7 +696,9 @@ ipcMain.handle('set-beep-enabled', async (event, enabled) => {
       matcher: '',
       hooks: [{
         type: 'command',
-        command: 'powershell.exe -Command "[Console]::Beep(1000, 400)"'
+        command: IS_WIN
+          ? 'powershell.exe -Command "[Console]::Beep(1000, 400)"'
+          : 'osascript -e beep'
       }]
     });
   }
@@ -819,11 +874,19 @@ function runSummaryJob({ folderPath, resolve }) {
   try {
     // Pipe the prompt via stdin instead of passing as arg — avoids Windows
     // cmd shell mangling double quotes / em-dashes in the prompt text.
-    proc = spawn('claude', ['-p'], {
-      cwd: folderPath,
-      shell: true,
-      windowsHide: true
-    });
+    if (IS_MAC) {
+      // A GUI-launched mac app doesn't inherit the login-shell PATH, so a bare
+      // `claude` often isn't found. Run it through a login shell so PATH is
+      // loaded; the prompt still pipes in via stdin.
+      const shellBin = process.env.SHELL || '/bin/zsh';
+      proc = spawn(shellBin, ['-ilc', 'claude -p'], { cwd: folderPath });
+    } else {
+      proc = spawn('claude', ['-p'], {
+        cwd: folderPath,
+        shell: true,
+        windowsHide: true
+      });
+    }
   } catch (err) {
     activeSummaryJobs--;
     processSummaryQueue();
@@ -1806,7 +1869,22 @@ const USAGE_URL = 'https://api.anthropic.com/api/oauth/usage';
 
 function getClaudeAccessToken() {
   try {
-    const raw = JSON.parse(fs.readFileSync(CLAUDE_CREDENTIALS_PATH, 'utf-8'));
+    let rawStr;
+    if (IS_MAC) {
+      // On macOS, Claude Code stores its OAuth credentials in the login
+      // Keychain, not in ~/.claude/.credentials.json. Read them from there;
+      // fall back to the file in case a given install used the file form.
+      try {
+        rawStr = execFileSync('security',
+          ['find-generic-password', '-s', 'Claude Code-credentials', '-w'],
+          { encoding: 'utf-8' });
+      } catch (e) {
+        rawStr = fs.readFileSync(CLAUDE_CREDENTIALS_PATH, 'utf-8');
+      }
+    } else {
+      rawStr = fs.readFileSync(CLAUDE_CREDENTIALS_PATH, 'utf-8');
+    }
+    const raw = JSON.parse(rawStr);
     const oauth = raw.claudeAiOauth || raw;
     if (!oauth || !oauth.accessToken) return null;
     return {
@@ -1912,8 +1990,13 @@ ipcMain.handle('check-for-updates', async () => {
     releases.sort((a, b) => compareVersions((b.tag_name || b.name), (a.tag_name || a.name)));
     var latest = releases[0];
     var latestVersion = (latest.tag_name || latest.name || '').replace(/^v/, '');
-    var asset = (latest.assets || []).find(a => /\.exe$/i.test(a.name) && /setup/i.test(a.name));
-    if (!asset) asset = (latest.assets || []).find(a => /\.exe$/i.test(a.name));
+    // Pick the installer asset for the running OS: .dmg on macOS, Setup .exe on
+    // Windows. (When no matching asset exists — e.g. a release with only a
+    // Windows build — downloadUrl stays empty and the UI offers "View on
+    // GitHub" instead of an in-app install.)
+    var assetRx = IS_MAC ? /\.dmg$/i : /\.exe$/i;
+    var asset = (latest.assets || []).find(a => assetRx.test(a.name) && (IS_MAC || /setup/i.test(a.name)));
+    if (!asset) asset = (latest.assets || []).find(a => assetRx.test(a.name));
     var cmp = compareVersions(latestVersion, APP_VERSION);
 
     // Collect notes for every release newer than the user's current version.
@@ -1953,6 +2036,14 @@ ipcMain.handle('check-for-updates', async () => {
 // spawns it (detached) and quits the app so the installer can replace files.
 
 ipcMain.handle('download-and-install-update', async (event, downloadUrl, version) => {
+  // macOS can't silently self-install (you can't exec a .dmg). Open the
+  // download / release page in the browser so the user installs by dragging
+  // the app to Applications; never spawn a downloaded file as an executable.
+  if (IS_MAC) {
+    const url = downloadUrl || `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
+    try { shell.openExternal(url); } catch (e) {}
+    return { success: true, opened: true };
+  }
   if (!downloadUrl) return { success: false, error: 'No download URL provided' };
   var os = require('os');
   var safeVersion = String(version || 'latest').replace(/[^a-zA-Z0-9.\-]/g, '_');

@@ -1,11 +1,12 @@
 {
   "name": "claude-manager",
-  "version": "2.5.3",
+  "version": "2.6.0",
   "description": "Claude Project Dashboard - manage your Claude Code project folders",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win"
+    "build": "electron-builder --win",
+    "build:mac": "electron-builder --mac"
   },
   "author": "Keith",
   "license": "ISC",
@@ -29,12 +30,22 @@
       "uninstallerIcon": "icon.ico",
       "shortcutName": "Claude Project Dashboard"
     },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["universal"] }
+      ],
+      "icon": "icon.png",
+      "category": "public.app-category.developer-tools",
+      "identity": null
+    },
     "files": [
       "main.js",
       "preload.js",
       "index.html",
       "tray-flyout.html",
-      "icon.ico"
+      "icon.ico",
+      "icon.png",
+      "tray-icon.png"
     ]
   },
   "devDependencies": {
