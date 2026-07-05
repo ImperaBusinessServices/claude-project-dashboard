@@ -1,0 +1,57 @@
+name: Build macOS app
+
+# Builds the macOS installer (.dmg) on a GitHub-hosted Mac, since electron-builder
+# cannot produce a Mac app from Windows. Manual-trigger only for now (this is the
+# first macOS port and we don't want to burn runner minutes on every commit).
+#
+# v1 is UNSIGNED (identity:null in package.json) so it needs no Apple credentials —
+# the tester bypasses Gatekeeper with a right-click → Open / "Open Anyway". A later
+# revision will sign + notarize using the App Store Connect API key already set up
+# for the labellens repo (Team W876TWB5KV), which removes the warning entirely.
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "Optional note describing this build"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  build-mac:
+    name: Build macOS .dmg (universal, unsigned)
+    runs-on: macos-14
+    timeout-minutes: 40
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      # CSC_IDENTITY_AUTO_DISCOVERY=false stops electron-builder from hunting the
+      # keychain for a signing certificate (there is none on the runner); combined
+      # with "identity": null in package.json this produces an ad-hoc/unsigned app.
+      - name: Build macOS app (universal, unsigned)
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder --mac --publish never
+
+      - name: List build output
+        run: ls -lh dist
+
+      - name: Upload .dmg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-project-dashboard-mac
+          path: dist/*.dmg
+          if-no-files-found: error
