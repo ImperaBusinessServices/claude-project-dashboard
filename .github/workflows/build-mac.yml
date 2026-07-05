@@ -59,13 +59,21 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: npx electron-builder --mac --publish never
 
-      # The .app inside is already stapled; staple the .dmg container too so it
-      # passes Gatekeeper offline. Verify the result.
-      - name: Staple & verify the .dmg
+      # electron-builder notarizes + staples the .app INSIDE the dmg. Notarize the
+      # .dmg CONTAINER too (submit + staple) so even a freshly downloaded dmg
+      # mounts with zero Gatekeeper prompts. Same App Store Connect API key.
+      - name: Notarize + staple the .dmg
+        env:
+          APPLE_API_KEY: ${{ runner.temp }}/private_keys/AuthKey_75386VJRAQ.p8
+          APPLE_API_KEY_ID: "75386VJRAQ"
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           set -euo pipefail
           DMG="$(ls dist/*.dmg | head -n1)"
-          echo "Stapling $DMG"
+          echo "Notarizing dmg container: $DMG"
+          xcrun notarytool submit "$DMG" \
+            --key "$APPLE_API_KEY" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER" \
+            --wait
           xcrun stapler staple "$DMG"
           xcrun stapler validate "$DMG"
           spctl -a -t open --context context:primary-signature -vvv "$DMG" || true
