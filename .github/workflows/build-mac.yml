@@ -1,13 +1,14 @@
 name: Build macOS app
 
-# Builds the macOS installer (.dmg) on a GitHub-hosted Mac, since electron-builder
-# cannot produce a Mac app from Windows. Manual-trigger only for now (this is the
-# first macOS port and we don't want to burn runner minutes on every commit).
-#
-# v1 is UNSIGNED (identity:null in package.json) so it needs no Apple credentials —
-# the tester bypasses Gatekeeper with a right-click → Open / "Open Anyway". A later
-# revision will sign + notarize using the App Store Connect API key already set up
-# for the labellens repo (Team W876TWB5KV), which removes the warning entirely.
+# Builds a Developer-ID-signed AND Apple-notarized universal .dmg on a
+# GitHub-hosted Mac (electron-builder can't build/sign a Mac app from Windows).
+# The signing identity + notarization credentials come from encrypted repo
+# secrets — nothing sensitive is in this file or the repo:
+#   CSC_LINK             base64 of the Developer ID Application .p12 (cert+key+G2 intermediate)
+#   CSC_KEY_PASSWORD     password for that .p12
+#   APPLE_API_KEY_P8_B64 base64 of the App Store Connect API .p8 (notarization only)
+#   APPLE_API_ISSUER     App Store Connect Issuer ID
+# Manual-trigger only.
 
 on:
   workflow_dispatch:
@@ -22,9 +23,9 @@ permissions:
 
 jobs:
   build-mac:
-    name: Build macOS .dmg (universal, unsigned)
+    name: Build signed + notarized macOS .dmg (universal)
     runs-on: macos-14
-    timeout-minutes: 40
+    timeout-minutes: 60
 
     steps:
       - name: Check out repo
@@ -38,13 +39,36 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      # CSC_IDENTITY_AUTO_DISCOVERY=false stops electron-builder from hunting the
-      # keychain for a signing certificate (there is none on the runner); combined
-      # with "identity": null in package.json this produces an ad-hoc/unsigned app.
-      - name: Build macOS app (universal, unsigned)
+      # Notarization uses the App Store Connect API key. @electron/notarize's
+      # notarytool wants the .p8 as a FILE PATH (not base64), so decode it here.
+      - name: Write App Store Connect API key to disk
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/private_keys"
+          echo "${{ secrets.APPLE_API_KEY_P8_B64 }}" | base64 --decode > "$RUNNER_TEMP/private_keys/AuthKey_75386VJRAQ.p8"
+
+      # electron-builder v26 signs (CSC_LINK auto-imports the .p12 into a temp
+      # keychain) and notarizes natively (mac.notarize.teamId + APPLE_API_* env),
+      # then staples the .app.
+      - name: Build, sign & notarize
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_API_KEY: ${{ runner.temp }}/private_keys/AuthKey_75386VJRAQ.p8
+          APPLE_API_KEY_ID: "75386VJRAQ"
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: npx electron-builder --mac --publish never
+
+      # The .app inside is already stapled; staple the .dmg container too so it
+      # passes Gatekeeper offline. Verify the result.
+      - name: Staple & verify the .dmg
+        run: |
+          set -euo pipefail
+          DMG="$(ls dist/*.dmg | head -n1)"
+          echo "Stapling $DMG"
+          xcrun stapler staple "$DMG"
+          xcrun stapler validate "$DMG"
+          spctl -a -t open --context context:primary-signature -vvv "$DMG" || true
 
       - name: List build output
         run: ls -lh dist

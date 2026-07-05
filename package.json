@@ -36,7 +36,11 @@
       ],
       "icon": "icon.png",
       "category": "public.app-category.developer-tools",
-      "identity": null
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.inherit.plist",
+      "notarize": { "teamId": "W876TWB5KV" }
     },
     "files": [
       "main.js",
