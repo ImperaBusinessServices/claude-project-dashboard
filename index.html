@@ -1442,7 +1442,15 @@
       await refreshFolders();
     }
 
-    function showCreateModal() {
+    async function showCreateModal() {
+      // If no projects folder is chosen yet, sending them to the folder picker
+      // is the right next step — you can't create a project with nowhere to put
+      // it. (Prevents a new user clicking "+ New Project" before choosing a folder.)
+      const settings = await window.api.getSettings();
+      if (!settings.projectRoot) {
+        await changeFolder();
+        return;
+      }
       document.getElementById('createModal').classList.add('active');
       document.getElementById('newFolderName').value = '';
       document.getElementById('createError').textContent = '';

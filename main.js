@@ -523,6 +523,12 @@ ipcMain.handle('delete-folder', async (event, folderPath) => {
 
 // Create new folder (with a CLAUDE.md so it's a proper project)
 ipcMain.handle('create-folder', async (event, folderName) => {
+  // Guard: no projects folder chosen yet (fresh install / first run). Without
+  // this, path.join('', name) tried to mkdir a relative path and failed with a
+  // cryptic "ENOENT ... mkdir '<name>'". Give a clear next step instead.
+  if (!settings.projectRoot || !fs.existsSync(settings.projectRoot)) {
+    return { success: false, error: 'Choose your projects folder first — click "Change Folder" at the top of the app.' };
+  }
   const fullPath = path.join(settings.projectRoot, folderName);
   if (fs.existsSync(fullPath)) {
     return { success: false, error: 'Folder already exists' };
