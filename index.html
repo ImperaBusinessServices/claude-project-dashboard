@@ -817,15 +817,21 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.5.3:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.7.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>"Up next" now sits above "Done so far"</strong> — in the status report, your to-do list is at the top where you'll see it first, with the finished work below it.</li>
-          <li><strong>Key links show as tidy tiles</strong> — the links box at the top of a report now lays each link out as its own little card (bold name + description) instead of a plain list, so it's easier to scan when a project has several live pages.</li>
+          <li><strong>The status report got a big glow-up</strong> — a new <strong>Documents</strong> section auto-lists files you create in a project (decks, PDFs, web pages) as clickable cards you can sort by date or name; a new <strong>Backlog</strong> section for "someday" ideas, kept separate from your to-do list; Up-next items are now <strong>numbered</strong>; each section sits in its own panel; and there's a <strong>light/dark toggle</strong> in the top-right (dark by default).</li>
+          <li><strong>Now on Mac, too</strong> — this is a proper Mac app now (Apple-signed, opens with no warnings), right alongside Windows.</li>
+          <li><strong>Search respects your filter</strong> — searching under "Active" now only shows active projects (it used to sneak archived ones in); switch to Archived or All to find those.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.5.3:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>"Up next" now sits above "Done so far"</strong> — your to-do list at the top, finished work below.</li>
+              <li><strong>Key links show as tidy tiles</strong> — each link is its own little card (bold name + description) instead of a plain list.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.5.2:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>"You are here" tick on the usage bars</strong> — a small pink marker now shows how far through each time window you are. On the Session bar it slides across the 5 hours; on the Week bar, across the 7 days. Halfway through the window sits at the middle, so you can see at a glance how much time is left versus how much you've used. Also shows in the tray popup.</li>
@@ -1057,6 +1063,10 @@
           <button class="btn btn-ghost" onclick="hideAbout(); showShortcuts();">Shortcuts</button>
           <button class="btn btn-ghost" onclick="hideAbout()">Close</button>
         </div>
+      </div>
+
+      <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); text-align: center; font-size: 11px; color: #888;">
+        An <a href="https://imperabusinessservices.com" target="_blank" rel="noopener" style="color: #b388ff; text-decoration: none; font-weight: 600;">Impera Business Services</a> product
       </div>
     </div>
   </div>
@@ -1313,12 +1323,12 @@
 
     function renderFolders() {
       let filtered = folders;
-      // When actively searching, show across ALL views (ignore active/archived filter)
+      // Always respect the Active / Archived / All view — even while searching.
+      // (Searching under "Active" only surfaces active projects; switch to
+      // Archived or All to find archived ones.)
+      if (currentView === 'active') filtered = folders.filter(f => !f.archived);
+      else if (currentView === 'archived') filtered = folders.filter(f => f.archived);
       const searching = currentSearch.length > 0;
-      if (!searching) {
-        if (currentView === 'active') filtered = folders.filter(f => !f.archived);
-        if (currentView === 'archived') filtered = folders.filter(f => f.archived);
-      }
       if (searching) {
         const q = currentSearch.toLowerCase();
         filtered = filtered.filter(f => {

@@ -32,11 +32,12 @@ const MEMORY_PROTOCOL_TEMPLATE = `${MEMORY_PROTOCOL_BEGIN}
 ## Project memory protocol
 
 Each project may contain a \`brain/\` folder for persistent context across Claude Code sessions:
-- \`STATE.md\` — what's in flight right now
-- \`next.md\` — a checklist of what's next. Mark each item \`- [ ]\` not started, \`- [~]\` in progress, \`- [?]\` done & awaiting the user's OK, \`- [x]\` approved & closed. **Claude marks finished work \`[?]\` (never \`[x]\`)** — only the user gives final approval by closing it. The status report renders these and the user can tick them off too (their clicks sync back here while the dashboard is open), so keep them current.
+- \`STATE.md\` — what's in flight right now. Start it with a **\`## Objective\`** section: one or two plain, punchy sentences on what this project is for. Keep it that short — NOT a list of links (URLs go in \`links.md\`).
+- \`next.md\` — the checklist of what's next. Mark each item \`- [ ]\` not started, \`- [~]\` in progress, \`- [?]\` done & awaiting the user's OK, \`- [x]\` approved & closed. **Claude marks finished work \`[?]\` (never \`[x]\`)** — only the user gives final approval by closing it. **Whenever you write a to-do list or a series of tasks, ALWAYS use this 4-state checklist format** (not plain bullets) — the status report turns it into a click-to-cycle tracker the user approves stage by stage, and their clicks sync back here while the dashboard is open. Keep it current.
 - \`changelog.md\` — append-only log: YYYY-MM-DD — what changed, with file paths
 - \`decisions.md\` — decisions with a one-line Why
-- \`links.md\` — the project's important/live URLs, one bullet each: \`- [Name](https://url) — short description\`. Shown pinned at the top of the status report as tiles. **Keep it current**: whenever the project gains, moves, or retires a live page/URL, add or update the bullet here.
+- \`links.md\` — the project's important/live URLs, one bullet each: \`- [Name](https://url) — short description\`. Shown as tiles in the status report. **Keep it current** when a page/URL is added, moved, or retired.
+- \`backlog.md\` — optional. Macro / future ideas not yet actionable — kept OUT of \`next.md\` so "Up next" stays focused on what's genuinely next. Shown as a collapsed "Backlog" card in the status report. One bullet each.
 
 ### Triggers
 - **"WWW?"** / **"where were we?"** → read \`./brain/STATE.md\`, \`./brain/next.md\`, and the last 20 lines of \`./brain/changelog.md\`. Tell the user where we are and what's next. If no \`brain/\` folder, say "no project memory here yet — want me to start one?" and bootstrap on yes.
@@ -551,11 +552,12 @@ function scaffoldBrain(projectPath, projectName) {
   const brainDir = path.join(projectPath, 'brain');
   fs.mkdirSync(brainDir, { recursive: true });
   const files = {
-    'STATE.md': `# ${projectName} — STATE\n\n<!-- What's in flight right now. Updated as work progresses. -->\n`,
+    'STATE.md': `# ${projectName} — STATE\n\n## Objective\n<!-- One or two clear, punchy sentences: what is this project for? Keep it short. URLs go in links.md, not here. -->\n\n## In flight\n<!-- What's being worked on right now. Updated as work progresses. -->\n`,
     'next.md': `# next\n\n<!-- Checklist of what's next. Markers: [ ] = not started, [~] = in progress, [?] = done, awaiting the user's OK, [x] = approved & closed. Claude marks finished work [?] (never [x]); only the user closes with [x]. The status report shows and edits these. -->\n\n- [ ] First task goes here\n`,
     'changelog.md': `# changelog\n\n<!-- Append-only log: YYYY-MM-DD — what changed, file paths. -->\n`,
     'decisions.md': `# decisions\n\n<!-- Project decisions with a one-line Why. -->\n`,
-    'links.md': `# Key links\n\n<!-- Optional. The project's important/live URLs; shown pinned at the top of the status report as tiles.\n     One bullet per link: - [Name](https://url) — short description\n     Delete this comment and add links once the project has pages/URLs worth surfacing. -->\n`
+    'links.md': `# Key links\n\n<!-- Optional. The project's important/live URLs; shown pinned at the top of the status report as tiles.\n     One bullet per link: - [Name](https://url) — short description\n     Delete this comment and add links once the project has pages/URLs worth surfacing. -->\n`,
+    'backlog.md': `# Backlog\n\n<!-- Optional. Macro / future ideas, not yet actionable — kept out of next.md so "Up next" stays focused. Shown as a collapsed card in the status report. One bullet each. -->\n`
   };
   for (const [name, body] of Object.entries(files)) {
     fs.writeFileSync(path.join(brainDir, name), body);
@@ -1114,6 +1116,32 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     --pending-soft: rgba(96,165,250,0.14);
     --border: rgba(255,255,255,0.1);
   }
+  /* Light theme (toggled via the top-right button; default is dark). */
+  :root.light {
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+    --panel-2: #eef1f5;
+    --text: #1f2430;
+    --muted: #6b7280;
+    --accent: #d6355a;
+    --accent-soft: rgba(214,53,90,0.10);
+    --purple: #7c3aed;
+    --done: #16a34a;
+    --amber: #c2740c;
+    --amber-soft: rgba(194,116,12,0.12);
+    --pending: #2563eb;
+    --pending-soft: rgba(37,99,235,0.12);
+    --border: rgba(0,0,0,0.12);
+  }
+  :root.light .card { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  :root.light code { color: #b45309; }
+  .head-actions { display: flex; align-items: center; gap: 8px; }
+  .theme-toggle {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    padding: 5px 10px; border-radius: 5px; font-size: 11px; cursor: pointer;
+    font-family: inherit; white-space: nowrap;
+  }
+  .theme-toggle:hover { border-color: var(--purple); color: var(--text); }
   * { box-sizing: border-box; }
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -1142,6 +1170,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     border-radius: 8px;
     padding: 18px 22px;
     margin-bottom: 16px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.30);
   }
   .card h2 {
     color: var(--accent);
@@ -1169,11 +1198,17 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   .card p { margin: 6px 0; }
   .card .empty { color: var(--muted); font-style: italic; }
   .card ul, .card ol { padding-left: 20px; margin: 6px 0; }
-  .card ul.checklist { list-style: none; padding-left: 0; }
+  .card ul.checklist { list-style: none; padding-left: 0; counter-reset: task; }
   .card ul.checklist li {
     padding: 5px 8px; display: flex; align-items: flex-start; gap: 10px;
     border-left: 3px solid transparent; border-radius: 4px;
     transition: background 0.15s, border-color 0.15s;
+  }
+  /* Number each actionable Up-next item (1. 2. 3. …) */
+  .card ul.checklist li:not(.static-cb) { counter-increment: task; }
+  .card ul.checklist li:not(.static-cb)::before {
+    content: counter(task) '.'; flex-shrink: 0; min-width: 22px; text-align: right;
+    color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; padding-top: 3px;
   }
   .card ul.checklist input[type="checkbox"] {
     margin-top: 5px; width: 16px; height: 16px; accent-color: var(--accent);
@@ -1229,6 +1264,14 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   .links-card li:last-child { border-bottom: none; }
   .links-card ul a { color: var(--purple); font-weight: 600; text-decoration: none; }
   .links-card ul a:hover { text-decoration: underline; }
+  /* Documents card reuses the .links tile grid; this is just the sort toggle. */
+  .docs-sort { display: flex; gap: 6px; margin: 0 0 10px; align-items: center; }
+  .docs-sort .lbl { color: var(--muted); font-size: 12px; margin-right: 2px; }
+  .docs-sort button {
+    background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+    border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; font-family: inherit;
+  }
+  .docs-sort button.active { color: var(--text); border-color: var(--purple); }
   .progress-text { white-space: nowrap; }
   code {
     background: var(--panel-2); padding: 2px 6px; border-radius: 4px;
@@ -1270,9 +1313,10 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     padding-top: 16px; border-top: 1px solid var(--border);
   }
 </style>
+<script>try{if(localStorage.getItem('crepo-theme')==='light')document.documentElement.classList.add('light');}catch(e){}</script>
 </head>
 <body>
-<!-- CMSR-TEMPLATE-VERSION: 7 -->
+<!-- CMSR-TEMPLATE-VERSION: 8 -->
 <div class="wrap" data-project-key="{{projectKey}}" data-project-path="{{projectPath}}" data-sync-port="{{syncPort}}" data-sync-token="{{syncToken}}">
 
   <header class="report-head">
@@ -1280,7 +1324,10 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
       <h1>{{projectName}}</h1>
       <div class="meta">Status Report · Last updated {{updatedAt}}</div>
     </div>
-    <span class="refresh-link" title="Use the dashboard's right-click menu to refresh">↻ Refresh from dashboard</span>
+    <div class="head-actions">
+      <button id="themeToggle" class="theme-toggle" title="Switch light / dark">☀ Light</button>
+      <span class="refresh-link" title="Use the dashboard's right-click menu to refresh">↻ Refresh from dashboard</span>
+    </div>
   </header>
 
   <div class="legend">
@@ -1293,6 +1340,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
   </div>
 
   {{linksSection}}
+  {{documentsSection}}
 
   <details class="card" open>
     <summary>🎯 Objective</summary>
@@ -1303,6 +1351,8 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     <summary>➡️ Up next</summary>
     <div class="card-body">{{next}}</div>
   </details>
+
+  {{backlogSection}}
 
   <details class="card" open>
     <summary>✅ Done so far</summary>
@@ -1496,6 +1546,51 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
     });
   }
   updateAllProgress();
+
+  // Documents card: reorder tiles by date (newest) or A–Z when the toggle is clicked.
+  (function () {
+    var card = document.querySelector('.docs-card');
+    if (!card) return;
+    var grid = card.querySelector('.links');
+    var btns = card.querySelectorAll('.docs-sort button');
+    function sortBy(mode) {
+      var tiles = Array.prototype.slice.call(grid.querySelectorAll('a'));
+      tiles.sort(function (a, b) {
+        if (mode === 'name') {
+          return (a.getAttribute('data-name') || '').localeCompare(b.getAttribute('data-name') || '');
+        }
+        return (parseFloat(b.getAttribute('data-mtime')) || 0) - (parseFloat(a.getAttribute('data-mtime')) || 0);
+      });
+      tiles.forEach(function (t) { grid.appendChild(t); });
+    }
+    btns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        btns.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        sortBy(btn.getAttribute('data-sort'));
+      });
+    });
+  })();
+
+  // Light / dark toggle — default dark; remembers your choice across reports.
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('themeToggle');
+    if (!btn) return;
+    var tkey = 'crepo-theme';
+    function apply(mode) {
+      if (mode === 'light') { root.classList.add('light'); btn.textContent = '🌙 Dark'; }
+      else { root.classList.remove('light'); btn.textContent = '☀ Light'; }
+    }
+    var saved = 'dark';
+    try { saved = localStorage.getItem(tkey) || 'dark'; } catch (e) {}
+    apply(saved);
+    btn.addEventListener('click', function () {
+      var next = root.classList.contains('light') ? 'dark' : 'light';
+      apply(next);
+      try { localStorage.setItem(tkey, next); } catch (e) {}
+    });
+  })();
 })();
 </script>
 </body>
@@ -1504,7 +1599,7 @@ const DEFAULT_STATUS_TEMPLATE = `<!DOCTYPE html>
 
 // Bump this when DEFAULT_STATUS_TEMPLATE gains features every report should get.
 // Must match the CMSR-TEMPLATE-VERSION marker embedded in the template.
-const STATUS_TEMPLATE_VERSION = 7;
+const STATUS_TEMPLATE_VERSION = 8;
 
 function ensureStatusTemplate() {
   try {
@@ -1730,13 +1825,67 @@ function renderLinkTiles(md) {
   return '<div class="links">' + tiles.join('') + '</div>';
 }
 
+// Auto-detect notable documents a project creates (decks, HTML pages, PDFs, etc.)
+// so the report can surface them as clickable cards. Scans the project root and
+// one level of subfolders; skips brain/, build junk, and dotfolders.
+function scanDocuments(projectPath) {
+  var exts = ['.html', '.htm', '.pdf', '.pptx', '.ppt', '.docx', '.doc', '.xlsx', '.xls', '.csv', '.key', '.pages', '.numbers'];
+  var out = [];
+  function walk(dir, rel, depth) {
+    var entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
+    for (var i = 0; i < entries.length; i++) {
+      var e = entries[i];
+      if (e.isDirectory()) {
+        if (depth >= 1) continue;
+        if (e.name === 'brain' || e.name.charAt(0) === '.' || SKIP_DIRS.has(e.name)) continue;
+        walk(path.join(dir, e.name), rel + e.name + '/', depth + 1);
+      } else {
+        var ext = path.extname(e.name).toLowerCase();
+        if (exts.indexOf(ext) === -1) continue;
+        try {
+          var st = fs.statSync(path.join(dir, e.name));
+          out.push({ name: e.name, rel: rel + e.name, mtime: st.mtimeMs, ext: ext.slice(1) });
+        } catch (e2) {}
+      }
+    }
+  }
+  walk(projectPath, '', 0);
+  return out;
+}
+
+// Render discovered documents as a grid of clickable tiles (name + date · type),
+// newest first, with a Date / A–Z sort toggle (wired in the report's script).
+// Links are relative to the report (which lives in brain/), so '../<path>' points
+// back into the project folder.
+function renderDocuments(docs) {
+  if (!docs.length) return '';
+  docs.sort(function (a, b) { return b.mtime - a.mtime; });
+  var tiles = docs.map(function (d) {
+    var href = '../' + d.rel.split('/').map(encodeURIComponent).join('/');
+    var sub = new Date(d.mtime).toISOString().slice(0, 10) + ' · ' + d.ext.toUpperCase();
+    return '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener"'
+      + ' data-mtime="' + d.mtime + '" data-name="' + escapeHtml(d.name.toLowerCase()) + '">'
+      + '<b>' + escapeHtml(d.name) + '</b><small>' + escapeHtml(sub) + '</small></a>';
+  }).join('');
+  return '<details class="card links-card docs-card" open>\n'
+    + '    <summary>📄 Documents</summary>\n'
+    + '    <div class="card-body">\n'
+    + '      <div class="docs-sort"><span class="lbl">Sort:</span>'
+    + '<button data-sort="date" class="active">Newest</button>'
+    + '<button data-sort="name">A–Z</button></div>\n'
+    + '      <div class="links">' + tiles + '</div>\n'
+    + '    </div>\n  </details>';
+}
+
 function buildStatusReportHtml(projectPath, projectName) {
   var brain = {
     state: stripBrainTitle(readBrainFile(projectPath, 'STATE.md')),
     next: stripBrainTitle(readBrainFile(projectPath, 'next.md')),
     changelog: stripBrainTitle(readBrainFile(projectPath, 'changelog.md')),
     decisions: stripBrainTitle(readBrainFile(projectPath, 'decisions.md')),
-    links: stripBrainTitle(readBrainFile(projectPath, 'links.md'))
+    links: stripBrainTitle(readBrainFile(projectPath, 'links.md')),
+    backlog: stripBrainTitle(readBrainFile(projectPath, 'backlog.md'))
   };
   var summaries = settings.summaries || {};
   var fallbackSummary = summaries[projectPath] ? summaries[projectPath].text : null;
@@ -1760,6 +1909,19 @@ function buildStatusReportHtml(projectPath, projectName) {
       + linksHtml + '</div>\n  </details>';
   }
 
+  // Auto-discovered documents (decks, HTML pages, PDFs the project produced),
+  // shown as clickable tiles with a Date / A–Z sort. Empty string if none found.
+  var documentsSection = renderDocuments(scanDocuments(projectPath));
+
+  // Optional Backlog card (macro / future items) from brain/backlog.md — collapsed
+  // by default and kept separate from the actionable "Up next" checklist.
+  var backlogSection = '';
+  var backlogMd = (brain.backlog || '').replace(/<!--[\s\S]*?-->/g, '').trim();
+  if (backlogMd) {
+    backlogSection = '<details class="card">\n    <summary>📋 Backlog</summary>\n    <div class="card-body">'
+      + mdToHtml(brain.backlog) + '</div>\n  </details>';
+  }
+
   var now = new Date();
   var updatedAt = now.toISOString().slice(0, 10) + ' ' + now.toTimeString().slice(0, 5);
   var projectKey = encodeProjectPath(projectPath);
@@ -1773,6 +1935,8 @@ function buildStatusReportHtml(projectPath, projectName) {
     .replace(/\{\{syncPort\}\}/g, escapeHtml(String(syncPort || '')))
     .replace(/\{\{syncToken\}\}/g, escapeHtml(String(syncToken || '')))
     .replace(/\{\{linksSection\}\}/g, linksSection)
+    .replace(/\{\{documentsSection\}\}/g, documentsSection)
+    .replace(/\{\{backlogSection\}\}/g, backlogSection)
     .replace(/\{\{objective\}\}/g, objectiveHtml)
     .replace(/\{\{done\}\}/g, doneHtml)
     .replace(/\{\{next\}\}/g, nextHtml)
