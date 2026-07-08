@@ -590,6 +590,15 @@ function isProcessRunning(pid) {
 ipcMain.handle('open-terminal', async (event, folderPath) => {
   const projectName = path.basename(folderPath);
 
+  // Auto-set-up memory: the first time you launch a project that has no brain/
+  // folder yet, scaffold one (unless you turned this off in Settings). So even
+  // folders made OUTSIDE the app get memory the moment you open them — zero setup.
+  try {
+    if (settings.createBrainOnNewProject !== false && !fs.existsSync(path.join(folderPath, 'brain'))) {
+      scaffoldBrain(folderPath, projectName);
+    }
+  } catch (e) {}
+
   if (IS_MAC) {
     // macOS: open Terminal.app and run `claude` in the project folder via
     // AppleScript. `do script` runs the command in a login shell, so `claude`

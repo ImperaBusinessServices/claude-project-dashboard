@@ -8,14 +8,14 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="canonical" href="https://claude-manager.com/">
 <meta property="og:title" content="Claude Project Dashboard">
-<meta property="og:description" content="A home for everything you build with Claude Code. Free for Windows.">
+<meta property="og:description" content="A home for everything you build with Claude Code. Free for Windows &amp; Mac.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://claude-manager.com/">
 <meta property="og:site_name" content="Claude Project Dashboard">
 <meta property="og:image" content="https://claude-manager.com/social-preview.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Claude Project Dashboard">
-<meta name="twitter:description" content="A home for everything you build with Claude Code. Free for Windows.">
+<meta name="twitter:description" content="A home for everything you build with Claude Code. Free for Windows &amp; Mac.">
 <meta name="twitter:image" content="https://claude-manager.com/social-preview.png">
 <script type="application/ld+json">
 {
@@ -23,7 +23,7 @@
   "@type": "SoftwareApplication",
   "name": "Claude Project Dashboard",
   "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "Windows 10, Windows 11",
+  "operatingSystem": "Windows 10, Windows 11, macOS",
   "url": "https://claude-manager.com/",
   "downloadUrl": "https://github.com/ImperaBusinessServices/claude-project-dashboard/releases/latest",
   "description": "A tiny desktop app that opens Claude Code in the right folder every time, remembers where you left off, and shows you exactly what Claude has been working on.",
@@ -522,13 +522,14 @@
       <div class="cta-row intro d4">
         <a class="btn btn-primary btn-xl" id="heroDownload" href="#download">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Download for Windows
+          <span class="dl-label">Download</span>
         </a>
         <a class="btn btn-ghost btn-xl" href="#tiles">See how it works ↓</a>
       </div>
+      <div class="intro d5" style="margin-top:10px;"><a id="otherPlatform" href="#" rel="noopener" style="display:none;font-size:13px;color:var(--coral-br);text-decoration:none;"></a></div>
       <div class="meta-line intro d5">
         <span>Free &amp; open source</span><span class="dot"></span>
-        <span>Windows 10 / 11</span><span class="dot"></span>
+        <span>Windows &amp; Mac</span><span class="dot"></span>
         <span>Installs in seconds — no admin needed</span>
       </div>
     </div>
@@ -947,15 +948,15 @@
     </div>
     <div class="steps">
       <div class="step reveal"><div class="num">1</div><h4>Download &amp; open</h4><p>Grab the installer below and double-click it. It installs just for you — no admin password.</p></div>
-      <div class="step reveal"><div class="num">2</div><h4>Click “Run anyway”</h4><p>Windows shows a blue “unrecognized app” notice. Click <b style="color:var(--muted)">More info → Run anyway</b> — it’s safe, just not yet code-signed.</p></div>
+      <div class="step reveal"><div class="num">2</div><h4>Open it</h4><p>On <b>Mac</b> it’s Apple-signed &amp; notarized — it just opens. On <b>Windows</b>, click <b style="color:var(--muted)">More info → Run anyway</b> on the blue notice (safe — the Windows build isn’t code-signed yet).</p></div>
       <div class="step reveal"><div class="num">3</div><h4>Point it at your folder</h4><p>On first launch, pick the folder where your projects live. That’s it — your tiles appear.</p></div>
     </div>
     <div class="download-cta reveal">
       <h3>Get the Claude Project Dashboard</h3>
-      <p>Free, open source, and a tiny ~92&nbsp;MB. Works on Windows 10 and 11.</p>
+      <p>Free &amp; open source. Works on <strong>Windows 10/11</strong> and <strong>macOS</strong> (Apple-signed · Intel + Apple Silicon).</p>
       <a class="btn btn-primary btn-xl" id="mainDownload" href="https://github.com/ImperaBusinessServices/claude-project-dashboard/releases/latest">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Download for Windows <span id="btnVer" style="opacity:.75;font-weight:500">v2.3.0</span>
+        <span class="dl-label">Download</span> <span id="btnVer" style="opacity:.75;font-weight:500">v2.7.0</span>
       </a>
       <div class="smartscreen">Prefer the source? <a href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="color:var(--coral-br)">Browse it on GitHub →</a></div>
     </div>
@@ -1098,10 +1099,29 @@
         if (!rel || !rel.tag_name) return;
         var ver = 'v' + rel.tag_name.replace(/^v/, '');
         ['navVer', 'btnVer'].forEach(function (id) { var n = document.getElementById(id); if (n) n.textContent = ver; });
-        var asset = (rel.assets || []).find(function (a) { return /setup.*\.exe$/i.test(a.name); }) || (rel.assets || []).find(function (a) { return /\.exe$/i.test(a.name); });
-        var url = asset ? asset.browser_download_url : (rel.html_url || '#');
-        ['navDownload', 'heroDownload', 'mainDownload'].forEach(function (id) { var n = document.getElementById(id); if (n) n.setAttribute('href', url); });
-        if (window.__setDownloadUrl) window.__setDownloadUrl(url);
+        var assets = rel.assets || [];
+        var exe = assets.find(function (a) { return /setup.*\.exe$/i.test(a.name); }) || assets.find(function (a) { return /\.exe$/i.test(a.name); });
+        var dmg = assets.find(function (a) { return /\.dmg$/i.test(a.name); });
+        var fallback = rel.html_url || '#';
+        var exeUrl = exe ? exe.browser_download_url : fallback;
+        var dmgUrl = dmg ? dmg.browser_download_url : fallback;
+        var isMac = /Mac|iPhone|iPad/i.test((navigator.platform || '') + ' ' + (navigator.userAgent || ''));
+        var primaryUrl = isMac ? dmgUrl : exeUrl;
+        var primaryLabel = isMac ? 'Download for Mac' : 'Download for Windows';
+        var otherName = isMac ? 'Windows' : 'Mac';
+        var otherUrl = isMac ? exeUrl : dmgUrl;
+        ['navDownload', 'heroDownload', 'mainDownload'].forEach(function (id) {
+          var n = document.getElementById(id); if (!n) return;
+          n.setAttribute('href', primaryUrl);
+          var lbl = n.querySelector('.dl-label'); if (lbl) lbl.textContent = primaryLabel;
+        });
+        if (window.__setDownloadUrl) window.__setDownloadUrl(primaryUrl);
+        var oth = document.getElementById('otherPlatform');
+        if (oth && otherUrl && otherUrl !== '#') {
+          oth.textContent = 'On ' + otherName + '? Get the ' + otherName + ' version →';
+          oth.setAttribute('href', otherUrl);
+          oth.style.display = 'inline-block';
+        }
       })
       .catch(function () {});
   } catch (e) {}

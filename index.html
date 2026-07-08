@@ -817,8 +817,9 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.7.0:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.7.1:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
+          <li><strong>Memory now sets itself up automatically</strong> — the app creates a <strong>brain/</strong> memory folder the first time you open any project (not just ones you make with + New Project), and switches on the instructions that make Claude remember your work across sessions. Zero setup — it just remembers. (Turn it off in Settings if you'd rather.)</li>
           <li><strong>The status report got a big glow-up</strong> — a new <strong>Documents</strong> section auto-lists files you create in a project (decks, PDFs, web pages) as clickable cards you can sort by date or name; a new <strong>Backlog</strong> section for "someday" ideas, kept separate from your to-do list; Up-next items are now <strong>numbered</strong>; each section sits in its own panel; and there's a <strong>light/dark toggle</strong> in the top-right (dark by default).</li>
           <li><strong>Now on Mac, too</strong> — this is a proper Mac app now (Apple-signed, opens with no warnings), right alongside Windows.</li>
           <li><strong>Search respects your filter</strong> — searching under "Active" now only shows active projects (it used to sneak archived ones in); switch to Archived or All to find those.</li>
@@ -1003,8 +1004,8 @@
       <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
             <div>
-              <strong style="color: #b388ff; font-size: 13px;">Set up brain/ on new projects</strong>
-              <div style="font-size: 11px; color: #999; margin-top: 2px;">When you click + New Project, also create a <strong>brain/</strong> folder so Claude can remember what you're working on across sessions.</div>
+              <strong style="color: #b388ff; font-size: 13px;">Set up brain/ automatically</strong>
+              <div style="font-size: 11px; color: #999; margin-top: 2px;">Creates a <strong>brain/</strong> memory folder for you — both on <strong>+ New Project</strong> AND the first time you launch any project that doesn't have one yet — so Claude remembers your work across sessions. On by default.</div>
             </div>
             <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: 14px;">
               <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer;">
@@ -1024,7 +1025,7 @@
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
             <div>
               <strong style="color: #b388ff; font-size: 13px;">Memory protocol in global CLAUDE.md</strong>
-              <div style="font-size: 11px; color: #999; margin-top: 2px;">Adds a small section to your <strong>~/.claude/CLAUDE.md</strong> so Claude knows to read &amp; update the <strong>brain/</strong> files automatically.</div>
+              <div style="font-size: 11px; color: #999; margin-top: 2px;">Adds a small section to your <strong>~/.claude/CLAUDE.md</strong> so Claude knows to read &amp; update the <strong>brain/</strong> files automatically. Set up for you on first launch — turn it off here if you'd rather not.</div>
             </div>
             <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: 14px;">
               <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer;">
@@ -1776,9 +1777,26 @@
         const installed = await window.api.getMemoryProtocolInstalled();
         const dismissed = await window.api.getMemoryPromptDismissed();
         if (!installed && !dismissed) {
-          document.getElementById('memoryPromptModal').classList.add('active');
+          // Default ON: set up project memory automatically the first time, so it
+          // "just works" with zero setup. You can turn it off any time in Settings.
+          await window.api.setMemoryProtocolInstalled(true);
+          await window.api.setMemoryPromptDismissed(true);
+          showMemoryToast();
         }
       } catch (e) {}
+    }
+
+    function showMemoryToast() {
+      let t = document.getElementById('memoryToast');
+      if (!t) {
+        t = document.createElement('div');
+        t.id = 'memoryToast';
+        t.style.cssText = 'position:fixed;bottom:20px;right:20px;max-width:340px;background:#16213e;border:1px solid rgba(179,136,255,0.55);border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.5;color:#e0e0e0;box-shadow:0 8px 30px rgba(0,0,0,0.5);opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;z-index:9999;';
+        t.innerHTML = '✓ <b>Project memory is on.</b> Claude will now remember your projects across sessions. <span style="opacity:.7">You can turn it off in Settings.</span>';
+        document.body.appendChild(t);
+      }
+      requestAnimationFrame(function () { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; });
+      setTimeout(function () { t.style.opacity = '0'; t.style.transform = 'translateY(10px)'; }, 7000);
     }
 
     async function dismissMemoryPrompt(install) {
