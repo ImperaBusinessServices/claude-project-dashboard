@@ -34,6 +34,9 @@ contextBridge.exposeInMainWorld('api', {
   openStatusTemplate: () => ipcRenderer.invoke('open-status-template'),
   resetStatusTemplate: () => ipcRenderer.invoke('reset-status-template'),
   getUsage: () => ipcRenderer.invoke('get-usage'),
+  // 💸 Spend tracker
+  getSpendData: (force) => ipcRenderer.invoke('get-spend-data', force),
+  openSpendReport: () => ipcRenderer.invoke('open-spend-report'),
   getUsageRefreshSeconds: () => ipcRenderer.invoke('get-usage-refresh-seconds'),
   setUsageRefreshSeconds: (sec) => ipcRenderer.invoke('set-usage-refresh-seconds', sec),
   // Tray meter

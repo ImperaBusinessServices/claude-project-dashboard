@@ -2113,6 +2113,212 @@ ipcMain.handle('set-usage-refresh-seconds', async (event, sec) => {
   return s.usageRefreshSeconds;
 });
 
+// ---- 💸 Spend tracker ----
+// Scans every Claude Code session log in ~/.claude/projects, prices the token
+// usage at standard API rates, and merges per-day totals into a history file
+// so the data survives Claude Code's ~30-day log cleanup.
+// The scan/pricing/dedup/merge logic is lifted from the standalone
+// spend-tracker (spend-tracker/update-spend.js), which is verified against
+// real logs — keep the two in sync if either changes.
+
+const SPEND_PROJECTS_DIR = path.join(HOME, '.claude', 'projects');
+// When the standalone spend-tracker exists (Keith's machine), its
+// spend-history.json is the single source of truth: both writers use the same
+// merge rule (per day, keep whichever total is higher), so the dashboard and
+// the standalone spend-report.html never disagree. On machines without it,
+// history lives in a per-user file next to the app settings.
+const SPEND_TRACKER_DIR = path.join(HOME, 'OneDrive', 'claude', 'spend-tracker');
+function spendHistoryPath() {
+  if (fs.existsSync(SPEND_TRACKER_DIR)) return path.join(SPEND_TRACKER_DIR, 'spend-history.json');
+  return path.join(HOME, '.claude-manager-spend-history.json');
+}
+function spendReportPath() {
+  const p = path.join(SPEND_TRACKER_DIR, 'spend-report.html');
+  return fs.existsSync(p) ? p : null;
+}
+
+// $ per million tokens: [input, cacheWrite5m, cacheWrite1h, cacheRead, output]
+// Source: platform.claude.com/docs/en/about-claude/pricing (fetched 2026-07-10)
+const SPEND_PRICE_RULES = [
+  { match: /fable|mythos/, rates: [10, 12.5, 20, 1, 50] },
+  { match: /opus-4-[5678]/, rates: [5, 6.25, 10, 0.5, 25] },
+  { match: /opus/, rates: [15, 18.75, 30, 1.5, 75] },
+  { match: /sonnet-5/, rates: null }, // intro pricing through 2026-08-31, handled below
+  { match: /sonnet/, rates: [3, 3.75, 6, 0.3, 15] },
+  { match: /haiku-4-5/, rates: [1, 1.25, 2, 0.1, 5] },
+  { match: /haiku-3-5/, rates: [0.8, 1, 1.6, 0.08, 4] },
+  { match: /haiku/, rates: [0.25, 0.3125, 0.5, 0.03, 1.25] },
+];
+const SPEND_SONNET5_INTRO = [2, 2.5, 4, 0.2, 10];
+const SPEND_SONNET5_STD = [3, 3.75, 6, 0.3, 15];
+const SPEND_DEFAULT_RATES = [5, 6.25, 10, 0.5, 25]; // unknown model -> opus-tier estimate
+
+function spendRatesFor(model, date) {
+  for (const rule of SPEND_PRICE_RULES) {
+    if (rule.match.test(model)) {
+      if (rule.rates) return rule.rates;
+      return date <= '2026-08-31' ? SPEND_SONNET5_INTRO : SPEND_SONNET5_STD;
+    }
+  }
+  return SPEND_DEFAULT_RATES;
+}
+
+function spendLocalDate(ts) {
+  const d = new Date(ts);
+  if (isNaN(d)) return null;
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+// Turn an encoded log-folder name ("C--Users-keith-OneDrive-claude-188-salon")
+// into a readable project name. Prefixes are derived from THIS machine's home
+// folder (the original spend-tracker hardcoded Keith's), so it works for
+// friends too.
+const SPEND_PREFIXES = [
+  encodeProjectPath(path.join(HOME, 'OneDrive', 'claude') + path.sep),
+  encodeProjectPath(path.join(HOME, 'OneDrive') + path.sep),
+  encodeProjectPath(HOME + path.sep),
+  encodeProjectPath(path.parse(HOME).root),
+];
+function spendPrettyProject(folder) {
+  let n = folder;
+  for (const pre of SPEND_PREFIXES) {
+    if (pre && n.startsWith(pre)) { n = n.slice(pre.length); break; }
+  }
+  n = n.replace(/---/g, ' - ').replace(/-/g, ' ').trim();
+  return n || folder;
+}
+
+function spendWalkJsonl(dir, out) {
+  let entries;
+  try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) spendWalkJsonl(full, out);
+    else if (e.name.endsWith('.jsonl')) out.push(full);
+  }
+}
+
+// each day keeps totals plus "cells": cost/token breakdown per project|model pair,
+// so the UI can filter by project and by model
+function spendNewDay() { return { total: 0, in: 0, out: 0, cr: 0, cw: 0, msgs: 0, cells: {} }; }
+function spendAddCell(day, project, model, cost, inTok, outTok, cr, cw) {
+  const key = project + '|' + model;
+  const c = day.cells[key] || (day.cells[key] = [0, 0, 0, 0, 0, 0]); // [cost,in,out,cr,cw,msgs]
+  c[0] = Math.round((c[0] + cost) * 1e6) / 1e6;
+  c[1] += inTok; c[2] += outTok; c[3] += cr; c[4] += cw; c[5] += 1;
+}
+
+async function scanSpendDays() {
+  const days = {};
+  const seen = new Set();
+  let projectDirs = [];
+  try {
+    projectDirs = fs.readdirSync(SPEND_PROJECTS_DIR, { withFileTypes: true })
+      .filter((d) => d.isDirectory()).map((d) => d.name);
+  } catch (err) {
+    return days; // no logs at all — history file (if any) still renders
+  }
+  for (const dirName of projectDirs) {
+    const projName = spendPrettyProject(dirName);
+    const files = [];
+    spendWalkJsonl(path.join(SPEND_PROJECTS_DIR, dirName), files);
+    for (const file of files) {
+      let text;
+      try { text = fs.readFileSync(file, 'utf8'); } catch { continue; }
+      for (const line of text.split('\n')) {
+        // cheap pre-filter before JSON.parse
+        if (!line.includes('"assistant"') || !line.includes('"usage"')) continue;
+        let e;
+        try { e = JSON.parse(line); } catch { continue; }
+        if (e.type !== 'assistant' || !e.message || !e.message.usage) continue;
+        if (e.isApiErrorMessage) continue;
+        const m = e.message;
+        const model = m.model || '';
+        if (!model || model === '<synthetic>') continue;
+        const key = (m.id || e.uuid || '') + '|' + (e.requestId || '');
+        if (key !== '|') { if (seen.has(key)) continue; seen.add(key); }
+        const date = spendLocalDate(e.timestamp);
+        if (!date) continue;
+        const u = m.usage;
+        const inTok = u.input_tokens || 0;
+        const outTok = u.output_tokens || 0;
+        const cr = u.cache_read_input_tokens || 0;
+        let w5 = 0, w1h = 0;
+        if (u.cache_creation) {
+          w5 = u.cache_creation.ephemeral_5m_input_tokens || 0;
+          w1h = u.cache_creation.ephemeral_1h_input_tokens || 0;
+        } else {
+          w5 = u.cache_creation_input_tokens || 0;
+        }
+        const r = spendRatesFor(model, date);
+        const cost = (inTok * r[0] + w5 * r[1] + w1h * r[2] + cr * r[3] + outTok * r[4]) / 1e6;
+
+        const d = days[date] || (days[date] = spendNewDay());
+        d.total = Math.round((d.total + cost) * 1e6) / 1e6;
+        d.in += inTok; d.out += outTok; d.cr += cr; d.cw += w5 + w1h; d.msgs += 1;
+        spendAddCell(d, projName, model.replace(/^claude-/, ''), cost, inTok, outTok, cr, w5 + w1h);
+      }
+    }
+    // let the event loop breathe between projects so the app stays responsive
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  return days;
+}
+
+// merge with saved history (per whole day: keep whichever total is higher,
+// so history survives Claude Code deleting old session logs)
+function mergeSpendHistory(days) {
+  const file = spendHistoryPath();
+  let history = { version: 2, days: {} };
+  try { history = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { /* first run */ }
+  const merged = {};
+  const allDates = new Set([...Object.keys(days), ...Object.keys(history.days || {})]);
+  for (const date of allDates) {
+    const scanned = days[date];
+    const stored = (history.days || {})[date];
+    // prefer scanned unless the stored (v2, has cells) day total is higher (= logs were cleaned up)
+    if (scanned && stored) merged[date] = (!stored.cells || scanned.total >= stored.total) ? scanned : stored;
+    else merged[date] = scanned || stored;
+  }
+  const updated = new Date().toISOString();
+  try {
+    fs.writeFileSync(file, JSON.stringify({ version: 2, updated, days: merged }, null, 1));
+  } catch (err) {
+    // read-only disk / sync conflict: still return the merged data for display
+  }
+  return { updated, days: merged };
+}
+
+let spendCache = null;       // last { updated, days }
+let spendScanPromise = null; // in-flight scan, so launch + a click don't double-scan
+
+function refreshSpendData() {
+  if (spendScanPromise) return spendScanPromise;
+  spendScanPromise = (async () => {
+    const days = await scanSpendDays();
+    spendCache = mergeSpendHistory(days);
+    return spendCache;
+  })().finally(() => { spendScanPromise = null; });
+  return spendScanPromise;
+}
+
+ipcMain.handle('get-spend-data', async (event, force) => {
+  try {
+    const data = (spendCache && !force) ? spendCache : await refreshSpendData();
+    return { success: true, updated: data.updated, days: data.days, reportAvailable: !!spendReportPath() };
+  } catch (err) {
+    return { success: false, error: err.message || String(err) };
+  }
+});
+
+ipcMain.handle('open-spend-report', async () => {
+  const p = spendReportPath();
+  if (!p) return { success: false, error: 'No standalone report on this machine' };
+  shell.openPath(p);
+  return { success: true };
+});
+
 // ---- Check for updates (via GitHub Releases API) ----
 // Queries the public GitHub Releases API for the latest tagged release.
 // Returns { current, latest, isUpdate, notes, downloadUrl, downloadSize }.

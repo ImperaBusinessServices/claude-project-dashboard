@@ -461,6 +461,105 @@
       gap: 8px;
     }
 
+    /* 💸 Spend section (Settings modal). Scoped CSS variables so the section
+       has its own light/dark toggle; default dark matches the app theme. */
+    #spendSection {
+      margin-bottom: 16px;
+      padding: 14px;
+      border-radius: 8px;
+      background: rgba(83,52,131,0.25);
+      border: 1px solid rgba(179,136,255,0.2);
+      --sp-card: #0f1729;
+      --sp-ink: #ffffff;
+      --sp-ink2: #c9cbe0;
+      --sp-muted: #8a8fa3;
+      --sp-grid: rgba(255,255,255,0.08);
+      --sp-axis: rgba(255,255,255,0.22);
+      --sp-border: rgba(255,255,255,0.12);
+      --sp-accent: #b388ff;
+      --sp-s1:#3987e5; --sp-s2:#199e70; --sp-s3:#c98500; --sp-s4:#4caf50;
+      --sp-s5:#9085e9; --sp-s6:#e66767; --sp-s7:#d55181; --sp-s8:#d95926;
+      --sp-other:#898781;
+    }
+    #spendSection.light {
+      background: #f2f0f7;
+      border-color: rgba(22,33,62,0.15);
+      --sp-card: #ffffff;
+      --sp-ink: #16213e;
+      --sp-ink2: #454a5e;
+      --sp-muted: #7a7f92;
+      --sp-grid: rgba(22,33,62,0.10);
+      --sp-axis: rgba(22,33,62,0.28);
+      --sp-border: rgba(22,33,62,0.15);
+      --sp-accent: #533483;
+      --sp-s1:#2a78d6; --sp-s2:#1baf7a; --sp-s3:#eda100; --sp-s4:#008300;
+      --sp-s5:#4a3aa7; --sp-s6:#e34948; --sp-s7:#e87ba4; --sp-s8:#eb6834;
+    }
+    #spendSection .spend-head { display: flex; align-items: center; gap: 8px; }
+    #spendSection .spend-head strong { color: var(--sp-accent); font-size: 13px; flex: 1; }
+    #spendSection .spend-updated { color: var(--sp-muted); font-size: 10.5px; }
+    .spend-btn {
+      border: 1px solid var(--sp-border); background: var(--sp-card); color: var(--sp-ink2);
+      border-radius: 6px; padding: 3px 9px; font-size: 11px; font-family: inherit; cursor: pointer;
+    }
+    .spend-btn:hover { border-color: var(--sp-accent); color: var(--sp-ink); }
+    .spend-btn:disabled { opacity: .55; cursor: default; }
+    #spendSection .spend-note { font-size: 11px; color: var(--sp-muted); margin: 4px 0 10px; line-height: 1.5; }
+    #spendSection .spend-loading { font-size: 12px; color: var(--sp-muted); padding: 8px 0 4px; }
+    .spend-tiles { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .spend-tile { background: var(--sp-card); border: 1px solid var(--sp-border); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+    .spend-tile .lbl { color: var(--sp-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
+    .spend-tile .val { color: var(--sp-ink); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .spend-tile.hero .val { font-size: 26px; font-weight: 700; line-height: 1.15; }
+    .spend-tile .sub { color: var(--sp-muted); font-size: 10px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .spend-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-bottom: 10px; }
+    .spend-filters button, .spend-filters select {
+      border: 1px solid var(--sp-border); background: var(--sp-card); color: var(--sp-ink2);
+      border-radius: 6px; padding: 3px 8px; font-size: 11px; font-family: inherit; cursor: pointer; outline: none;
+    }
+    .spend-filters button.on { color: var(--sp-ink); font-weight: 600; border-color: var(--sp-accent); }
+    .spend-filters select { max-width: 168px; }
+    #spResetBtn { display: none; color: var(--sp-ink); }
+    #spResetBtn.show { display: inline-block; }
+    .spend-card { background: var(--sp-card); border: 1px solid var(--sp-border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+    .spend-card-title { color: var(--sp-ink); font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+    .spend-card-title .spend-hint { color: var(--sp-muted); font-weight: 400; font-size: 10.5px; margin-left: 6px; }
+    .spend-legend { display: flex; flex-wrap: wrap; gap: 3px 12px; margin-bottom: 8px; font-size: 10.5px; color: var(--sp-ink2); }
+    .spend-legend .key { display: inline-flex; align-items: center; gap: 5px; }
+    .spend-legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+    #spChart { display: block; width: 100%; }
+    #spChart text { font: 9.5px 'Segoe UI', Tahoma, sans-serif; fill: var(--sp-muted); }
+    #spChart .grid { stroke: var(--sp-grid); stroke-width: 1; }
+    #spChart .axis { stroke: var(--sp-axis); stroke-width: 1; }
+    #spChart.dim g.col:not(.hot) { opacity: .5; }
+    #spChart g.col { outline: none; }
+    #spTooltip {
+      position: fixed; z-index: 300; pointer-events: none; display: none;
+      background: var(--sp-card); border: 1px solid var(--sp-border); border-radius: 8px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.35); padding: 8px 10px; font-size: 11px;
+      min-width: 160px; max-width: 250px; color: var(--sp-ink2);
+    }
+    #spTooltip .tdate { color: var(--sp-muted); font-size: 10px; }
+    #spTooltip .ttotal { color: var(--sp-ink); font-size: 15px; font-weight: 650; margin: 1px 0 4px; }
+    #spTooltip .row { display: flex; align-items: center; gap: 6px; padding: 1px 0; }
+    #spTooltip .row i { width: 10px; height: 3px; border-radius: 2px; flex: none; }
+    #spTooltip .row b { color: var(--sp-ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+    #spTooltip .row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #spTooltip .tfoot { color: var(--sp-muted); font-size: 10px; margin-top: 4px; }
+    .spend-table { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+    .spend-table th { text-align: left; color: var(--sp-muted); font-weight: 500; font-size: 10.5px;
+      border-bottom: 1px solid var(--sp-grid); padding: 3px 10px 3px 0; }
+    .spend-table td { border-bottom: 1px solid var(--sp-grid); padding: 4px 10px 4px 0; color: var(--sp-ink2);
+      font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .spend-table td.name { color: var(--sp-ink); overflow: hidden; text-overflow: ellipsis; max-width: 230px; }
+    .spend-table td .swatch { width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 6px; }
+    .spend-table td.money, .spend-table th.money, .spend-table td.num, .spend-table th.num { text-align: right; }
+    .spend-table td.money { color: var(--sp-ink); font-weight: 600; }
+    .spend-table tr.pick { cursor: pointer; }
+    .spend-table tr.pick:hover td { background: rgba(128,128,128,.09); }
+    .spend-table .meter { display: inline-block; height: 5px; border-radius: 3px; vertical-align: middle; }
+    .spend-foot { display: flex; align-items: center; gap: 8px; }
+
     /* Scrollbar */
     .content::-webkit-scrollbar { width: 8px; }
     .content::-webkit-scrollbar-track { background: transparent; }
@@ -808,26 +907,80 @@
 
   <!-- About Modal -->
   <div class="modal-overlay" id="aboutModal">
-    <div class="modal" style="width: 520px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.5.3</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.8.0</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
+
+      <!-- 💸 Spend (v2.8.0): what your Claude usage would cost at API prices -->
+      <div id="spendSection">
+        <div class="spend-head">
+          <strong>💸 Spend</strong>
+          <span class="spend-updated" id="spendUpdated"></span>
+          <button class="spend-btn" id="spendThemeBtn" onclick="spendToggleTheme()" title="Switch this section between light and dark">☀️ Light</button>
+          <button class="spend-btn" id="spendRefreshBtn" onclick="loadSpend(true)" title="Rescan your session logs now">↻ Refresh</button>
+        </div>
+        <div class="spend-note">What your Claude usage would cost at pay-as-you-go API prices, read from your local session logs — nothing leaves your computer. On a subscription plan this is the value you're getting, not an extra bill.</div>
+        <div class="spend-loading" id="spendLoading">Scanning your session logs…</div>
+        <div id="spendBody" style="display:none;">
+          <div class="spend-tiles">
+            <div class="spend-tile hero"><div class="lbl">This month</div><div class="val" id="spMonth"></div><div class="sub" id="spMonthSub"></div></div>
+            <div class="spend-tile"><div class="lbl">Today</div><div class="val" id="spToday"></div></div>
+            <div class="spend-tile"><div class="lbl">Last 7 days</div><div class="val" id="sp7"></div></div>
+            <div class="spend-tile"><div class="lbl">All time</div><div class="val" id="spAll"></div><div class="sub" id="spAllSub"></div></div>
+          </div>
+          <div class="spend-filters" id="spendFilters">
+            <button type="button" data-r="7">7 days</button>
+            <button type="button" data-r="30" class="on">30 days</button>
+            <button type="button" data-r="90">90 days</button>
+            <button type="button" data-r="all">All</button>
+            <select id="spProjSel" aria-label="Filter by project"></select>
+            <select id="spModelSel" aria-label="Filter by model"></select>
+            <button type="button" id="spResetBtn">✕ Reset</button>
+          </div>
+          <div class="spend-card">
+            <div class="spend-card-title">Daily spend, stacked by project <span class="spend-hint" id="spChartNote"></span></div>
+            <div class="spend-legend" id="spLegend"></div>
+            <div id="spChartWrap"><svg id="spChart"></svg></div>
+          </div>
+          <div class="spend-card">
+            <div class="spend-card-title">By project <span class="spend-hint" id="spProjNote"></span></div>
+            <table class="spend-table" id="spProjTable"></table>
+          </div>
+          <div class="spend-card">
+            <div class="spend-card-title">By model <span class="spend-hint" id="spModelNote"></span></div>
+            <table class="spend-table" id="spModelTable"></table>
+          </div>
+          <div class="spend-foot">
+            <button class="spend-btn" id="spReportBtn" style="display:none;" onclick="window.api.openSpendReport()">Open the full-page report ↗</button>
+          </div>
+        </div>
+        <div class="spend-loading" id="spendError" style="display:none;"></div>
+        <div id="spTooltip"></div>
+      </div>
+
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.7.1:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.8.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>Memory now sets itself up automatically</strong> — the app creates a <strong>brain/</strong> memory folder the first time you open any project (not just ones you make with + New Project), and switches on the instructions that make Claude remember your work across sessions. Zero setup — it just remembers. (Turn it off in Settings if you'd rather.)</li>
-          <li><strong>The status report got a big glow-up</strong> — a new <strong>Documents</strong> section auto-lists files you create in a project (decks, PDFs, web pages) as clickable cards you can sort by date or name; a new <strong>Backlog</strong> section for "someday" ideas, kept separate from your to-do list; Up-next items are now <strong>numbered</strong>; each section sits in its own panel; and there's a <strong>light/dark toggle</strong> in the top-right (dark by default).</li>
-          <li><strong>Now on Mac, too</strong> — this is a proper Mac app now (Apple-signed, opens with no warnings), right alongside Windows.</li>
-          <li><strong>Search respects your filter</strong> — searching under "Active" now only shows active projects (it used to sneak archived ones in); switch to Archived or All to find those.</li>
+          <li><strong>💸 New Spend section (top of this page)</strong> — see what your Claude usage would cost at pay-as-you-go API prices: this month, today, last 7 days, and all time, plus a daily chart colored by project and by-project / by-model breakdowns. Hover a bar for that day's split. Filter by time range, project, or model — clicking a table row filters to it, and every number on screen follows your filters.</li>
+          <li><strong>It's all local</strong> — the numbers come from Claude Code's own session logs on your computer; nothing is sent anywhere. The app also keeps its own history file, so your totals survive Claude Code's automatic log cleanup (~30 days).</li>
+          <li><strong>Light or dark</strong> — the Spend section has its own light/dark toggle, independent of the rest of the app.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.7.1:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>Memory now sets itself up automatically</strong> — the app creates a <strong>brain/</strong> memory folder the first time you open any project (not just ones you make with + New Project), and switches on the instructions that make Claude remember your work across sessions. Zero setup — it just remembers. (Turn it off in Settings if you'd rather.)</li>
+              <li><strong>The status report got a big glow-up</strong> — a new <strong>Documents</strong> section auto-lists files you create in a project (decks, PDFs, web pages) as clickable cards you can sort by date or name; a new <strong>Backlog</strong> section for "someday" ideas, kept separate from your to-do list; Up-next items are now <strong>numbered</strong>; each section sits in its own panel; and there's a <strong>light/dark toggle</strong> in the top-right (dark by default).</li>
+              <li><strong>Now on Mac, too</strong> — this is a proper Mac app now (Apple-signed, opens with no warnings), right alongside Windows.</li>
+              <li><strong>Search respects your filter</strong> — searching under "Active" now only shows active projects (it used to sneak archived ones in); switch to Archived or All to find those.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.5.3:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>"Up next" now sits above "Done so far"</strong> — your to-do list at the top, finished work below.</li>
@@ -1705,6 +1858,9 @@
     }
     async function showAbout() {
       document.getElementById('aboutModal').classList.add('active');
+      // 💸 Spend: the chart can't be drawn while the modal is hidden (it has no
+      // width) — render now that it's visible, or kick off the first scan.
+      if (spDays) spApplyAll(); else loadSpend(false);
       const enabled = await window.api.getBeepEnabled();
       document.getElementById('beepToggle').checked = enabled;
       updateBeepVisual(enabled);
@@ -2381,9 +2537,446 @@
     }
     initUsage();
 
+    // ---- 💸 Spend section (Settings modal) ----
+    // UI logic adapted from the standalone spend-tracker report
+    // (spend-tracker/report-template.html); data comes from main via
+    // get-spend-data (scan of ~/.claude/projects logs merged with history).
+    const SP_SLOTS = ['--sp-s1','--sp-s2','--sp-s3','--sp-s4','--sp-s5','--sp-s6','--sp-s7','--sp-s8'];
+    const SP_OTHER = 'Other';
+    const spState = { range: '30', proj: 'all', model: 'all' };
+    let spDays = null;        // date -> day record ({total,in,out,cr,cw,msgs,cells})
+    let spDayKeys = [];       // sorted dates
+    let spDayCells = {};      // date -> [{p,mo,c,i,o,r,w,m}]
+    let spSlotOf = {};        // project -> fixed color slot (all-time top 8)
+    let spRankedProjects = [], spRankedModels = [];
+    let spLoadPromise = null;
+
+    function spEl(id) { return document.getElementById(id); }
+    function spMoney(v, dp) {
+      if (dp === undefined) dp = v >= 100 ? 0 : 2;
+      return '$' + v.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+    }
+    function spTok(v) {
+      if (v >= 1e9) return (v / 1e9).toFixed(1) + 'B';
+      if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+      if (v >= 1e3) return (v / 1e3).toFixed(0) + 'K';
+      return String(v);
+    }
+    function spFmtDate(iso) {
+      const [y, m, d] = iso.split('-').map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    function spFmtDateLong(iso) {
+      const [y, m, d] = iso.split('-').map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    function spLocalISO(d) {
+      const p = (n) => String(n).padStart(2, '0');
+      return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    }
+    function spAddDaysISO(iso, n) {
+      const [y, m, d] = iso.split('-').map(Number);
+      const dt = new Date(y, m - 1, d); dt.setDate(dt.getDate() + n);
+      return spLocalISO(dt);
+    }
+    function spColorVar(p) { return spSlotOf[p] || '--sp-other'; }
+
+    async function loadSpend(force) {
+      if (spLoadPromise) return spLoadPromise;
+      const btn = spEl('spendRefreshBtn');
+      btn.disabled = true; btn.textContent = '↻ Scanning…';
+      if (!spDays) spEl('spendLoading').style.display = 'block';
+      spEl('spendError').style.display = 'none';
+      spLoadPromise = (async () => {
+        try {
+          const res = await window.api.getSpendData(!!force);
+          if (!res || !res.success) throw new Error((res && res.error) || 'unknown error');
+          spDays = res.days || {};
+          spBuildIndex();
+          spEl('spendLoading').style.display = 'none';
+          spEl('spendBody').style.display = 'block';
+          spEl('spReportBtn').style.display = res.reportAvailable ? 'inline-block' : 'none';
+          const up = new Date(res.updated);
+          spEl('spendUpdated').textContent = isNaN(up) ? '' :
+            'updated ' + up.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+          spApplyAll();
+        } catch (err) {
+          spEl('spendLoading').style.display = 'none';
+          if (!spDays) {
+            const e = spEl('spendError');
+            e.textContent = 'Couldn’t read your session logs: ' + (err.message || err);
+            e.style.display = 'block';
+          }
+        } finally {
+          btn.disabled = false; btn.textContent = '↻ Refresh';
+          spLoadPromise = null;
+        }
+      })();
+      return spLoadPromise;
+    }
+
+    // unpack cells, rank projects/models all-time, assign fixed color slots
+    function spBuildIndex() {
+      spDayKeys = Object.keys(spDays).sort();
+      spDayCells = {};
+      const projTotals = {}, modelTotals = {};
+      for (const dk of spDayKeys) {
+        const list = [];
+        for (const [key, v] of Object.entries(spDays[dk].cells || {})) {
+          const cut = key.lastIndexOf('|');
+          list.push({ p: key.slice(0, cut), mo: key.slice(cut + 1), c: v[0], i: v[1], o: v[2], r: v[3], w: v[4], m: v[5] });
+        }
+        spDayCells[dk] = list;
+        for (const cell of list) {
+          projTotals[cell.p] = (projTotals[cell.p] || 0) + cell.c;
+          modelTotals[cell.mo] = (modelTotals[cell.mo] || 0) + cell.c;
+        }
+      }
+      spRankedProjects = Object.entries(projTotals).sort((a, b) => b[1] - a[1]);
+      spRankedModels = Object.entries(modelTotals).sort((a, b) => b[1] - a[1]);
+      spSlotOf = {};
+      spRankedProjects.slice(0, 8).forEach(([p], i) => { spSlotOf[p] = SP_SLOTS[i]; });
+      spFillSelect(spEl('spProjSel'), 'All projects', spRankedProjects);
+      spFillSelect(spEl('spModelSel'), 'All models', spRankedModels);
+      // keep the active filter across refreshes if it still exists
+      spEl('spProjSel').value = spState.proj;
+      if (spEl('spProjSel').value !== spState.proj) { spState.proj = 'all'; spEl('spProjSel').value = 'all'; }
+      spEl('spModelSel').value = spState.model;
+      if (spEl('spModelSel').value !== spState.model) { spState.model = 'all'; spEl('spModelSel').value = 'all'; }
+      spRenderLegend();
+    }
+
+    function spFillSelect(sel, allLabel, entries) {
+      sel.textContent = '';
+      const o = document.createElement('option');
+      o.value = 'all'; o.textContent = allLabel; sel.appendChild(o);
+      for (const [name, cost] of entries) {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name + '  (' + spMoney(cost) + ')';
+        sel.appendChild(opt);
+      }
+    }
+
+    function spRenderLegend() {
+      const legend = spEl('spLegend');
+      legend.textContent = '';
+      for (const [p] of spRankedProjects.slice(0, 8)) {
+        const k = document.createElement('span'); k.className = 'key';
+        const i = document.createElement('i'); i.style.background = 'var(' + spSlotOf[p] + ')';
+        k.appendChild(i); k.appendChild(document.createTextNode(p)); legend.appendChild(k);
+      }
+      if (spRankedProjects.length > 8) {
+        const k = document.createElement('span'); k.className = 'key';
+        const i = document.createElement('i'); i.style.background = 'var(--sp-other)';
+        k.appendChild(i); k.appendChild(document.createTextNode(SP_OTHER)); legend.appendChild(k);
+      }
+    }
+
+    // ---- filter state helpers ----
+    function spCellOk(cell) {
+      return (spState.proj === 'all' || cell.p === spState.proj) &&
+             (spState.model === 'all' || cell.mo === spState.model);
+    }
+    function spDayAgg(dk) {
+      const a = { c: 0, i: 0, o: 0, r: 0, w: 0, m: 0 };
+      for (const cell of spDayCells[dk] || []) if (spCellOk(cell)) {
+        a.c += cell.c; a.i += cell.i; a.o += cell.o; a.r += cell.r; a.w += cell.w; a.m += cell.m;
+      }
+      return a;
+    }
+    function spProjStack(dk) {
+      const out = {};
+      for (const cell of spDayCells[dk] || []) if (spCellOk(cell)) out[cell.p] = (out[cell.p] || 0) + cell.c;
+      return out;
+    }
+    function spDatesInRange() {
+      if (!spDayKeys.length) return [];
+      const todayISO = spLocalISO(new Date());
+      const end = todayISO >= spDayKeys[spDayKeys.length - 1] ? todayISO : spDayKeys[spDayKeys.length - 1];
+      const start = spState.range === 'all' ? spDayKeys[0] : spAddDaysISO(end, -(Number(spState.range) - 1));
+      const out = [];
+      for (let d = start; d <= end; d = spAddDaysISO(d, 1)) out.push(d);
+      return out;
+    }
+    function spRangeLabel() { return spState.range === 'all' ? 'All time' : 'Last ' + spState.range + ' days'; }
+    function spFilterDesc() {
+      const bits = [];
+      if (spState.proj !== 'all') bits.push(spState.proj);
+      if (spState.model !== 'all') bits.push(spState.model);
+      return bits.join(' · ');
+    }
+
+    // ---- stat tiles ----
+    function spRenderTiles() {
+      const todayISO = spLocalISO(new Date());
+      const monthPrefix = todayISO.slice(0, 7);
+      const from7 = spAddDaysISO(todayISO, -6);
+      let sumMonth = 0, sumToday = 0, sum7 = 0, sumAll = 0;
+      for (const dk of spDayKeys) {
+        const t = spDayAgg(dk).c;
+        sumAll += t;
+        if (dk.startsWith(monthPrefix)) sumMonth += t;
+        if (dk === todayISO) sumToday += t;
+        if (dk >= from7) sum7 += t;
+      }
+      spEl('spMonth').textContent = spMoney(sumMonth);
+      const fd = spFilterDesc();
+      spEl('spMonthSub').textContent = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + (fd ? ' · ' + fd : '');
+      spEl('spToday').textContent = spMoney(sumToday);
+      spEl('sp7').textContent = spMoney(sum7);
+      spEl('spAll').textContent = spMoney(sumAll);
+      spEl('spAllSub').textContent = spDayKeys.length ? 'since ' + spFmtDate(spDayKeys[0]) : '';
+    }
+
+    // ---- stacked bar chart (SVG) ----
+    const SP_NS = 'http://www.w3.org/2000/svg';
+    function spSvgEl(tag, attrs) {
+      const n = document.createElementNS(SP_NS, tag);
+      for (const k in attrs) n.setAttribute(k, attrs[k]);
+      return n;
+    }
+    function spNiceMax(v) {
+      if (v <= 0) return 4;
+      const raw = v / 4;
+      const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+      for (const m of [1, 2, 2.5, 5, 10]) if (m * pow >= raw) return m * pow * 4;
+      return 10 * pow * 4;
+    }
+    function spStackRows(dk) { // fixed stacking order: slot 1 bottom ... Other top
+      const stack = spProjStack(dk);
+      const rows = [];
+      let other = 0;
+      for (const [p, c] of Object.entries(stack)) {
+        if (c <= 0) continue;
+        if (spSlotOf[p]) rows.push([p, c]); else other += c;
+      }
+      rows.sort((a, b) => SP_SLOTS.indexOf(spSlotOf[a[0]]) - SP_SLOTS.indexOf(spSlotOf[b[0]]));
+      if (other > 0) rows.push([SP_OTHER, other]);
+      return rows;
+    }
+    function spShowTooltip(dk, x, y) {
+      const tooltip = spEl('spTooltip');
+      const agg = spDayAgg(dk);
+      tooltip.textContent = '';
+      const td = document.createElement('div'); td.className = 'tdate';
+      td.textContent = spFmtDateLong(dk); tooltip.appendChild(td);
+      const tt = document.createElement('div'); tt.className = 'ttotal';
+      tt.textContent = spMoney(agg.c, 2); tooltip.appendChild(tt);
+      for (const [p, c] of spStackRows(dk).slice().sort((a, b) => b[1] - a[1])) {
+        const row = document.createElement('div'); row.className = 'row';
+        const i = document.createElement('i'); i.style.background = 'var(' + spColorVar(p) + ')';
+        const b = document.createElement('b'); b.textContent = spMoney(c, 2);
+        const s = document.createElement('span'); s.textContent = p;
+        row.appendChild(i); row.appendChild(b); row.appendChild(s); tooltip.appendChild(row);
+      }
+      if (agg.m > 0) {
+        const f = document.createElement('div'); f.className = 'tfoot';
+        f.textContent = agg.m.toLocaleString() + ' replies · ' + spTok(agg.o) + ' tokens out';
+        tooltip.appendChild(f);
+      }
+      tooltip.style.display = 'block';
+      const r = tooltip.getBoundingClientRect();
+      let left = x + 14, top = y - r.height - 10;
+      if (left + r.width > innerWidth - 8) left = x - r.width - 14;
+      if (top < 8) top = y + 16;
+      tooltip.style.left = left + 'px'; tooltip.style.top = top + 'px';
+    }
+    function spHideTooltip() { spEl('spTooltip').style.display = 'none'; spEl('spChart').classList.remove('dim'); }
+
+    function spRenderChart() {
+      const svg = spEl('spChart');
+      svg.textContent = '';
+      const fd = spFilterDesc();
+      spEl('spChartNote').textContent = fd ? 'showing: ' + fd : '';
+      const wrap = spEl('spChartWrap');
+      if (!wrap.clientWidth) return; // modal hidden — drawn again on open
+      const dates = spDatesInRange();
+      if (!dates.length) return;
+      const W = wrap.clientWidth;
+      const H = 210, mL = 44, mR = 6, mT = 10, mB = 20;
+      svg.setAttribute('width', W); svg.setAttribute('height', H);
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      const plotW = W - mL - mR, plotH = H - mT - mB;
+      const maxTotal = Math.max(...dates.map((d) => spDayAgg(d).c));
+      const yMax = spNiceMax(maxTotal);
+      const yPix = (v) => mT + plotH - (v / yMax) * plotH;
+      for (let i = 0; i <= 4; i++) {
+        const v = (yMax / 4) * i, y = yPix(v);
+        if (i > 0) svg.appendChild(spSvgEl('line', { x1: mL, x2: W - mR, y1: y, y2: y, class: 'grid' }));
+        const t = spSvgEl('text', { x: mL - 7, y: y + 3, 'text-anchor': 'end' });
+        t.textContent = '$' + v.toLocaleString('en-US', { maximumFractionDigits: v < 10 ? 1 : 0 });
+        svg.appendChild(t);
+      }
+      svg.appendChild(spSvgEl('line', { x1: mL, x2: W - mR, y1: yPix(0), y2: yPix(0), class: 'axis' }));
+      const band = plotW / dates.length;
+      const colW = Math.min(22, band * 0.65);
+      const labelEvery = Math.ceil(dates.length / Math.max(1, Math.floor(plotW / 56)));
+      dates.forEach((dk, idx) => {
+        const cx = mL + band * idx + band / 2;
+        if (idx % labelEvery === 0) {
+          const t = spSvgEl('text', { x: cx, y: H - 6, 'text-anchor': 'middle' });
+          t.textContent = spFmtDate(dk); svg.appendChild(t);
+        }
+        const rows = spStackRows(dk);
+        if (!rows.length) return;
+        const g = spSvgEl('g', { class: 'col', tabindex: '0' });
+        const x = cx - colW / 2;
+        let cum = 0;
+        rows.forEach(([p, c], i) => {
+          const isTop = i === rows.length - 1;
+          const y1 = yPix(cum), y0 = yPix(cum + c);
+          cum += c;
+          let h = y1 - y0;
+          let y = y0;
+          if (!isTop && h > 4) { y += 2; h -= 2; } // 2px surface gap above interior segments
+          if (h <= 0.4) return;
+          if (isTop && h > 3) {
+            const r = Math.min(3, h / 2, colW / 2);
+            const pathEl = spSvgEl('path', {
+              d: 'M' + x + ',' + (y + h) + ' L' + x + ',' + (y + r) +
+                 ' Q' + x + ',' + y + ' ' + (x + r) + ',' + y +
+                 ' L' + (x + colW - r) + ',' + y +
+                 ' Q' + (x + colW) + ',' + y + ' ' + (x + colW) + ',' + (y + r) +
+                 ' L' + (x + colW) + ',' + (y + h) + ' Z',
+              fill: 'var(' + spColorVar(p) + ')',
+            });
+            g.appendChild(pathEl);
+          } else {
+            g.appendChild(spSvgEl('rect', { x: x, y: y, width: colW, height: h, fill: 'var(' + spColorVar(p) + ')' }));
+          }
+        });
+        const hit = spSvgEl('rect', { x: mL + band * idx, y: mT, width: band, height: plotH, fill: 'transparent' });
+        g.appendChild(hit);
+        g.addEventListener('pointermove', (ev) => {
+          svg.classList.add('dim');
+          svg.querySelectorAll('g.col').forEach((c) => c.classList.remove('hot'));
+          g.classList.add('hot');
+          spShowTooltip(dk, ev.clientX, ev.clientY);
+        });
+        g.addEventListener('pointerleave', spHideTooltip);
+        g.addEventListener('focus', () => {
+          svg.classList.add('dim'); g.classList.add('hot');
+          const bb = g.getBoundingClientRect();
+          spShowTooltip(dk, bb.x + bb.width / 2, bb.y + 30);
+        });
+        g.addEventListener('blur', spHideTooltip);
+        svg.appendChild(g);
+      });
+    }
+
+    // ---- tables ----
+    function spTh(tr, txt, cls) { const c = document.createElement('th'); if (cls) c.className = cls; c.textContent = txt; tr.appendChild(c); }
+    function spTd(tr, txt, cls) { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = txt; tr.appendChild(c); return c; }
+
+    function spRenderProjTable() {
+      // scoped to date range + model filter (click a row to filter by that project)
+      const totals = {};
+      let grand = 0;
+      for (const dk of spDatesInRange()) for (const cell of spDayCells[dk] || []) {
+        if (spState.model !== 'all' && cell.mo !== spState.model) continue;
+        totals[cell.p] = (totals[cell.p] || 0) + cell.c; grand += cell.c;
+      }
+      const ranked = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+      spEl('spProjNote').textContent = spRangeLabel() +
+        (spState.model !== 'all' ? ' · ' + spState.model : '') + ' · click a row to filter';
+      const t = spEl('spProjTable'); t.textContent = '';
+      const hr = document.createElement('tr');
+      spTh(hr, 'Project'); spTh(hr, 'Spend', 'money'); spTh(hr, 'Share', 'num'); spTh(hr, '');
+      t.appendChild(hr);
+      const max = ranked.length ? ranked[0][1] : 1;
+      for (const [p, c] of ranked.slice(0, 10)) {
+        const tr = document.createElement('tr');
+        tr.className = 'pick'; tr.title = 'Click to filter by ' + p;
+        tr.addEventListener('click', () => { spEl('spProjSel').value = p; spState.proj = p; spApplyAll(); });
+        const nameCell = spTd(tr, '', 'name');
+        const sw = document.createElement('i'); sw.className = 'swatch';
+        sw.style.background = 'var(' + spColorVar(p) + ')';
+        nameCell.appendChild(sw); nameCell.appendChild(document.createTextNode(p));
+        spTd(tr, spMoney(c), 'money');
+        spTd(tr, (grand ? (c / grand * 100) : 0).toFixed(1) + '%', 'num');
+        const mc = spTd(tr, '');
+        const m = document.createElement('span'); m.className = 'meter';
+        m.style.width = Math.max(2, Math.round(c / max * 90)) + 'px';
+        m.style.background = 'var(' + spColorVar(p) + ')';
+        mc.appendChild(m);
+        t.appendChild(tr);
+      }
+      if (ranked.length > 10) {
+        const rest = ranked.slice(10).reduce((s, r) => s + r[1], 0);
+        const tr = document.createElement('tr');
+        spTd(tr, (ranked.length - 10) + ' more projects', 'name');
+        spTd(tr, spMoney(rest), 'money');
+        spTd(tr, (grand ? (rest / grand * 100) : 0).toFixed(1) + '%', 'num');
+        spTd(tr, '');
+        t.appendChild(tr);
+      }
+    }
+
+    function spRenderModelTable() {
+      // scoped to date range + project filter (click a row to filter by that model)
+      const totals = {};
+      let grand = 0;
+      for (const dk of spDatesInRange()) for (const cell of spDayCells[dk] || []) {
+        if (spState.proj !== 'all' && cell.p !== spState.proj) continue;
+        totals[cell.mo] = (totals[cell.mo] || 0) + cell.c; grand += cell.c;
+      }
+      spEl('spModelNote').textContent = spRangeLabel() +
+        (spState.proj !== 'all' ? ' · ' + spState.proj : '') + ' · click a row to filter';
+      const t = spEl('spModelTable'); t.textContent = '';
+      const hr = document.createElement('tr');
+      spTh(hr, 'Model'); spTh(hr, 'Spend', 'money'); spTh(hr, 'Share', 'num');
+      t.appendChild(hr);
+      for (const [m, c] of Object.entries(totals).sort((a, b) => b[1] - a[1])) {
+        const tr = document.createElement('tr');
+        tr.className = 'pick'; tr.title = 'Click to filter by ' + m;
+        tr.addEventListener('click', () => { spEl('spModelSel').value = m; spState.model = m; spApplyAll(); });
+        spTd(tr, m, 'name'); spTd(tr, spMoney(c), 'money');
+        spTd(tr, (grand ? (c / grand * 100) : 0).toFixed(1) + '%', 'num');
+        t.appendChild(tr);
+      }
+    }
+
+    function spApplyAll() {
+      if (!spDays) return;
+      spEl('spResetBtn').classList.toggle('show', spState.proj !== 'all' || spState.model !== 'all');
+      spRenderTiles(); spRenderChart(); spRenderProjTable(); spRenderModelTable();
+    }
+
+    // ---- filter events ----
+    spEl('spendFilters').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-r]'); if (!b) return;
+      spState.range = b.dataset.r;
+      document.querySelectorAll('#spendFilters button[data-r]').forEach((x) => x.classList.toggle('on', x === b));
+      spApplyAll();
+    });
+    spEl('spProjSel').addEventListener('change', () => { spState.proj = spEl('spProjSel').value; spApplyAll(); });
+    spEl('spModelSel').addEventListener('change', () => { spState.model = spEl('spModelSel').value; spApplyAll(); });
+    spEl('spResetBtn').addEventListener('click', () => {
+      spState.proj = 'all'; spState.model = 'all';
+      spEl('spProjSel').value = 'all'; spEl('spModelSel').value = 'all';
+      spApplyAll();
+    });
+
+    // ---- light/dark toggle (spend section only; dark matches the app) ----
+    function spSetTheme(mode) {
+      spEl('spendSection').classList.toggle('light', mode === 'light');
+      spEl('spendThemeBtn').textContent = mode === 'light' ? '🌙 Dark' : '☀️ Light';
+      try { localStorage.setItem('cpdSpendTheme', mode); } catch (e) {}
+      spApplyAll(); // repaint the chart with the new palette
+    }
+    function spendToggleTheme() {
+      spSetTheme(spEl('spendSection').classList.contains('light') ? 'dark' : 'light');
+    }
+    (function() {
+      let saved = null;
+      try { saved = localStorage.getItem('cpdSpendTheme'); } catch (e) {}
+      if (saved === 'light') spSetTheme('light');
+    })();
+
     // Load on start
     refreshFolders();
     maybeShowMemoryPrompt();
+    loadSpend(false); // 💸 refresh spend data on app launch (background)
   </script>
 
 </body>
