@@ -533,6 +533,29 @@
     .spend-filters select { max-width: 168px; }
     #spResetBtn { display: none; color: var(--sp-ink); }
     #spResetBtn.show { display: inline-block; }
+    /* Multi-select project dropdown (checkboxes — pick several at once) */
+    .sp-multi { position: relative; display: inline-block; }
+    .sp-multi-btn {
+      border: 1px solid var(--sp-border); background: var(--sp-card); color: var(--sp-ink2);
+      border-radius: 6px; padding: 3px 8px; font-size: 11px; font-family: inherit; cursor: pointer; outline: none;
+      max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .sp-multi.filtered .sp-multi-btn { color: var(--sp-ink); font-weight: 600; border-color: var(--sp-accent); }
+    .sp-multi-menu {
+      display: none; position: absolute; top: calc(100% + 3px); left: 0; z-index: 30;
+      min-width: 230px; max-height: 260px; overflow-y: auto;
+      background: var(--sp-card); border: 1px solid var(--sp-border); border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35); padding: 4px;
+    }
+    .sp-multi.open .sp-multi-menu { display: block; }
+    .sp-multi-menu label {
+      display: flex; align-items: center; gap: 7px; padding: 4px 8px; border-radius: 5px;
+      font-size: 11px; color: var(--sp-ink2); cursor: pointer; white-space: nowrap;
+    }
+    .sp-multi-menu label:hover { background: rgba(128,128,128,0.12); }
+    .sp-multi-menu label input { accent-color: var(--sp-accent); cursor: pointer; }
+    .sp-multi-menu label .cost { margin-left: auto; color: var(--sp-muted); }
+    .sp-multi-menu .sp-multi-all { border-bottom: 1px solid var(--sp-border); margin-bottom: 3px; padding-bottom: 6px; }
     .spend-card { background: var(--sp-card); border: 1px solid var(--sp-border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
     .spend-card-title { color: var(--sp-ink); font-size: 12px; font-weight: 600; margin-bottom: 6px; }
     .spend-card-title .spend-hint { color: var(--sp-muted); font-weight: 400; font-size: 10.5px; margin-left: 6px; }
@@ -569,6 +592,7 @@
     .spend-table td.money { color: var(--sp-ink); font-weight: 600; }
     .spend-table tr.pick { cursor: pointer; }
     .spend-table tr.pick:hover td { background: rgba(128,128,128,.09); }
+    .spend-table tr.sel td { background: rgba(128,128,128,.14); }
     .spend-table .meter { display: inline-block; height: 5px; border-radius: 3px; vertical-align: middle; }
     .spend-foot { display: flex; align-items: center; gap: 8px; }
 
@@ -921,7 +945,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.9.0</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.9.1</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -951,7 +975,10 @@
             <button type="button" data-r="30" class="on">30 days</button>
             <button type="button" data-r="90">90 days</button>
             <button type="button" data-r="all">All</button>
-            <select id="spProjSel" aria-label="Filter by project"></select>
+            <div class="sp-multi" id="spProjMulti">
+              <button type="button" class="sp-multi-btn" id="spProjBtn" title="Filter by project — tick as many as you like">All projects ▾</button>
+              <div class="sp-multi-menu" id="spProjMenu"></div>
+            </div>
             <select id="spModelSel" aria-label="Filter by model"></select>
             <button type="button" id="spResetBtn">✕ Reset</button>
           </div>
@@ -980,15 +1007,20 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.9.0:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.9.1:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>🟠 Fable on the usage meter</strong> — Anthropic's new Fable model gets its own weekly allowance, so the Week bar now shows an orange tick marking how much of Fable's limit you've used (same numbers as Claude's own usage screen). Hover the meter for the exact percentage. The tray flyout shows it too.</li>
-          <li><strong>💸 Spend section is now collapsible</strong> — by default it shows just the totals row (this month, today, last 7 days, all time). Click <strong>▸ Details</strong> to expand the chart, filters, and breakdown tables. It remembers your choice.</li>
+          <li><strong>💸 Pick several projects at once</strong> — the Spend section's project filter is now a checkbox dropdown, so you can compare any mix of projects. Clicking rows in the By-project table adds/removes them too (selected rows highlight).</li>
+          <li><strong>Whole dollars in the tables</strong> — the By-project and By-model tables now round to the nearest dollar. Cleaner to read.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.9.0:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>🟠 Fable on the usage meter</strong> — Anthropic's new Fable model gets its own weekly allowance, so the Week bar now shows an orange tick marking how much of Fable's limit you've used (same numbers as Claude's own usage screen). Hover the meter for the exact percentage. The tray flyout shows it too.</li>
+              <li><strong>💸 Spend section is now collapsible</strong> — by default it shows just the totals row (this month, today, last 7 days, all time). Click <strong>▸ Details</strong> to expand the chart, filters, and breakdown tables. It remembers your choice.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.8.0:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>💸 New Spend section (top of this page)</strong> — see what your Claude usage would cost at pay-as-you-go API prices: this month, today, last 7 days, and all time, plus a daily chart colored by project and by-project / by-model breakdowns. Hover a bar for that day's split. Filter by time range, project, or model — clicking a table row filters to it, and every number on screen follows your filters.</li>
@@ -2570,7 +2602,8 @@
     // get-spend-data (scan of ~/.claude/projects logs merged with history).
     const SP_SLOTS = ['--sp-s1','--sp-s2','--sp-s3','--sp-s4','--sp-s5','--sp-s6','--sp-s7','--sp-s8'];
     const SP_OTHER = 'Other';
-    const spState = { range: '30', proj: 'all', model: 'all' };
+    // projs: multi-select (a Set of project names; empty = all projects)
+    const spState = { range: '30', projs: new Set(), model: 'all' };
     let spDays = null;        // date -> day record ({total,in,out,cr,cw,msgs,cells})
     let spDayKeys = [];       // sorted dates
     let spDayCells = {};      // date -> [{p,mo,c,i,o,r,w,m}]
@@ -2663,11 +2696,11 @@
       spRankedModels = Object.entries(modelTotals).sort((a, b) => b[1] - a[1]);
       spSlotOf = {};
       spRankedProjects.slice(0, 8).forEach(([p], i) => { spSlotOf[p] = SP_SLOTS[i]; });
-      spFillSelect(spEl('spProjSel'), 'All projects', spRankedProjects);
+      spFillProjMenu();
       spFillSelect(spEl('spModelSel'), 'All models', spRankedModels);
       // keep the active filter across refreshes if it still exists
-      spEl('spProjSel').value = spState.proj;
-      if (spEl('spProjSel').value !== spState.proj) { spState.proj = 'all'; spEl('spProjSel').value = 'all'; }
+      spState.projs = new Set([...spState.projs].filter((p) => projTotals[p] !== undefined));
+      spSyncProjUI();
       spEl('spModelSel').value = spState.model;
       if (spEl('spModelSel').value !== spState.model) { spState.model = 'all'; spEl('spModelSel').value = 'all'; }
       spRenderLegend();
@@ -2682,6 +2715,41 @@
         opt.value = name; opt.textContent = name + '  (' + spMoney(cost) + ')';
         sel.appendChild(opt);
       }
+    }
+
+    // ---- multi-select project dropdown ----
+    function spFillProjMenu() {
+      const menu = spEl('spProjMenu'); menu.textContent = '';
+      const addRow = (labelText, cost, dataAttr, dataVal, cls) => {
+        const lab = document.createElement('label');
+        if (cls) lab.className = cls;
+        const cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.dataset[dataAttr] = dataVal;
+        lab.appendChild(cb); lab.appendChild(document.createTextNode(labelText));
+        if (cost !== null) {
+          const c = document.createElement('span'); c.className = 'cost';
+          c.textContent = spMoney(cost, 0); lab.appendChild(c);
+        }
+        menu.appendChild(lab);
+      };
+      addRow('All projects', null, 'all', '1', 'sp-multi-all');
+      for (const [name, cost] of spRankedProjects) addRow(name, cost, 'p', name);
+    }
+    function spSyncProjUI() {
+      const n = spState.projs.size;
+      const label = n === 0 ? 'All projects' : n === 1 ? [...spState.projs][0] : n + ' projects';
+      spEl('spProjBtn').textContent = label + ' ▾';
+      spEl('spProjMulti').classList.toggle('filtered', n > 0);
+      spEl('spProjMenu').querySelectorAll('input[data-p]').forEach((cb) => { cb.checked = spState.projs.has(cb.dataset.p); });
+      const allCb = spEl('spProjMenu').querySelector('input[data-all]');
+      if (allCb) allCb.checked = n === 0;
+    }
+    // Short description of the project filter for the card notes
+    function spProjDesc() {
+      const n = spState.projs.size;
+      if (n === 0) return '';
+      if (n <= 2) return [...spState.projs].join(' + ');
+      return n + ' projects';
     }
 
     function spRenderLegend() {
@@ -2701,7 +2769,7 @@
 
     // ---- filter state helpers ----
     function spCellOk(cell) {
-      return (spState.proj === 'all' || cell.p === spState.proj) &&
+      return (spState.projs.size === 0 || spState.projs.has(cell.p)) &&
              (spState.model === 'all' || cell.mo === spState.model);
     }
     function spDayAgg(dk) {
@@ -2728,7 +2796,7 @@
     function spRangeLabel() { return spState.range === 'all' ? 'All time' : 'Last ' + spState.range + ' days'; }
     function spFilterDesc() {
       const bits = [];
-      if (spState.proj !== 'all') bits.push(spState.proj);
+      if (spState.projs.size) bits.push(spProjDesc());
       if (spState.model !== 'all') bits.push(spState.model);
       return bits.join(' · ');
     }
@@ -2913,13 +2981,17 @@
       const max = ranked.length ? ranked[0][1] : 1;
       for (const [p, c] of ranked.slice(0, 10)) {
         const tr = document.createElement('tr');
-        tr.className = 'pick'; tr.title = 'Click to filter by ' + p;
-        tr.addEventListener('click', () => { spEl('spProjSel').value = p; spState.proj = p; spApplyAll(); });
+        tr.className = 'pick' + (spState.projs.has(p) ? ' sel' : '');
+        tr.title = spState.projs.has(p) ? 'Click to remove ' + p + ' from the filter' : 'Click to add ' + p + ' to the filter';
+        tr.addEventListener('click', () => {
+          if (spState.projs.has(p)) spState.projs.delete(p); else spState.projs.add(p);
+          spSyncProjUI(); spApplyAll();
+        });
         const nameCell = spTd(tr, '', 'name');
         const sw = document.createElement('i'); sw.className = 'swatch';
         sw.style.background = 'var(' + spColorVar(p) + ')';
         nameCell.appendChild(sw); nameCell.appendChild(document.createTextNode(p));
-        spTd(tr, spMoney(c), 'money');
+        spTd(tr, spMoney(c, 0), 'money');
         spTd(tr, (grand ? (c / grand * 100) : 0).toFixed(1) + '%', 'num');
         const mc = spTd(tr, '');
         const m = document.createElement('span'); m.className = 'meter';
@@ -2932,7 +3004,7 @@
         const rest = ranked.slice(10).reduce((s, r) => s + r[1], 0);
         const tr = document.createElement('tr');
         spTd(tr, (ranked.length - 10) + ' more projects', 'name');
-        spTd(tr, spMoney(rest), 'money');
+        spTd(tr, spMoney(rest, 0), 'money');
         spTd(tr, (grand ? (rest / grand * 100) : 0).toFixed(1) + '%', 'num');
         spTd(tr, '');
         t.appendChild(tr);
@@ -2944,20 +3016,25 @@
       const totals = {};
       let grand = 0;
       for (const dk of spDatesInRange()) for (const cell of spDayCells[dk] || []) {
-        if (spState.proj !== 'all' && cell.p !== spState.proj) continue;
+        if (spState.projs.size && !spState.projs.has(cell.p)) continue;
         totals[cell.mo] = (totals[cell.mo] || 0) + cell.c; grand += cell.c;
       }
       spEl('spModelNote').textContent = spRangeLabel() +
-        (spState.proj !== 'all' ? ' · ' + spState.proj : '') + ' · click a row to filter';
+        (spState.projs.size ? ' · ' + spProjDesc() : '') + ' · click a row to filter';
       const t = spEl('spModelTable'); t.textContent = '';
       const hr = document.createElement('tr');
       spTh(hr, 'Model'); spTh(hr, 'Spend', 'money'); spTh(hr, 'Share', 'num');
       t.appendChild(hr);
       for (const [m, c] of Object.entries(totals).sort((a, b) => b[1] - a[1])) {
         const tr = document.createElement('tr');
-        tr.className = 'pick'; tr.title = 'Click to filter by ' + m;
-        tr.addEventListener('click', () => { spEl('spModelSel').value = m; spState.model = m; spApplyAll(); });
-        spTd(tr, m, 'name'); spTd(tr, spMoney(c), 'money');
+        tr.className = 'pick' + (spState.model === m ? ' sel' : '');
+        tr.title = 'Click to filter by ' + m;
+        tr.addEventListener('click', () => {
+          spState.model = spState.model === m ? 'all' : m;
+          spEl('spModelSel').value = spState.model;
+          spApplyAll();
+        });
+        spTd(tr, m, 'name'); spTd(tr, spMoney(c, 0), 'money');
         spTd(tr, (grand ? (c / grand * 100) : 0).toFixed(1) + '%', 'num');
         t.appendChild(tr);
       }
@@ -2965,7 +3042,7 @@
 
     function spApplyAll() {
       if (!spDays) return;
-      spEl('spResetBtn').classList.toggle('show', spState.proj !== 'all' || spState.model !== 'all');
+      spEl('spResetBtn').classList.toggle('show', spState.projs.size > 0 || spState.model !== 'all');
       spRenderTiles(); spRenderChart(); spRenderProjTable(); spRenderModelTable();
     }
 
@@ -2976,12 +3053,28 @@
       document.querySelectorAll('#spendFilters button[data-r]').forEach((x) => x.classList.toggle('on', x === b));
       spApplyAll();
     });
-    spEl('spProjSel').addEventListener('change', () => { spState.proj = spEl('spProjSel').value; spApplyAll(); });
+    // Project dropdown: button opens the checkbox menu; it stays open while
+    // ticking so several projects can be picked; closes on an outside click.
+    spEl('spProjBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      spEl('spProjMulti').classList.toggle('open');
+    });
+    spEl('spProjMenu').addEventListener('click', (e) => e.stopPropagation());
+    spEl('spProjMenu').addEventListener('change', (e) => {
+      const cb = e.target;
+      if (cb.dataset.all !== undefined) spState.projs.clear();
+      else if (cb.dataset.p) {
+        if (cb.checked) spState.projs.add(cb.dataset.p);
+        else spState.projs.delete(cb.dataset.p);
+      }
+      spSyncProjUI(); spApplyAll();
+    });
+    document.addEventListener('click', () => spEl('spProjMulti').classList.remove('open'));
     spEl('spModelSel').addEventListener('change', () => { spState.model = spEl('spModelSel').value; spApplyAll(); });
     spEl('spResetBtn').addEventListener('click', () => {
-      spState.proj = 'all'; spState.model = 'all';
-      spEl('spProjSel').value = 'all'; spEl('spModelSel').value = 'all';
-      spApplyAll();
+      spState.projs.clear(); spState.model = 'all';
+      spEl('spModelSel').value = 'all';
+      spSyncProjUI(); spApplyAll();
     });
 
     // ---- collapse toggle: tiles always show, everything else folds away ----
