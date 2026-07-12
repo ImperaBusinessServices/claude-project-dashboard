@@ -109,6 +109,18 @@
       box-shadow: 0 0 3px rgba(233,69,96,0.7);
       pointer-events: none;
     }
+    /* Orange tick on the Week bar — the model-scoped weekly limit (e.g. Fable).
+       Taller than the pink time tick so both stay visible if they overlap. */
+    .usage-row .usage-model-marker {
+      position: absolute;
+      top: -3px;
+      height: 12px;
+      width: 2px;
+      margin-left: -1px;
+      background: #ff9d2e;
+      border-radius: 1px;
+      box-shadow: 0 0 3px rgba(255,157,46,0.8);
+    }
     .usage-row .usage-pct {
       color: rgba(255,255,255,0.7);
       width: 32px;
@@ -909,7 +921,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.8.0</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.9.0</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -919,10 +931,10 @@
         <div class="spend-head">
           <strong>💸 Spend</strong>
           <span class="spend-updated" id="spendUpdated"></span>
+          <button class="spend-btn" id="spendToggleBtn" onclick="spendToggleCollapsed()" title="Show or hide the chart, filters, and breakdown tables">▸ Details</button>
           <button class="spend-btn" id="spendThemeBtn" onclick="spendToggleTheme()" title="Switch this section between light and dark">☀️ Light</button>
           <button class="spend-btn" id="spendRefreshBtn" onclick="loadSpend(true)" title="Rescan your session logs now">↻ Refresh</button>
         </div>
-        <div class="spend-note">What your Claude usage would cost at pay-as-you-go API prices, read from your local session logs — nothing leaves your computer. On a subscription plan this is the value you're getting, not an extra bill.</div>
         <div class="spend-loading" id="spendLoading">Scanning your session logs…</div>
         <div id="spendBody" style="display:none;">
           <div class="spend-tiles">
@@ -931,6 +943,9 @@
             <div class="spend-tile"><div class="lbl">Last 7 days</div><div class="val" id="sp7"></div></div>
             <div class="spend-tile"><div class="lbl">All time</div><div class="val" id="spAll"></div><div class="sub" id="spAllSub"></div></div>
           </div>
+          <!-- Everything below the tiles folds behind the ▸ Details toggle -->
+          <div id="spendDetail" style="display:none;">
+          <div class="spend-note">What your Claude usage would cost at pay-as-you-go API prices, read from your local session logs — nothing leaves your computer. On a subscription plan this is the value you're getting, not an extra bill.</div>
           <div class="spend-filters" id="spendFilters">
             <button type="button" data-r="7">7 days</button>
             <button type="button" data-r="30" class="on">30 days</button>
@@ -956,6 +971,7 @@
           <div class="spend-foot">
             <button class="spend-btn" id="spReportBtn" style="display:none;" onclick="window.api.openSpendReport()">Open the full-page report ↗</button>
           </div>
+          </div><!-- /spendDetail -->
         </div>
         <div class="spend-loading" id="spendError" style="display:none;"></div>
         <div id="spTooltip"></div>
@@ -964,16 +980,21 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.8.0:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.9.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>💸 New Spend section (top of this page)</strong> — see what your Claude usage would cost at pay-as-you-go API prices: this month, today, last 7 days, and all time, plus a daily chart colored by project and by-project / by-model breakdowns. Hover a bar for that day's split. Filter by time range, project, or model — clicking a table row filters to it, and every number on screen follows your filters.</li>
-          <li><strong>It's all local</strong> — the numbers come from Claude Code's own session logs on your computer; nothing is sent anywhere. The app also keeps its own history file, so your totals survive Claude Code's automatic log cleanup (~30 days).</li>
-          <li><strong>Light or dark</strong> — the Spend section has its own light/dark toggle, independent of the rest of the app.</li>
+          <li><strong>🟠 Fable on the usage meter</strong> — Anthropic's new Fable model gets its own weekly allowance, so the Week bar now shows an orange tick marking how much of Fable's limit you've used (same numbers as Claude's own usage screen). Hover the meter for the exact percentage. The tray flyout shows it too.</li>
+          <li><strong>💸 Spend section is now collapsible</strong> — by default it shows just the totals row (this month, today, last 7 days, all time). Click <strong>▸ Details</strong> to expand the chart, filters, and breakdown tables. It remembers your choice.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.8.0:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>💸 New Spend section (top of this page)</strong> — see what your Claude usage would cost at pay-as-you-go API prices: this month, today, last 7 days, and all time, plus a daily chart colored by project and by-project / by-model breakdowns. Hover a bar for that day's split. Filter by time range, project, or model — clicking a table row filters to it, and every number on screen follows your filters.</li>
+              <li><strong>It's all local</strong> — the numbers come from Claude Code's own session logs on your computer; nothing is sent anywhere. The app also keeps its own history file, so your totals survive Claude Code's automatic log cleanup (~30 days).</li>
+              <li><strong>Light or dark</strong> — the Spend section has its own light/dark toggle, independent of the rest of the app.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.7.1:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>Memory now sets itself up automatically</strong> — the app creates a <strong>brain/</strong> memory folder the first time you open any project (not just ones you make with + New Project), and switches on the instructions that make Claude remember your work across sessions. Zero setup — it just remembers. (Turn it off in Settings if you'd rather.)</li>
@@ -2352,16 +2373,20 @@
       return Math.max(0, Math.min(100, frac * 100));
     }
 
-    function usageRowHtml(label, b, windowMs) {
+    function usageRowHtml(label, b, windowMs, modelB) {
       const cls = b.pct >= 90 ? ' hot' : b.pct >= 70 ? ' warn' : '';
       const left = usageCountdownShort(b.resetsAt);
       const mark = usageTimelinePct(b.resetsAt, windowMs);
       const marker = mark == null ? '' :
         `<div class="usage-marker" style="left:${mark}%" title="You're ${Math.round(mark)}% through this window"></div>`;
+      // Orange tick: a model-scoped limit riding on the same bar (e.g. Fable's
+      // own weekly allowance — same window, its own percentage).
+      const modelMarker = !modelB ? '' :
+        `<div class="usage-model-marker" style="left:${modelB.pct}%" title="${modelB.label}: ${modelB.pct}% of its weekly limit used"></div>`;
       return `
         <div class="usage-row">
           <span class="usage-label">${label}</span>
-          <div class="usage-bar"><div class="usage-fill${cls}" style="width:${b.pct}%"></div>${marker}</div>
+          <div class="usage-bar"><div class="usage-fill${cls}" style="width:${b.pct}%"></div>${marker}${modelMarker}</div>
           <span class="usage-pct">${b.pct}%</span>
           <span class="usage-reset">${left ? '&#8635; ' + left : ''}</span>
         </div>`;
@@ -2396,8 +2421,9 @@
         tips.push('Session: ' + res.fiveHour.pct + '% used' + (usageTimeLeft(res.fiveHour.resetsAt) ? ' · ' + usageTimeLeft(res.fiveHour.resetsAt) : ''));
       }
       if (res.sevenDay) {
-        html += usageRowHtml('Week', res.sevenDay, USAGE_WINDOW_7D);
+        html += usageRowHtml('Week', res.sevenDay, USAGE_WINDOW_7D, res.sevenDayModel);
         tips.push('Week: ' + res.sevenDay.pct + '% used' + (usageTimeLeft(res.sevenDay.resetsAt) ? ' · ' + usageTimeLeft(res.sevenDay.resetsAt) : ''));
+        if (res.sevenDayModel) tips.push(res.sevenDayModel.label + ' (orange tick): ' + res.sevenDayModel.pct + '% of its own weekly limit used');
       }
       if (res.sevenDayOpus) {
         html += usageRowHtml('Opus', res.sevenDayOpus, USAGE_WINDOW_7D);
@@ -2486,6 +2512,7 @@
       const parts = [];
       if (lastUsage.fiveHour) parts.push('Session ' + lastUsage.fiveHour.pct + '%' + (usageTimeLeft(lastUsage.fiveHour.resetsAt) ? ' · ' + usageTimeLeft(lastUsage.fiveHour.resetsAt) : ''));
       if (lastUsage.sevenDay) parts.push('Week ' + lastUsage.sevenDay.pct + '%' + (usageTimeLeft(lastUsage.sevenDay.resetsAt) ? ' · ' + usageTimeLeft(lastUsage.sevenDay.resetsAt) : ''));
+      if (lastUsage.sevenDayModel) parts.push(lastUsage.sevenDayModel.label + ' ' + lastUsage.sevenDayModel.pct + '%');
       window.api.setTrayIcon(dataUrl, parts.join('\n'));
     }
 
@@ -2956,6 +2983,24 @@
       spEl('spProjSel').value = 'all'; spEl('spModelSel').value = 'all';
       spApplyAll();
     });
+
+    // ---- collapse toggle: tiles always show, everything else folds away ----
+    function spSetCollapsed(collapsed) {
+      spEl('spendDetail').style.display = collapsed ? 'none' : 'block';
+      spEl('spendToggleBtn').textContent = collapsed ? '▸ Details' : '▾ Hide details';
+      try { localStorage.setItem('cpdSpendCollapsed', collapsed ? '1' : '0'); } catch (e) {}
+      // The chart can't be drawn while its container is hidden (zero width) —
+      // repaint now that it's visible.
+      if (!collapsed && spDays) spApplyAll();
+    }
+    function spendToggleCollapsed() {
+      spSetCollapsed(spEl('spendDetail').style.display !== 'none');
+    }
+    (function() {
+      let saved = null;
+      try { saved = localStorage.getItem('cpdSpendCollapsed'); } catch (e) {}
+      spSetCollapsed(saved !== '0'); // collapsed by default
+    })();
 
     // ---- light/dark toggle (spend section only; dark matches the app) ----
     function spSetTheme(mode) {

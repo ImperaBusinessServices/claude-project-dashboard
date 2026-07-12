@@ -2089,11 +2089,26 @@ ipcMain.handle('get-usage', async () => {
         resetsAt: b.resets_at || null
       };
     }
+    // Model-scoped weekly limit (e.g. Fable, which gets its own 50% weekly
+    // allowance). Newer API responses carry it in a "limits" array as a
+    // "weekly_scoped" entry with the model's display name in scope.
+    let sevenDayModel = null;
+    if (Array.isArray(data.limits)) {
+      const scoped = data.limits.find(l => l && l.kind === 'weekly_scoped' && typeof l.percent === 'number');
+      if (scoped) {
+        sevenDayModel = {
+          pct: Math.max(0, Math.min(100, Math.round(scoped.percent))),
+          resetsAt: scoped.resets_at || null,
+          label: (scoped.scope && scoped.scope.model && scoped.scope.model.display_name) || 'Model'
+        };
+      }
+    }
     const result = {
       success: true,
       fiveHour: bucket(data.five_hour),
       sevenDay: bucket(data.seven_day),
-      sevenDayOpus: bucket(data.seven_day_opus)
+      sevenDayOpus: bucket(data.seven_day_opus),
+      sevenDayModel
     };
     if (process.env.USAGE_DEBUG) console.log('[usage] ok keys=' + Object.keys(data).join(',') + ' parsed=' + JSON.stringify(result));
     return result;
@@ -2127,7 +2142,7 @@ const SPEND_PROJECTS_DIR = path.join(HOME, '.claude', 'projects');
 // merge rule (per day, keep whichever total is higher), so the dashboard and
 // the standalone spend-report.html never disagree. On machines without it,
 // history lives in a per-user file next to the app settings.
-const SPEND_TRACKER_DIR = path.join(HOME, 'OneDrive', 'claude', 'spend-tracker');
+const SPEND_TRACKER_DIR = path.join(HOME, 'OneDrive', 'claude', 'claude-manager', 'spend-tracker');
 function spendHistoryPath() {
   if (fs.existsSync(SPEND_TRACKER_DIR)) return path.join(SPEND_TRACKER_DIR, 'spend-history.json');
   return path.join(HOME, '.claude-manager-spend-history.json');

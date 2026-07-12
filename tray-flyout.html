@@ -36,6 +36,10 @@
   /* "You are here" tick — how far through the time window we are (Session=5h, Week=7d) */
   .fmarker { position: absolute; top: -2px; height: 12px; width: 2px; margin-left: -1px;
     background: #e94560; border-radius: 1px; box-shadow: 0 0 3px rgba(233,69,96,0.7); pointer-events: none; }
+  /* Orange tick on the Week bar — the model-scoped weekly limit (e.g. Fable).
+     Taller than the pink time tick so both stay visible if they overlap. */
+  .fmodelmark { position: absolute; top: -3px; height: 14px; width: 2px; margin-left: -1px;
+    background: #ff9d2e; border-radius: 1px; box-shadow: 0 0 3px rgba(255,157,46,0.8); pointer-events: none; }
   .frow-reset { font-size: 11px; color: #8b949e; margin-top: 4px; }
   .empty { font-size: 12px; color: #8b949e; padding: 6px 0 10px; }
   .foot {
@@ -81,15 +85,19 @@
     return Math.max(0, Math.min(100, ((windowMs - until) / windowMs) * 100));
   }
   const WIN_5H = 5 * 3600000, WIN_7D = 7 * 86400000;
-  function rowHtml(name, b, windowMs) {
+  function rowHtml(name, b, windowMs, modelB) {
     const cls = b.pct >= 90 ? 'red' : b.pct >= 70 ? 'amber' : 'green';
     const left = cdShort(b.resetsAt);
     const mark = timelinePct(b.resetsAt, windowMs);
     const marker = mark == null ? '' : '<div class="fmarker" style="left:' + mark + '%"></div>';
+    // Orange tick: a model-scoped limit on the same bar (e.g. Fable's own weekly allowance)
+    const modelMarker = !modelB ? '' : '<div class="fmodelmark" style="left:' + modelB.pct + '%"></div>';
+    let reset = left ? '&#8635; resets in ' + left : '';
+    if (modelB) reset += (reset ? ' · ' : '') + '<span style="color:#ff9d2e">' + modelB.label + ' ' + modelB.pct + '%</span>';
     return '<div class="frow">'
       + '<div class="frow-top"><span class="frow-name">' + name + '</span><span class="frow-pct">' + b.pct + '%</span></div>'
-      + '<div class="fbar"><div class="ffill ' + cls + '" style="width:' + b.pct + '%"></div>' + marker + '</div>'
-      + (left ? '<div class="frow-reset">&#8635; resets in ' + left + '</div>' : '')
+      + '<div class="fbar"><div class="ffill ' + cls + '" style="width:' + b.pct + '%"></div>' + marker + modelMarker + '</div>'
+      + (reset ? '<div class="frow-reset">' + reset + '</div>' : '')
       + '</div>';
   }
   function render(u) {
@@ -103,7 +111,7 @@
     dot.classList.remove('stale');
     let html = '';
     if (u.fiveHour) html += rowHtml('Session', u.fiveHour, WIN_5H);
-    if (u.sevenDay) html += rowHtml('Week', u.sevenDay, WIN_7D);
+    if (u.sevenDay) html += rowHtml('Week', u.sevenDay, WIN_7D, u.sevenDayModel);
     if (u.sevenDayOpus) html += rowHtml('Opus (week)', u.sevenDayOpus, WIN_7D);
     host.innerHTML = html;
   }
