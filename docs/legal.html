@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legal &amp; Disclaimer — Claude Project Dashboard</title>
+<meta name="description" content="Legal notices and disclaimers for the Claude Project Dashboard and claude-manager.com.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf6f0; --card: #ffffff; --text: #2b2620; --muted: #6d645a; --faint: #97897b;
+    --line: rgba(43,38,32,0.12); --coral: #c2410c; --coral-br: #e05d2d;
+  }
+  :root.dark {
+    --bg: #191512; --card: #211c18; --text: #ece5db; --muted: #b0a494; --faint: #857a6c;
+    --line: rgba(236,229,219,0.14); --coral: #ff9d5c; --coral-br: #ff8a45;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light) {
+      --bg: #191512; --card: #211c18; --text: #ece5db; --muted: #b0a494; --faint: #857a6c;
+      --line: rgba(236,229,219,0.14); --coral: #ff9d5c; --coral-br: #ff8a45;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Hanken Grotesk', system-ui, sans-serif; line-height: 1.7; font-size: 15.5px; transition: background .25s, color .25s; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 22px; }
+  header { padding: 26px 0; border-bottom: 1px solid var(--line); }
+  .head-in { display: flex; align-items: center; gap: 12px; }
+  .head-in img { width: 26px; height: 26px; border-radius: 6px; }
+  .head-in b { font-size: 15px; }
+  .head-in a { color: var(--text); text-decoration: none; display: flex; align-items: center; gap: 10px; }
+  #themeBtn { margin-left: auto; background: var(--card); border: 1px solid var(--line); color: var(--text); border-radius: 100px; padding: 6px 13px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  main { padding: 46px 0 30px; }
+  h1 { font-family: 'Fraunces', serif; font-size: clamp(30px, 5vw, 42px); line-height: 1.15; letter-spacing: -0.01em; margin-bottom: 10px; }
+  .updated { color: var(--faint); font-size: 13px; margin-bottom: 34px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 24px 26px; margin-bottom: 18px; }
+  h2 { font-family: 'Fraunces', serif; font-size: 21px; margin-bottom: 10px; letter-spacing: -0.01em; }
+  p { color: var(--muted); margin-bottom: 12px; }
+  p:last-child { margin-bottom: 0; }
+  b { color: var(--text); }
+  a { color: var(--coral); }
+  .back { display: inline-block; margin: 8px 0 60px; color: var(--coral); text-decoration: none; font-weight: 600; }
+  .back:hover { text-decoration: underline; }
+</style>
+<script>
+  // Apply the saved theme before paint (no flash)
+  (function(){ try { var t = localStorage.getItem('cm-legal-theme'); if (t) document.documentElement.classList.add(t); } catch(e){} })();
+</script>
+</head>
+<body>
+
+<header>
+  <div class="wrap head-in">
+    <a href="index.html"><img src="favicon.svg" alt=""><b>Claude Project Dashboard</b></a>
+    <button id="themeBtn" onclick="toggleTheme()">🌙 Dark</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Legal &amp; Disclaimer</h1>
+  <p class="updated">Last updated: 2026-07-12 · claude-manager.com and the Claude Project Dashboard are operated by <a href="https://imperabusinessservices.com" target="_blank" rel="noopener">Impera Business Services</a>.</p>
+
+  <section>
+    <h2>Not affiliated with Anthropic</h2>
+    <p>The Claude Project Dashboard is an <b>independent tool</b> for people who use Claude Code. <b>Claude</b> and <b>Claude Code</b> are products and trademarks of Anthropic, PBC. This project is <b>not affiliated with, endorsed by, or sponsored by Anthropic</b> in any way.</p>
+  </section>
+
+  <section>
+    <h2>Usage and spend numbers are estimates — not billing</h2>
+    <p>The app shows two kinds of numbers about your Claude account, and <b>both are informational estimates only</b>:</p>
+    <p><b>The usage meter</b> (Session, Week, and per-model bars) reflects data reported for your account at the time it was fetched. It can lag, differ from, or disagree with what Anthropic's own screens show.</p>
+    <p><b>The Spend section</b> estimates what your usage <b>would cost at published pay-as-you-go API list prices</b>. It is computed entirely on your computer from Claude Code's local session logs. It is <b>not a bill</b>, it is <b>not your subscription price</b>, and it is <b>not provided or verified by Anthropic</b>. If you're on a subscription plan (Pro or Max), what you actually pay is your subscription fee — not the numbers shown. Prices change, logs can be incomplete, and estimates can be wrong.</p>
+    <p><b>For your real limits and real charges, rely only on Anthropic's own usage screens and your Anthropic billing account.</b> To the maximum extent permitted by law, Impera Business Services accepts <b>no liability</b> for any difference between the figures shown by the app or this website and any amount you are actually billed, nor for any decision made in reliance on those figures.</p>
+  </section>
+
+  <section>
+    <h2>The software is provided “as is”</h2>
+    <p>The Claude Project Dashboard is free software, provided <b>“as is” and without warranty of any kind</b>, express or implied — including, without limitation, warranties of merchantability, fitness for a particular purpose, and non-infringement. You use it at your own risk.</p>
+    <p>To the maximum extent permitted by applicable law, in no event shall Impera Business Services or the app's contributors be liable for any claim, damages, or other liability — whether in contract, tort, or otherwise — arising from or in connection with the software or its use, including (without limitation) loss of data, loss of profits, or business interruption.</p>
+  </section>
+
+  <section>
+    <h2>Privacy</h2>
+    <p>The app runs entirely on your computer. Your usage figures, spend estimates, project names, and files <b>never leave your machine</b> — the app does not send them to us or anyone else.</p>
+    <p>If you choose to enter your email address on the download page, we use it only to share updates about the app. Nothing else, and we don't sell or share it.</p>
+  </section>
+
+  <section>
+    <h2>Questions</h2>
+    <p>Email <a href="mailto:keithblanco@gmail.com">keithblanco@gmail.com</a> and we'll get back to you.</p>
+  </section>
+
+  <a class="back" href="index.html">← Back to claude-manager.com</a>
+</main>
+
+<script>
+  function syncBtn() {
+    var root = document.documentElement;
+    var dark = root.classList.contains('dark') || (window.matchMedia('(prefers-color-scheme: dark)').matches && !root.classList.contains('light'));
+    document.getElementById('themeBtn').textContent = dark ? '☀️ Light' : '🌙 Dark';
+  }
+  function toggleTheme() {
+    var root = document.documentElement;
+    var dark = root.classList.contains('dark') || (window.matchMedia('(prefers-color-scheme: dark)').matches && !root.classList.contains('light'));
+    root.classList.toggle('dark', !dark);
+    root.classList.toggle('light', dark);
+    try { localStorage.setItem('cm-legal-theme', !dark ? 'dark' : 'light'); } catch (e) {}
+    syncBtn();
+  }
+  syncBtn();
+</script>
+</body>
+</html>

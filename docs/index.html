@@ -183,6 +183,70 @@
     background-size: 36px 36px;
     -webkit-mask: radial-gradient(125% 100% at 50% 0%, #000 35%, transparent 100%); mask: radial-gradient(125% 100% at 50% 0%, #000 35%, transparent 100%); }
   .app-glow { position:absolute; inset:-4% 0 auto; height:55%; z-index:0; background: radial-gradient(50% 70% at 50% 0%, rgba(130,185,255,0.20), transparent 70%); filter: blur(6px); }
+
+  /* ---- Hero slider: slide 1 = the app, slide 2 = the terminals it lives in ---- */
+  .hs-track { display: flex; width: 200%; transition: transform .75s cubic-bezier(.45,0,.2,1); position: relative; z-index: 1; }
+  .hs-slide { width: 50%; flex: 0 0 50%; position: relative; min-width: 0; transition: opacity .5s; }
+  /* Slide 2 is shorter than the app window — center it in the stage */
+  .hs-slide:last-child { display: flex; flex-direction: column; justify-content: center; }
+  .hs-track.s1 { transform: translateX(-50%); }
+  /* Fade the parked slide out — otherwise its edge peeks through the stage padding */
+  .hs-track:not(.s1) .hs-slide:last-child, .hs-track.s1 .hs-slide:first-child { opacity: 0; pointer-events: none; }
+  .hs-nav { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 24px; }
+  .hs-arrow { background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.22); color: #fff; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 17px; line-height: 1; display: grid; place-items: center; transition: background .2s; }
+  .hs-arrow:hover { background: rgba(255,255,255,.22); }
+  .hs-dot { width: 9px; height: 9px; border-radius: 100px; background: rgba(255,255,255,.3); cursor: pointer; transition: all .25s; }
+  .hs-dot.on { background: #fff; width: 24px; }
+
+  /* Slide 2 — a desk full of Claude Code terminals */
+  .term-head { text-align: center; max-width: 640px; margin: 0 auto 26px; }
+  .term-head h3 { font-family: var(--display); font-size: clamp(22px,3vw,30px); color: #f4f8ff; margin: 0 0 10px; letter-spacing: -0.01em; }
+  .term-head h3 em { font-style: italic; color: #7cc0ff; }
+  .term-head p { font-size: 14.5px; line-height: 1.65; color: rgba(226,236,250,.82); margin: 0; }
+  .term-head p b { color: #fff; }
+  /* Faithful Windows-Terminal-running-Claude-Code windows */
+  .term-scene { position: relative; height: clamp(380px, 48vw, 560px); }
+  .tw { position: absolute; border-radius: 9px; overflow: hidden; background: #0c0c0c; border: 1px solid rgba(255,255,255,.16); box-shadow: 0 30px 70px -24px rgba(0,0,0,.7); font-family: var(--mono); text-align: left; }
+  .tw-tabs { display: flex; align-items: center; gap: 7px; padding: 5px 10px 0 6px; background: #000; font-size: 10px; color: #9aa3ad; }
+  .tw-tab { display: inline-flex; align-items: center; gap: 8px; background: #262626; color: #e8e8e8; padding: 5px 10px; border-radius: 7px 7px 0 0; white-space: nowrap; }
+  .tw-tab .tico { font-size: 9px; }
+  .tw-tab .tx { color: #8b949e; }
+  .tw-plus, .tw-chev { color: #8b949e; }
+  .tw-ctl { margin-left: auto; color: #9aa3ad; letter-spacing: 4px; font-size: 10px; padding-bottom: 4px; }
+  .tw-body { padding: 12px 15px 13px; font-size: 12px; line-height: 1.75; color: #d6dbe2; }
+  .tw-hero { display: flex; gap: 11px; align-items: flex-start; margin-bottom: 8px; }
+  .tw-hero svg { flex-shrink: 0; margin-top: 3px; }
+  .tw-t1 { color: #fff; font-weight: 700; }
+  .tw-t1 .ver { color: #8b949e; font-weight: 400; }
+  .tw-body .dim { color: #8b949e; }
+  .tw-body .cl { color: #e0805e; }
+  .tw-body .u { color: #d6dbe2; }
+  .tw-sep { border-top: 1px solid rgba(255,255,255,.22); margin: 9px 0 7px; }
+  .tw-prompt { color: #fff; }
+  .tw-caret { display: inline-block; width: 7px; height: 13px; background: #e8e8e8; vertical-align: -2px; margin-left: 4px; animation: twblink 1.05s steps(1) infinite; }
+  @keyframes twblink { 50% { opacity: 0; } }
+  .tw-status { display: flex; gap: 5px; margin-top: 7px; font-size: 9.5px; white-space: nowrap; overflow: hidden; }
+  .tw-status .c1 { color: #56d9d2; } .tw-status .c2 { color: #e36fd9; } .tw-status .c3 { color: #3fd97f; } .tw-status .c4 { color: #4ea0ff; }
+  .tw-status .dot { color: #565f6a; }
+  .tw-status .rt { margin-left: auto; color: #8b949e; }
+  .tw1 { width: 47%; left: 0.5%; top: 5%; opacity: .8; transform: scale(.96); z-index: 1; }
+  .tw2 { width: 47%; right: 0.5%; top: 0; opacity: .8; transform: scale(.96); z-index: 1; }
+  .tw3 { width: 60%; left: 20%; top: 36%; z-index: 2; }
+  @media (max-width: 700px) {
+    .tw1 { width: 74%; left: 0; } .tw2 { width: 74%; right: 0; top: 2%; } .tw3 { width: 86%; left: 7%; top: 40%; }
+    .tw-body { font-size: 9.5px; } .tw-status { font-size: 8.5px; }
+  }
+
+  /* Orange Fable tick on the preview's Week bar (mirrors the real app) */
+  .a-usage .u-bar { position: relative; overflow: visible; }
+  .a-usage .u-fill { display: block; }
+  .a-usage .u-tick { position: absolute; top: -3px; height: 12px; width: 2px; margin-left: -1px; background: #ff9d2e; border-radius: 1px; box-shadow: 0 0 3px rgba(255,157,46,.85); }
+
+  /* Mini meter chip for the "across the top" breakdown */
+  .mtr { display: inline-flex; flex-direction: column; gap: 5px; justify-content: center; min-width: 74px; padding: 9px 10px !important; }
+  .mtr .mtr-bar { position: relative; display: block; width: 58px; height: 5px; border-radius: 3px; background: rgba(128,140,160,.3); }
+  .mtr .mtr-bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: #34c98e; }
+  .mtr .mtr-bar em { position: absolute; top: -3px; height: 11px; width: 2px; background: #ff9d2e; border-radius: 1px; box-shadow: 0 0 3px rgba(255,157,46,.85); }
   .appwin {
     position: relative; z-index: 1;
     /* Arctic Light palette */
@@ -518,7 +582,7 @@
       <span class="eyebrow intro d1"><span class="pulse"></span> For everyone getting started with Claude Code</span>
       <h1 class="intro d2">All your Claude Code Terminal projects, in <span class="accent">one place</span>.</h1>
       <p class="lede intro d3">The Claude Project Dashboard turns your scattered project folders into clean tiles. Click one and Claude Code opens right there — in the correct folder, exactly where you left off.</p>
-      <p class="intro d3" style="max-width:58ch;margin:16px auto 0;font-size:14.5px;color:var(--text);line-height:1.6;"><span style="display:inline-block;background:var(--coral-deep);color:#fff6ef;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:100px;margin-right:9px;vertical-align:middle;">NEW · v2.3.0</span>A live <strong>Claude usage meter</strong> right at the top — see how much of your Session and Weekly limits you’ve used, with reset countdowns. Optional <strong>system-tray gauge</strong> too.</p>
+      <p class="intro d3" style="max-width:58ch;margin:16px auto 0;font-size:14.5px;color:var(--text);line-height:1.6;"><span style="display:inline-block;background:var(--coral-deep);color:#fff6ef;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:100px;margin-right:9px;vertical-align:middle;">NEW</span>A live <strong>Claude usage meter</strong> — Session &amp; Week bars with reset countdowns and an <strong style="color:#e8821e">orange Fable tick</strong> — plus a <strong>💸 Spend dashboard</strong> in Settings showing what your usage would cost at API prices.</p>
       <div class="cta-row intro d4">
         <a class="btn btn-primary btn-xl" id="heroDownload" href="#download">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 19h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -534,9 +598,13 @@
       </div>
     </div>
 
-    <!-- The real app, recreated (demo project names, not real clients) -->
-    <div class="app-showcase intro d3">
+    <!-- The real app, recreated (demo project names, not real clients).
+         Slide 1 = the dashboard; slide 2 = the terminals it launches
+         (so nobody mistakes this for Claude Desktop / claude.ai). -->
+    <div class="app-showcase intro d3" id="appShowcase">
       <div class="app-glow"></div>
+      <div class="hs-track" id="hsTrack">
+      <div class="hs-slide">
       <div class="demo-hint">✨ This preview is live — try the sort buttons or “+ New Project”</div>
       <div class="appwin" id="appwin">
         <div class="a-titlebar">
@@ -548,7 +616,7 @@
           <div class="a-usage" title="Your Claude plan usage — same numbers as Claude's own /usage screen">
             <span class="u-new">NEW</span>
             <div class="u-row"><span class="u-lbl">Session</span><span class="u-bar"><span class="u-fill" style="width:24%"></span></span><span class="u-pct">24%</span><span class="u-rst">↻ 3h 41m</span></div>
-            <div class="u-row"><span class="u-lbl">Week</span><span class="u-bar"><span class="u-fill" style="width:12%"></span></span><span class="u-pct">12%</span><span class="u-rst">↻ 4d</span></div>
+            <div class="u-row"><span class="u-lbl">Week</span><span class="u-bar"><span class="u-fill" style="width:12%"></span><span class="u-tick" style="left:38%" title="Fable: 38% of its own weekly limit used"></span></span><span class="u-pct">12%</span><span class="u-rst">↻ 4d</span></div>
           </div>
           <div class="a-actions">
             <span class="a-btn">Settings</span>
@@ -628,6 +696,73 @@
       </div>
       <div class="float f1">🚀 <b>one click</b> to launch</div>
       <div class="float f2"><b>memory blend</b> across projects</div>
+      </div><!-- /slide 1 -->
+
+      <div class="hs-slide">
+        <div class="term-head">
+          <h3>Made for the <em>terminal</em> — not a chat window.</h3>
+          <p>This isn’t Claude Desktop or claude.ai. The Dashboard is for people who run <b>Claude Code in a terminal</b> — every tile opens a real terminal window, in the right project folder, ready to work.</p>
+        </div>
+        <div class="term-scene">
+          <div class="tw tw1">
+            <div class="tw-tabs"><span class="tw-tab">tax-helper-2026 <span class="tx">✕</span></span><span class="tw-plus">+</span><span class="tw-chev">⌄</span><span class="tw-ctl">— ▢ ✕</span></div>
+            <div class="tw-body">
+              <div class="tw-hero">
+                <svg width="27" height="18" viewBox="0 0 27 18" aria-hidden="true"><g fill="#e0805e"><rect x="3" y="0" width="3" height="3"/><rect x="21" y="0" width="3" height="3"/><rect x="0" y="3" width="27" height="3"/><rect x="0" y="6" width="27" height="3"/><rect x="0" y="9" width="27" height="3"/><rect x="0" y="12" width="6" height="3"/><rect x="21" y="12" width="6" height="3"/><rect x="0" y="15" width="3" height="3"/><rect x="24" y="15" width="3" height="3"/></g><g fill="#0c0c0c"><rect x="6" y="6" width="3" height="3"/><rect x="18" y="6" width="3" height="3"/></g></svg>
+                <div>
+                  <div class="tw-t1">Claude Code <span class="ver">v2.1</span></div>
+                  <div class="dim">C:\projects\tax-helper-2026</div>
+                </div>
+              </div>
+              <div><span class="dim">›</span> <span class="u">finish the deductions checklist</span></div>
+              <div><span class="cl">●</span> Updating deductions.md…</div>
+              <div class="tw-status"><span class="c1">Fable 5</span><span class="dot">·</span><span class="c3">22% context</span><span class="rt">⏵⏵ auto</span></div>
+            </div>
+          </div>
+          <div class="tw tw2">
+            <div class="tw-tabs"><span style="color:#565f6a;letter-spacing:2px;">● ● ●</span><span style="margin:0 auto;color:#9aa3ad;">recipe-box — claude</span></div>
+            <div class="tw-body">
+              <div class="tw-hero">
+                <svg width="27" height="18" viewBox="0 0 27 18" aria-hidden="true"><g fill="#e0805e"><rect x="3" y="0" width="3" height="3"/><rect x="21" y="0" width="3" height="3"/><rect x="0" y="3" width="27" height="3"/><rect x="0" y="6" width="27" height="3"/><rect x="0" y="9" width="27" height="3"/><rect x="0" y="12" width="6" height="3"/><rect x="21" y="12" width="6" height="3"/><rect x="0" y="15" width="3" height="3"/><rect x="24" y="15" width="3" height="3"/></g><g fill="#0c0c0c"><rect x="6" y="6" width="3" height="3"/><rect x="18" y="6" width="3" height="3"/></g></svg>
+                <div>
+                  <div class="tw-t1">Claude Code <span class="ver">v2.1</span></div>
+                  <div class="dim">~/projects/recipe-box</div>
+                </div>
+              </div>
+              <div><span class="dim">›</span> <span class="u">add grandma’s lasagna recipe</span></div>
+              <div><span class="cl">●</span> Writing lasagna.md…</div>
+              <div class="tw-status"><span class="c1">Fable 5</span><span class="dot">·</span><span class="c3">8% context</span><span class="rt">⏵⏵ auto</span></div>
+            </div>
+          </div>
+          <div class="tw tw3">
+            <div class="tw-tabs"><span class="tw-tab">salon-website <span class="tx">✕</span></span><span class="tw-plus">+</span><span class="tw-chev">⌄</span><span class="tw-ctl">— ▢ ✕</span></div>
+            <div class="tw-body">
+              <div class="tw-hero">
+                <svg width="33" height="22" viewBox="0 0 27 18" aria-hidden="true"><g fill="#e0805e"><rect x="3" y="0" width="3" height="3"/><rect x="21" y="0" width="3" height="3"/><rect x="0" y="3" width="27" height="3"/><rect x="0" y="6" width="27" height="3"/><rect x="0" y="9" width="27" height="3"/><rect x="0" y="12" width="6" height="3"/><rect x="21" y="12" width="6" height="3"/><rect x="0" y="15" width="3" height="3"/><rect x="24" y="15" width="3" height="3"/></g><g fill="#0c0c0c"><rect x="6" y="6" width="3" height="3"/><rect x="18" y="6" width="3" height="3"/></g></svg>
+                <div>
+                  <div class="tw-t1">Claude Code <span class="ver">v2.1</span></div>
+                  <div class="dim">Fable 5 · Claude Max</div>
+                  <div class="dim">C:\projects\salon-website</div>
+                </div>
+              </div>
+              <div><span class="dim">›</span> <span class="u">polish the booking page and add photos</span></div>
+              <div><span class="cl">●</span> Editing booking.html…</div>
+              <div><span class="cl">●</span> Done — want me to refresh the gallery too?</div>
+              <div class="tw-sep"></div>
+              <div class="tw-prompt">›<span class="tw-caret"></span></div>
+              <div class="tw-status"><span class="c1">Fable 5</span><span class="dot">·</span><span class="c2">⚡ extra high</span><span class="dot">·</span><span class="c3">14% context</span><span class="dot">·</span><span class="c4">~$0.63</span><span class="rt">⏵⏵ auto mode on</span></div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /slide 2 -->
+      </div><!-- /hs-track -->
+
+      <div class="hs-nav">
+        <button class="hs-arrow" id="hsPrev" aria-label="Previous slide">‹</button>
+        <span class="hs-dot on" data-s="0" role="button" aria-label="The dashboard"></span>
+        <span class="hs-dot" data-s="1" role="button" aria-label="The terminals it launches"></span>
+        <button class="hs-arrow" id="hsNext" aria-label="Next slide">›</button>
+      </div>
     </div>
   </div>
 </header>
@@ -694,6 +829,7 @@
         <div class="tbk"><span class="chip2 dim">Archived</span><span><b>Tuck finished projects away</b> — flip between Active, Archived, and All anytime.</span></div>
         <div class="tbk"><span class="chip2 dim">Search</span><span>Find any project <b>by name or by what it’s about</b>.</span></div>
         <div class="tbk"><span class="chip2 dim">Global CLAUDE.md</span><span>Open the <b>master instructions</b> Claude uses across every project.</span></div>
+        <div class="tbk"><span class="chip2 dim mtr"><span class="mtr-bar"><i style="width:24%"></i></span><span class="mtr-bar"><i style="width:12%"></i><em style="left:38%"></em></span></span><span>The <b>Claude usage meter</b> — live Session &amp; Week bars with reset countdowns, same numbers as Claude’s own <b>/usage</b> screen. The <b style="color:#e8821e">orange tick</b> shows how much of <b>Fable’s own weekly limit</b> you’ve used. Optional system-tray gauge too.</span></div>
       </div>
     </div>
   </div>
@@ -787,7 +923,7 @@
     <div class="reveal">
       <span class="kicker">Memory, blended</span>
       <h2>Every project remembers — and they <em>share</em>.</h2>
-      <p class="section-lede">The quiet superpower: your projects don’t start cold. Each one keeps its own memory, and they’re all woven together.</p>
+      <p class="section-lede">The quiet superpower: your projects don’t start cold. Claude <b>writes its own notes as it works</b> — you never take a note — and every project’s memory is woven together.</p>
     </div>
 
     <div class="hero-feature">
@@ -796,7 +932,7 @@
           <div class="pic">🕸️</div>
           <div>
             <h3>A <span class="synapse-name">memory blend</span> across every project — meet Synapse</h3>
-            <p>An Obsidian-style web of memory woven right into your code. Every project keeps its own notes, and <b>Synapse blends them together</b> — so Claude can borrow a detail from one project while working in another, and your projects <b>build on each other</b> instead of starting from scratch. Memory files are plain Markdown, so they open natively in <b>Obsidian, Notion, or any notes app</b> you already use.</p>
+            <p><b>The notes write themselves.</b> As Claude works, it keeps its own running notes — what it built, what’s next, what you decided — <b>automatically, with zero effort from you</b>. (Think Obsidian or Notion, except you never have to write anything: the notebook fills itself.) Every project keeps its own memory, and <b>Synapse blends them together</b> — so Claude can borrow a detail from one project while working in another, and your projects <b>build on each other</b> instead of starting from scratch. The files are plain Markdown, so they still open natively in <b>Obsidian, Notion, or any notes app</b> if you want to peek.</p>
           </div>
         </div>
         <div class="hf-point">
@@ -1008,10 +1144,11 @@
         <a href="#download">Download</a>
         <a href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener">GitHub</a>
         <a href="https://imperabusinessservices.com" target="_blank" rel="noopener">Impera Business Services</a>
+        <a href="legal.html">Legal &amp; disclaimer</a>
       </div>
     </div>
     <p class="made-by">Built by <a href="https://imperabusinessservices.com" target="_blank" rel="noopener" style="color:var(--coral-br);text-decoration:none;"><b>Impera Business Services</b> →</a></p>
-    <p class="disclaimer"><a href="https://imperabusinessservices.com" target="_blank" rel="noopener" style="color:inherit;">Impera Business Services</a> created the Claude Project Dashboard — an independent tool for people who use Claude Code. Claude and Claude Code are products of Anthropic; this project is not affiliated with or endorsed by Anthropic. “Synapse” is our friendly name for the app’s project-memory system.</p>
+    <p class="disclaimer"><a href="https://imperabusinessservices.com" target="_blank" rel="noopener" style="color:inherit;">Impera Business Services</a> created the Claude Project Dashboard — an independent tool for people who use Claude Code. Claude and Claude Code are products of Anthropic; this project is not affiliated with or endorsed by Anthropic. “Synapse” is our friendly name for the app’s project-memory system. Usage and spend figures shown by the app are <b>local estimates, not billing</b> — see the <a href="legal.html" style="color:inherit;">full legal &amp; disclaimer page</a>.</p>
   </div>
 </footer>
 
@@ -1354,6 +1491,29 @@
         setTimeout(function () { closeGate(); submitBtn.disabled = false; submitBtn.textContent = orig; startDownload(); }, 800);
       });
   });
+})();
+
+/* ---- Hero slider: dashboard ⇄ the terminals it launches ---- */
+(function () {
+  var track = document.getElementById('hsTrack');
+  if (!track) return;
+  var dots = Array.prototype.slice.call(document.querySelectorAll('.hs-dot'));
+  var cur = 0, timer = null;
+  function go(n) {
+    cur = (n + 2) % 2;
+    track.classList.toggle('s1', cur === 1);
+    dots.forEach(function (d, i) { d.classList.toggle('on', i === cur); });
+  }
+  function auto() { stop(); timer = setInterval(function () { go(cur + 1); }, 8000); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+  document.getElementById('hsPrev').addEventListener('click', function () { go(cur - 1); auto(); });
+  document.getElementById('hsNext').addEventListener('click', function () { go(cur + 1); auto(); });
+  dots.forEach(function (d) { d.addEventListener('click', function () { go(Number(d.dataset.s)); auto(); }); });
+  // Don't slide away mid-play: pause while the pointer is over the showcase
+  var stage = document.getElementById('appShowcase');
+  stage.addEventListener('mouseenter', stop);
+  stage.addEventListener('mouseleave', auto);
+  auto();
 })();
 </script>
 </body>
