@@ -3,7 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('api', {
   getFolders: () => ipcRenderer.invoke('get-folders'),
   createFolder: (name) => ipcRenderer.invoke('create-folder', name),
-  openTerminal: (path) => ipcRenderer.invoke('open-terminal', path),
+  openTerminal: (path, aiCmd) => ipcRenderer.invoke('open-terminal', path, aiCmd),
   openClaudeMd: (path) => ipcRenderer.invoke('open-claude-md', path),
   openGlobalClaudeMd: () => ipcRenderer.invoke('open-global-claude-md'),
   openExplorer: (path) => ipcRenderer.invoke('open-explorer', path),
@@ -40,7 +40,7 @@ contextBridge.exposeInMainWorld('api', {
   getUsageRefreshSeconds: () => ipcRenderer.invoke('get-usage-refresh-seconds'),
   setUsageRefreshSeconds: (sec) => ipcRenderer.invoke('set-usage-refresh-seconds', sec),
   // Multi-CLI launch (feature-branch test)
-  getLaunchCommand: () => ipcRenderer.invoke('get-launch-command'),
+  getLaunchSetup: () => ipcRenderer.invoke('get-launch-setup'),
   setLaunchCommand: (cmd) => ipcRenderer.invoke('set-launch-command', cmd),
   // Tray meter
   getTrayEnabled: () => ipcRenderer.invoke('get-tray-enabled'),
