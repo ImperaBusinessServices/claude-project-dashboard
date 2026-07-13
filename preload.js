@@ -39,6 +39,9 @@ contextBridge.exposeInMainWorld('api', {
   openSpendReport: () => ipcRenderer.invoke('open-spend-report'),
   getUsageRefreshSeconds: () => ipcRenderer.invoke('get-usage-refresh-seconds'),
   setUsageRefreshSeconds: (sec) => ipcRenderer.invoke('set-usage-refresh-seconds', sec),
+  // Multi-CLI launch (feature-branch test)
+  getLaunchCommand: () => ipcRenderer.invoke('get-launch-command'),
+  setLaunchCommand: (cmd) => ipcRenderer.invoke('set-launch-command', cmd),
   // Tray meter
   getTrayEnabled: () => ipcRenderer.invoke('get-tray-enabled'),
   setTrayEnabled: (enabled) => ipcRenderer.invoke('set-tray-enabled', enabled),

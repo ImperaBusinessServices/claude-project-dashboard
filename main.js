@@ -586,7 +586,22 @@ function isProcessRunning(pid) {
   }
 }
 
-// Open folder in terminal and start Claude Code
+// Which AI CLI the Launch button runs (multi-CLI support, feature-branch test).
+// Default 'claude'. The value is inserted into a shell line, so it's restricted
+// to a safe charset; anything else falls back to claude.
+function getLaunchCommand() {
+  const clean = String(settings.launchCommand || 'claude').replace(/[^A-Za-z0-9 ._\/-]/g, '').trim();
+  return clean || 'claude';
+}
+ipcMain.handle('get-launch-command', async () => getLaunchCommand());
+ipcMain.handle('set-launch-command', async (event, cmd) => {
+  const clean = String(cmd || 'claude').replace(/[^A-Za-z0-9 ._\/-]/g, '').trim() || 'claude';
+  const s = { ...settings, launchCommand: clean };
+  saveSettings(s);
+  return clean;
+});
+
+// Open folder in terminal and start the chosen AI CLI (Claude Code by default)
 ipcMain.handle('open-terminal', async (event, folderPath) => {
   const projectName = path.basename(folderPath);
 
@@ -606,9 +621,10 @@ ipcMain.handle('open-terminal', async (event, folderPath) => {
     // BEFORE `activate` avoids Terminal opening a stray empty window when it
     // wasn't already running. `quoted form of` shell-escapes the path safely.
     const asPath = String(folderPath).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    const launchCmd = getLaunchCommand();
     const scriptLines = [
       'tell application "Terminal"',
-      `  do script ("cd " & quoted form of "${asPath}" & " && claude")`,
+      `  do script ("cd " & quoted form of "${asPath}" & " && ${launchCmd}")`,
       '  activate',
       'end tell'
     ];
@@ -635,9 +651,10 @@ ipcMain.handle('open-terminal', async (event, folderPath) => {
   }
 
   // Launch new terminal with project name as tab title
-  const child = exec(`wt --title "${projectName}" --suppressApplicationTitle -d "${folderPath}" cmd /k claude`, (err) => {
+  const launchCmd = getLaunchCommand();
+  const child = exec(`wt --title "${projectName}" --suppressApplicationTitle -d "${folderPath}" cmd /k ${launchCmd}`, (err) => {
     if (err) {
-      const fallback = exec(`start cmd /k "cd /d ${folderPath} && claude"`);
+      const fallback = exec(`start cmd /k "cd /d ${folderPath} && ${launchCmd}"`);
       if (fallback.pid) launchedTerminals[folderPath] = fallback.pid;
     }
   });
@@ -645,13 +662,17 @@ ipcMain.handle('open-terminal', async (event, folderPath) => {
   return { alreadyOpen: false };
 });
 
-// Open CLAUDE.md for a project
+// Open the project's instructions file. CLAUDE.md first; if the project uses
+// the cross-tool AGENTS.md standard (Codex, OpenCode, etc.) open that instead.
+// Creating fresh: CLAUDE.md when the launch AI is claude, else AGENTS.md.
 ipcMain.handle('open-claude-md', async (event, folderPath) => {
   const claudeMdPath = path.join(folderPath, 'CLAUDE.md');
-  if (!fs.existsSync(claudeMdPath)) {
-    fs.writeFileSync(claudeMdPath, `# ${path.basename(folderPath)}\n\nProject instructions go here.\n`);
-  }
-  shell.openPath(claudeMdPath);
+  const agentsMdPath = path.join(folderPath, 'AGENTS.md');
+  if (fs.existsSync(claudeMdPath)) return void shell.openPath(claudeMdPath);
+  if (fs.existsSync(agentsMdPath)) return void shell.openPath(agentsMdPath);
+  const target = getLaunchCommand().startsWith('claude') ? claudeMdPath : agentsMdPath;
+  fs.writeFileSync(target, `# ${path.basename(folderPath)}\n\nProject instructions go here.\n`);
+  shell.openPath(target);
 });
 
 // Open global CLAUDE.md

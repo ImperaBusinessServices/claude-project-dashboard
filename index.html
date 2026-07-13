@@ -945,7 +945,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.9.1</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.10.0 · multi-AI test build</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1138,6 +1138,24 @@
               <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">Type a one-line description for each project. Hover the <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(179,136,255,0.2);color:#b388ff;border:1px solid rgba(179,136,255,0.4);font-size:9px;font-weight:700;vertical-align:middle;">i</span> badge on a tile to read it. You can also right-click any tile to edit just that one (or have Claude try to auto-generate).</div>
             </div>
             <button class="btn btn-secondary btn-small" onclick="hideAbout(); showSummariesTable();" style="flex-shrink:0;">Edit Summaries</button>
+          </div>
+        </div>
+
+      <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; padding-right: 14px;">
+              <strong style="color: #b388ff; font-size: 13px;">Which AI runs when you click Launch <span style="background:#e94560;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:6px;vertical-align:middle;letter-spacing:.4px;">TEST</span></strong>
+              <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">The Launch button opens a terminal in the project folder and starts this AI. Claude Code is the default — any other choice must already be installed on your computer.</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
+              <select id="launchCmdSelect" onchange="changeLaunchCmd(this.value)" style="background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none; cursor: pointer;">
+                <option value="claude">Claude Code (default)</option>
+                <option value="codex">Codex CLI (OpenAI)</option>
+                <option value="opencode">OpenCode</option>
+                <option value="custom">Custom command…</option>
+              </select>
+              <input id="launchCmdCustom" type="text" placeholder="e.g. aider" onchange="changeLaunchCmdCustom(this.value)" style="display:none; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none;">
+            </div>
           </div>
         </div>
 
@@ -1608,7 +1626,7 @@
             ${subLine}
           </div>
           <div class="folder-actions">
-            <button class="btn btn-primary btn-small" onclick="openTerminal('${escapedPath}')">Launch Claude</button>
+            <button class="btn btn-primary btn-small" onclick="openTerminal('${escapedPath}')">${launchBtnLabel()}</button>
             <button class="btn btn-secondary btn-small" onclick="openClaudeMd('${escapedPath}')">CLAUDE.md</button>
             <button class="btn btn-status btn-small${f.hasStatusReport ? ' exists' : ''}" onclick="handleStatusClick('${escapedPath}')" oncontextmenu="showCtxMenu(event, '${escapedPath}', 'status')" title="${f.hasStatusReport ? 'Open status report (right-click for more options)' : 'Create a status report for this project'}">📊 Status</button>
             <button class="btn btn-ghost btn-small btn-icon" onclick="openExplorer('${escapedPath}')">&#128194;</button>
@@ -1909,8 +1927,40 @@
         alert('Could not delete: ' + ((res && res.error) || 'unknown error'));
       }
     }
+    // ---- Multi-CLI launch (feature-branch test): which AI the Launch button runs ----
+    let launchCmd = 'claude';
+    const LAUNCH_PRESETS = { claude: 'Launch Claude', codex: 'Launch Codex', opencode: 'Launch OpenCode' };
+    function launchBtnLabel() {
+      return LAUNCH_PRESETS[launchCmd] || ('Launch ' + (launchCmd.split(' ')[0] || 'AI'));
+    }
+    async function initLaunchCmd() {
+      try {
+        const c = await window.api.getLaunchCommand();
+        if (c && c !== launchCmd) { launchCmd = c; try { renderFolders(); } catch (e) {} }
+      } catch (e) {}
+    }
+    function syncLaunchCmdUI() {
+      const sel = document.getElementById('launchCmdSelect');
+      const custom = document.getElementById('launchCmdCustom');
+      if (LAUNCH_PRESETS[launchCmd]) { sel.value = launchCmd; custom.style.display = 'none'; }
+      else { sel.value = 'custom'; custom.style.display = 'block'; custom.value = launchCmd; }
+    }
+    async function changeLaunchCmd(v) {
+      const custom = document.getElementById('launchCmdCustom');
+      if (v === 'custom') { custom.style.display = 'block'; custom.focus(); return; }
+      custom.style.display = 'none';
+      launchCmd = await window.api.setLaunchCommand(v);
+      try { renderFolders(); } catch (e) {}
+    }
+    async function changeLaunchCmdCustom(v) {
+      if (!String(v).trim()) return;
+      launchCmd = await window.api.setLaunchCommand(String(v).trim());
+      try { renderFolders(); } catch (e) {}
+    }
+
     async function showAbout() {
       document.getElementById('aboutModal').classList.add('active');
+      try { syncLaunchCmdUI(); } catch (e) {}
       // 💸 Spend: the chart can't be drawn while the modal is hidden (it has no
       // width) — render now that it's visible, or kick off the first scan.
       if (spDays) spApplyAll(); else loadSpend(false);
@@ -3112,6 +3162,7 @@
     })();
 
     // Load on start
+    initLaunchCmd(); // fetch the chosen launch AI (re-renders tiles if not claude)
     refreshFolders();
     maybeShowMemoryPrompt();
     loadSpend(false); // 💸 refresh spend data on app launch (background)
