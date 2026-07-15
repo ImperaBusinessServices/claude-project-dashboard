@@ -1,6 +1,6 @@
 {
   "name": "claude-manager",
-  "version": "2.10.1",
+  "version": "2.10.2",
   "description": "Claude Project Dashboard - manage your Claude Code project folders",
   "main": "main.js",
   "scripts": {
@@ -32,7 +32,12 @@
     },
     "mac": {
       "target": [
-        { "target": "dmg", "arch": ["universal"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
       ],
       "icon": "icon.png",
       "category": "public.app-category.developer-tools",

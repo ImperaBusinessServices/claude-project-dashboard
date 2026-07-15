@@ -775,6 +775,21 @@
     }
     .launch-menu .cur { color: #4ade80; margin-left: 8px; }
 
+    /* One colour per AI, so the Launch button says at a glance what it starts.
+       Declared after .btn-primary so these win on the split button. */
+    .btn-ai-claude   { background: #e94560; }
+    .btn-ai-codex    { background: #2f6fe4; }
+    .btn-ai-opencode { background: #16a34a; }
+    .btn-ai-custom   { background: #6d4aa8; }
+    .ai-dot {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; margin-right: 8px; vertical-align: middle;
+    }
+    .ai-dot-claude   { background: #e94560; }
+    .ai-dot-codex    { background: #2f6fe4; }
+    .ai-dot-opencode { background: #16a34a; }
+    .ai-dot-custom   { background: #6d4aa8; }
+
     /* Summaries table modal */
     .summaries-table {
       width: 100%;
@@ -1638,8 +1653,8 @@
           </div>
           <div class="folder-actions">
             <span class="launch-split">
-              <button class="btn btn-primary btn-small" onclick="openTerminal('${escapedPath}')" title="Opens a terminal in this folder and starts ${escapeHtml(tileLaunchCmd(f.path))}">${tileLaunchLabel(f.path)}</button>
-              <button class="btn btn-primary btn-small launch-caret" onclick="showLaunchMenu(event, '${escapedPath}')" title="Launch this project with a different AI">&#9662;</button>
+              <button class="btn btn-primary btn-small ${tileLaunchClass(f.path)}" onclick="openTerminal('${escapedPath}')" title="Opens a terminal in this folder and starts ${escapeHtml(tileLaunchCmd(f.path))}">${tileLaunchLabel(f.path)}</button>
+              <button class="btn btn-primary btn-small launch-caret ${tileLaunchClass(f.path)}" onclick="showLaunchMenu(event, '${escapedPath}')" title="Launch this project with a different AI">&#9662;</button>
             </span>
             <button class="btn btn-secondary btn-small" onclick="openClaudeMd('${escapedPath}')">CLAUDE.md</button>
             <button class="btn btn-status btn-small${f.hasStatusReport ? ' exists' : ''}" onclick="handleStatusClick('${escapedPath}')" oncontextmenu="showCtxMenu(event, '${escapedPath}', 'status')" title="${f.hasStatusReport ? 'Open status report (right-click for more options)' : 'Create a status report for this project'}">📊 Status</button>
@@ -1954,6 +1969,9 @@
       const c = tileLaunchCmd(path);
       return LAUNCH_PRESETS[c] || ('Launch ' + (c.split(' ')[0] || 'AI'));
     }
+    // Anything that isn't a known preset is a custom command -> its own colour.
+    function aiKey(cmd) { return LAUNCH_PRESETS[cmd] ? cmd : 'custom'; }
+    function tileLaunchClass(path) { return 'btn-ai-' + aiKey(tileLaunchCmd(path)); }
     async function refreshLaunchSetup() {
       try {
         const s = await window.api.getLaunchSetup();
@@ -1971,8 +1989,8 @@
       const m = document.getElementById('launchMenu');
       const cur = tileLaunchCmd(path);
       m.innerHTML = LAUNCH_MENU.map(([c, label]) =>
-        `<div class="ctx-item" onclick="launchWith('${c}')">${label}${cur === c ? '<span class="cur">●</span>' : ''}</div>`
-      ).join('') + `<div class="ctx-sep"></div><div class="ctx-item" onclick="launchWithCustom()">Custom command…</div>`;
+        `<div class="ctx-item" onclick="launchWith('${c}')"><span class="ai-dot ai-dot-${c}"></span>${label}${cur === c ? '<span class="cur">●</span>' : ''}</div>`
+      ).join('') + `<div class="ctx-sep"></div><div class="ctx-item" onclick="launchWithCustom()"><span class="ai-dot ai-dot-custom"></span>Custom command…</div>`;
       m.style.display = 'block';
       const r = e.target.getBoundingClientRect();
       m.style.left = Math.max(8, Math.min(r.left, innerWidth - m.offsetWidth - 8)) + 'px';
