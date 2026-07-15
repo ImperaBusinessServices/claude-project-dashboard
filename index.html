@@ -969,7 +969,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.10.1 · multi-AI test 2</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.10.2</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1031,15 +1031,22 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.9.1:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.10.2:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>💸 Pick several projects at once</strong> — the Spend section's project filter is now a checkbox dropdown, so you can compare any mix of projects. Clicking rows in the By-project table adds/removes them too (selected rows highlight).</li>
-          <li><strong>Whole dollars in the tables</strong> — the By-project and By-model tables now round to the nearest dollar. Cleaner to read.</li>
+          <li><strong>🤖 Launch a different AI, per project</strong> — the Launch button now has a small <strong>▾</strong> next to it. Click it to start <strong>Codex CLI</strong> (OpenAI), <strong>OpenCode</strong>, or your own command in that project instead of Claude Code. It launches straight away and remembers your pick for that project next time. Clicking the button itself still just launches Claude, exactly as before.</li>
+          <li><strong>Colour-coded so you can see it at a glance</strong> — the Launch button takes the colour of whichever AI it starts: Claude pink, Codex blue, OpenCode green, your own command purple.</li>
+          <li><strong>Instructions file follows the AI</strong> — for non-Claude AIs the CLAUDE.md button switches to <strong>AGENTS.md</strong> (the shared standard those tools read), and creates it if it's missing.</li>
+          <li><strong>Note:</strong> Codex asks you to sign in with a ChatGPT account the first time, and needs ChatGPT Plus to go further. Everything Claude-related — the usage meters, spend tracking, brain/ notes — is unchanged.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.9.1:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>💸 Pick several projects at once</strong> — the Spend section's project filter is now a checkbox dropdown, so you can compare any mix of projects. Clicking rows in the By-project table adds/removes them too (selected rows highlight).</li>
+              <li><strong>Whole dollars in the tables</strong> — the By-project and By-model tables now round to the nearest dollar. Cleaner to read.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.9.0:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>🟠 Fable on the usage meter</strong> — Anthropic's new Fable model gets its own weekly allowance, so the Week bar now shows an orange tick marking how much of Fable's limit you've used (same numbers as Claude's own usage screen). Hover the meter for the exact percentage. The tray flyout shows it too.</li>

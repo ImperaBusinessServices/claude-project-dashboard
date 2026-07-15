@@ -472,6 +472,7 @@
   .bd-text p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; }
   .bd-text p b { color: var(--coral-deep); font-weight: 600; }
   :root[data-theme="dark"] .bd-text p b { color: var(--coral-br); }
+  .bd-text p.bd-more { margin-top: 8px; font-size: 14px; opacity: 0.92; }
   .bd-ibadge { width: 30px; height: 30px; border-radius: 50%; background: rgba(125,92,246,0.25); border: 1px solid rgba(125,92,246,0.55); color: #b6a4ff; font-size: 17px; font-style: italic; display: grid; place-items: center; font-family: var(--display); }
 
   .toolbar-break { margin-top: 16px; background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; }
@@ -782,6 +783,7 @@
         <div class="bd-text">
           <h4>Launch Claude</h4>
           <p>Opens a terminal <b>right inside this project’s folder</b> and starts Claude Code — already caught up on where you left off. No typing paths, no wrong directory.</p>
+          <p class="bd-more">New: the little <b>▾</b> next to it lets you start <b>Codex CLI</b>, <b>OpenCode</b>, or your own command in that project instead — it remembers your pick per project, and the button takes that tool’s colour so you can see what you’re launching at a glance.</p>
         </div>
       </div>
       <div class="bd-item reveal" id="bd-claude">
