@@ -586,9 +586,45 @@ function isProcessRunning(pid) {
   }
 }
 
-// Open folder in terminal and start Claude Code
-ipcMain.handle('open-terminal', async (event, folderPath) => {
+// Which AI CLI the Launch button runs (multi-CLI support, feature-branch test).
+// Two levels: a global default (Settings) and a per-project override, chosen
+// from the tile's ▾ menu and remembered. Commands are inserted into a shell
+// line, so they're restricted to a safe charset; anything else → claude.
+function sanitizeLaunchCmd(raw) {
+  return String(raw || '').replace(/[^A-Za-z0-9 ._\/-]/g, '').trim();
+}
+function getLaunchCommand() {
+  return sanitizeLaunchCmd(settings.launchCommand) || 'claude';
+}
+function getLaunchCommandFor(folderPath) {
+  const overrides = settings.launchOverrides || {};
+  return sanitizeLaunchCmd(overrides[folderPath]) || getLaunchCommand();
+}
+ipcMain.handle('get-launch-setup', async () => ({
+  global: getLaunchCommand(),
+  overrides: settings.launchOverrides || {}
+}));
+ipcMain.handle('set-launch-command', async (event, cmd) => {
+  const clean = sanitizeLaunchCmd(cmd) || 'claude';
+  const s = { ...settings, launchCommand: clean };
+  saveSettings(s);
+  return clean;
+});
+
+// Open folder in terminal and start the chosen AI CLI (Claude Code by default).
+// aiCmd (optional) comes from the tile's ▾ menu: launch with that AI now AND
+// remember it as this project's choice. Without it, the project's remembered
+// choice (or the global default) applies.
+ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
   const projectName = path.basename(folderPath);
+
+  let launchCmd = sanitizeLaunchCmd(aiCmd);
+  if (launchCmd) {
+    const overrides = { ...(settings.launchOverrides || {}), [folderPath]: launchCmd };
+    saveSettings({ ...settings, launchOverrides: overrides });
+  } else {
+    launchCmd = getLaunchCommandFor(folderPath);
+  }
 
   // Auto-set-up memory: the first time you launch a project that has no brain/
   // folder yet, scaffold one (unless you turned this off in Settings). So even
@@ -608,7 +644,7 @@ ipcMain.handle('open-terminal', async (event, folderPath) => {
     const asPath = String(folderPath).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     const scriptLines = [
       'tell application "Terminal"',
-      `  do script ("cd " & quoted form of "${asPath}" & " && claude")`,
+      `  do script ("cd " & quoted form of "${asPath}" & " && ${launchCmd}")`,
       '  activate',
       'end tell'
     ];
@@ -622,7 +658,9 @@ ipcMain.handle('open-terminal', async (event, folderPath) => {
   // still alive, bringing that window to the foreground instead of opening a
   // duplicate. (PID tracking is meaningful on Windows; on macOS the launcher
   // exits immediately, so the mac path above simply opens a fresh tab.)
-  const existing = launchedTerminals[folderPath];
+  // An explicit ▾ pick means "launch THIS AI now" — skip the reuse-existing-
+  // window shortcut so the new AI actually starts (old terminal stays open).
+  const existing = sanitizeLaunchCmd(aiCmd) ? null : launchedTerminals[folderPath];
   if (existing && isProcessRunning(existing)) {
     // Try to bring existing terminal window to front
     exec(`powershell -Command "(Get-Process -Id ${existing} -ErrorAction SilentlyContinue | ForEach-Object { $_.MainWindowHandle })" `, (err, stdout) => {
@@ -635,9 +673,9 @@ ipcMain.handle('open-terminal', async (event, folderPath) => {
   }
 
   // Launch new terminal with project name as tab title
-  const child = exec(`wt --title "${projectName}" --suppressApplicationTitle -d "${folderPath}" cmd /k claude`, (err) => {
+  const child = exec(`wt --title "${projectName}" --suppressApplicationTitle -d "${folderPath}" cmd /k ${launchCmd}`, (err) => {
     if (err) {
-      const fallback = exec(`start cmd /k "cd /d ${folderPath} && claude"`);
+      const fallback = exec(`start cmd /k "cd /d ${folderPath} && ${launchCmd}"`);
       if (fallback.pid) launchedTerminals[folderPath] = fallback.pid;
     }
   });
@@ -645,13 +683,17 @@ ipcMain.handle('open-terminal', async (event, folderPath) => {
   return { alreadyOpen: false };
 });
 
-// Open CLAUDE.md for a project
+// Open the project's instructions file. CLAUDE.md first; if the project uses
+// the cross-tool AGENTS.md standard (Codex, OpenCode, etc.) open that instead.
+// Creating fresh: CLAUDE.md when the launch AI is claude, else AGENTS.md.
 ipcMain.handle('open-claude-md', async (event, folderPath) => {
   const claudeMdPath = path.join(folderPath, 'CLAUDE.md');
-  if (!fs.existsSync(claudeMdPath)) {
-    fs.writeFileSync(claudeMdPath, `# ${path.basename(folderPath)}\n\nProject instructions go here.\n`);
-  }
-  shell.openPath(claudeMdPath);
+  const agentsMdPath = path.join(folderPath, 'AGENTS.md');
+  if (fs.existsSync(claudeMdPath)) return void shell.openPath(claudeMdPath);
+  if (fs.existsSync(agentsMdPath)) return void shell.openPath(agentsMdPath);
+  const target = getLaunchCommandFor(folderPath).startsWith('claude') ? claudeMdPath : agentsMdPath;
+  fs.writeFileSync(target, `# ${path.basename(folderPath)}\n\nProject instructions go here.\n`);
+  shell.openPath(target);
 });
 
 // Open global CLAUDE.md
