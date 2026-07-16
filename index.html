@@ -957,6 +957,7 @@
       <button class="sort-btn active" id="sort-modified" onclick="setSort('modified')">Last Modified</button>
       <button class="sort-btn" id="sort-created" onclick="setSort('created')">Date Created</button>
       <button class="sort-btn" id="sort-name" onclick="setSort('name')">Name</button>
+      <button class="sort-btn" id="sort-ai" onclick="setSort('ai')" title="Group projects by the AI their Launch button starts">AI</button>
     </div>
   </div>
 
@@ -969,7 +970,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.10.2</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.10.3</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1031,17 +1032,23 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.10.2:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.10.3:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>🤖 Launch a different AI, per project</strong> — the Launch button now has a small <strong>▾</strong> next to it. Click it to start <strong>Codex CLI</strong> (OpenAI), <strong>OpenCode</strong>, or your own command in that project instead of Claude Code. It launches straight away and remembers your pick for that project next time. Clicking the button itself still just launches Claude, exactly as before.</li>
-          <li><strong>Colour-coded so you can see it at a glance</strong> — the Launch button takes the colour of whichever AI it starts: Claude pink, Codex blue, OpenCode green, your own command purple.</li>
-          <li><strong>Instructions file follows the AI</strong> — for non-Claude AIs the CLAUDE.md button switches to <strong>AGENTS.md</strong> (the shared standard those tools read), and creates it if it's missing.</li>
-          <li><strong>Note:</strong> Codex asks you to sign in with a ChatGPT account the first time, and needs ChatGPT Plus to go further. Everything Claude-related — the usage meters, spend tracking, brain/ notes — is unchanged.</li>
+          <li><strong>Sort by AI</strong> — a new <strong>AI</strong> button next to the other Sort by buttons groups your projects by whichever AI their Launch button starts: Claude first, then Codex, OpenCode, and your own commands. Click it again to flip the order. Inside each group projects are listed A–Z.</li>
+          <li><strong>🧠 Other AIs now understand your notes</strong> — Codex and OpenCode can't read CLAUDE.md, so they had no idea what your <strong>brain/</strong> folder was for, and shortcuts like "where were we?" meant nothing to them. Launching one of them in a project now writes an <strong>AGENTS.md</strong> (the file those tools do read) explaining the whole thing. It never overwrites a file you already have, and only happens if you've got the memory protocol switched on.</li>
+          <li><strong>Note:</strong> spend tracking still only counts Claude — Codex sessions won't show up on the chart.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.10.2:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>🤖 Launch a different AI, per project</strong> — the Launch button now has a small <strong>▾</strong> next to it. Click it to start <strong>Codex CLI</strong> (OpenAI), <strong>OpenCode</strong>, or your own command in that project instead of Claude Code. It launches straight away and remembers your pick for that project next time. Clicking the button itself still just launches Claude, exactly as before.</li>
+              <li><strong>Colour-coded so you can see it at a glance</strong> — the Launch button takes the colour of whichever AI it starts: Claude pink, Codex blue, OpenCode green, your own command purple.</li>
+              <li><strong>Instructions file follows the AI</strong> — for non-Claude AIs the CLAUDE.md button switches to <strong>AGENTS.md</strong> (the shared standard those tools read), and creates it if it's missing.</li>
+              <li><strong>Note:</strong> Codex asks you to sign in with a ChatGPT account the first time, and needs ChatGPT Plus to go further. Everything Claude-related — the usage meters, spend tracking, brain/ notes — is unchanged.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.9.1:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>💸 Pick several projects at once</strong> — the Spend section's project filter is now a checkbox dropdown, so you can compare any mix of projects. Clicking rows in the By-project table adds/removes them too (selected rows highlight).</li>
@@ -1512,11 +1519,20 @@
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
+    // Grouping order for the AI sort — matches the ▾ menu, so the tiles come out
+    // in the same order (and the same colour run) as the menu that sets them.
+    const AI_SORT_ORDER = ['claude', 'codex', 'opencode', 'custom'];
+
     function sortFolders(list) {
       const dir = sortAscending ? 1 : -1;
       return [...list].sort((a, b) => {
         if (currentSort === 'modified') return (a.modified - b.modified) * dir;
         if (currentSort === 'created') return (a.created - b.created) * dir;
+        if (currentSort === 'ai') {
+          const rank = f => AI_SORT_ORDER.indexOf(aiKey(tileLaunchCmd(f.path)));
+          // Same AI -> alphabetical, so a group's own order never jumps around.
+          return (rank(a) - rank(b)) * dir || a.name.localeCompare(b.name);
+        }
         return a.name.localeCompare(b.name) * dir;
       });
     }
@@ -1526,7 +1542,8 @@
         sortAscending = !sortAscending;
       } else {
         currentSort = type;
-        sortAscending = false;
+        // Dates read best newest-first; AI groups read best Claude-first.
+        sortAscending = (type === 'ai');
       }
       document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
       const btn = document.getElementById(`sort-${type}`);
