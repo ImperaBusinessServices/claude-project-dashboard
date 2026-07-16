@@ -27,13 +27,16 @@ const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.next', '__pycache__
 
 const MEMORY_PROTOCOL_BEGIN = '<!-- BEGIN: claude-manager memory protocol v1 -->';
 const MEMORY_PROTOCOL_END = '<!-- END: claude-manager memory protocol v1 -->';
-const MEMORY_PROTOCOL_TEMPLATE = `${MEMORY_PROTOCOL_BEGIN}
+// `self` is how the file addresses its reader: "Claude" in the global CLAUDE.md,
+// "You" in a project's AGENTS.md (the cross-tool file Codex/OpenCode read instead).
+function memoryProtocolBlock(self = 'Claude') {
+  return `${MEMORY_PROTOCOL_BEGIN}
 
 ## Project memory protocol
 
-Each project may contain a \`brain/\` folder for persistent context across Claude Code sessions:
+Each project may contain a \`brain/\` folder for persistent context across sessions:
 - \`STATE.md\` — what's in flight right now. Start it with a **\`## Objective\`** section: one or two plain, punchy sentences on what this project is for. Keep it that short — NOT a list of links (URLs go in \`links.md\`).
-- \`next.md\` — the checklist of what's next. Mark each item \`- [ ]\` not started, \`- [~]\` in progress, \`- [?]\` done & awaiting the user's OK, \`- [x]\` approved & closed. **Claude marks finished work \`[?]\` (never \`[x]\`)** — only the user gives final approval by closing it. **Whenever you write a to-do list or a series of tasks, ALWAYS use this 4-state checklist format** (not plain bullets) — the status report turns it into a click-to-cycle tracker the user approves stage by stage, and their clicks sync back here while the dashboard is open. Keep it current.
+- \`next.md\` — the checklist of what's next. Mark each item \`- [ ]\` not started, \`- [~]\` in progress, \`- [?]\` done & awaiting the user's OK, \`- [x]\` approved & closed. **${self} must mark finished work \`[?]\`, never \`[x]\`** — only the user gives final approval by closing it. **Whenever you write a to-do list or a series of tasks, ALWAYS use this 4-state checklist format** (not plain bullets) — the status report turns it into a click-to-cycle tracker the user approves stage by stage, and their clicks sync back here while the dashboard is open. Keep it current.
 - \`changelog.md\` — append-only log: YYYY-MM-DD — what changed, with file paths
 - \`decisions.md\` — decisions with a one-line Why
 - \`links.md\` — the project's important/live URLs, one bullet each: \`- [Name](https://url) — short description\`. Shown as tiles in the status report. **Keep it current** when a page/URL is added, moved, or retired.
@@ -53,6 +56,27 @@ Each project may contain a \`brain/\` folder for persistent context across Claud
 Always write dates as \`YYYY-MM-DD\`. Convert relative references ("yesterday", "Thursday") to absolute dates when filing.
 
 ${MEMORY_PROTOCOL_END}`;
+}
+const MEMORY_PROTOCOL_TEMPLATE = memoryProtocolBlock();
+
+function agentsMdStub(projectName) {
+  return `# ${projectName}\n\nProject instructions go here.\n`;
+}
+
+// Codex, OpenCode and the rest can't read CLAUDE.md — they read AGENTS.md, the
+// cross-tool standard. Without one, "WWW?" and "save state" mean nothing to them.
+// Creates the file, or appends the marked block to an existing one; never clobbers.
+function seedAgentsMd(folderPath, projectName) {
+  const agentsMdPath = path.join(folderPath, 'AGENTS.md');
+  let content = agentsMdStub(projectName);
+  if (fs.existsSync(agentsMdPath)) {
+    content = fs.readFileSync(agentsMdPath, 'utf-8');
+    if (content.includes(MEMORY_PROTOCOL_BEGIN)) return agentsMdPath;
+  }
+  const sep = content.endsWith('\n') ? '\n' : '\n\n';
+  fs.writeFileSync(agentsMdPath, content + sep + memoryProtocolBlock('You') + '\n');
+  return agentsMdPath;
+}
 
 let mainWindow;
 let settings = loadSettings();
@@ -635,6 +659,15 @@ ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
     }
   } catch (e) {}
 
+  // ...and give a project that runs a non-Claude AI an AGENTS.md carrying that
+  // same protocol, so the brain/ folder we just made is actually understood.
+  // Gated on the user having opted into the memory protocol at all.
+  try {
+    if (!launchCmd.startsWith('claude') && isMemoryProtocolInstalled()) {
+      seedAgentsMd(folderPath, projectName);
+    }
+  } catch (e) {}
+
   if (IS_MAC) {
     // macOS: open Terminal.app and run `claude` in the project folder via
     // AppleScript. `do script` runs the command in a login shell, so `claude`
@@ -691,9 +724,17 @@ ipcMain.handle('open-claude-md', async (event, folderPath) => {
   const agentsMdPath = path.join(folderPath, 'AGENTS.md');
   if (fs.existsSync(claudeMdPath)) return void shell.openPath(claudeMdPath);
   if (fs.existsSync(agentsMdPath)) return void shell.openPath(agentsMdPath);
-  const target = getLaunchCommandFor(folderPath).startsWith('claude') ? claudeMdPath : agentsMdPath;
-  fs.writeFileSync(target, `# ${path.basename(folderPath)}\n\nProject instructions go here.\n`);
-  shell.openPath(target);
+  const projectName = path.basename(folderPath);
+  if (getLaunchCommandFor(folderPath).startsWith('claude')) {
+    fs.writeFileSync(claudeMdPath, agentsMdStub(projectName));
+    return void shell.openPath(claudeMdPath);
+  }
+  // A fresh AGENTS.md gets the memory protocol baked in (same opt-in gate).
+  if (!isMemoryProtocolInstalled()) {
+    fs.writeFileSync(agentsMdPath, agentsMdStub(projectName));
+    return void shell.openPath(agentsMdPath);
+  }
+  shell.openPath(seedAgentsMd(folderPath, projectName));
 });
 
 // Open global CLAUDE.md
