@@ -654,6 +654,23 @@ ipcMain.handle('set-launch-command', async (event, cmd) => {
 // aiCmd (optional) comes from the tile's ▾ menu: launch with that AI now AND
 // remember it as this project's choice. Without it, the project's remembered
 // choice (or the global default) applies.
+// Is a command's binary actually on this machine? Windows checks the app's
+// PATH via `where`; mac asks a login shell (GUI apps don't inherit login PATH).
+// NOTE: the app process's PATH is frozen at launch, so after installing Claude
+// Code the user must restart the dashboard — the install screen says so.
+const foundBins = {};
+function commandExists(bin) {
+  if (!/^[A-Za-z0-9._-]+$/.test(bin)) return true; // odd name — let the terminal try it
+  try {
+    if (IS_MAC) {
+      execFileSync(process.env.SHELL || '/bin/zsh', ['-ilc', `command -v ${bin}`], { stdio: 'ignore' });
+    } else {
+      execFileSync('where', [bin], { stdio: 'ignore' });
+    }
+    return true;
+  } catch (e) { return false; }
+}
+
 ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
   const projectName = path.basename(folderPath);
 
@@ -663,6 +680,16 @@ ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
     saveSettings({ ...settings, launchOverrides: overrides });
   } else {
     launchCmd = getLaunchCommandFor(folderPath);
+  }
+
+  // First-run friends often don't have the AI installed yet. Catch that HERE
+  // and tell the renderer, instead of opening a terminal that just prints
+  // "'claude' is not recognized" at a blinking cursor. Only positive results
+  // are cached: a "not found" must re-check so the Try-again button works.
+  const bin = launchCmd.trim().split(/\s+/)[0];
+  if (!foundBins[bin]) {
+    if (commandExists(bin)) foundBins[bin] = true;
+    else return { missingCmd: bin, isMac: IS_MAC };
   }
 
   // Auto-set-up memory: the first time you launch a project that has no brain/

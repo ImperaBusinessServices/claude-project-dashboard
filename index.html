@@ -993,7 +993,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.11.0</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.11.1</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1055,15 +1055,19 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.11.0:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.11.1:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>⭐ Favorites</strong> — every project card now has a star box (above the archive checkbox). Click it to mark a project as a favorite; click again to unstar. Hover either box to see what it does.</li>
-          <li><strong>New "★ Favorites" tab</strong> — next to Active in the view toggle, showing just your starred projects. Search works inside it like everywhere else.</li>
+          <li><strong>Friendly first-run help</strong> — if Claude Code isn't installed on this computer yet, clicking Launch now shows a clear step-by-step screen (get an account, copy-paste one install line) instead of opening a broken terminal window. Works for the other AIs too.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.11.0:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>⭐ Favorites</strong> — every project card now has a star box (above the archive checkbox). Click it to mark a project as a favorite; click again to unstar. Hover either box to see what it does.</li>
+              <li><strong>New "★ Favorites" tab</strong> — next to Active in the view toggle, showing just your starred projects. Search works inside it like everywhere else.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.10.3:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>Sort by AI</strong> — a new <strong>AI</strong> button next to the other Sort by buttons groups your projects by whichever AI their Launch button starts: Claude first, then Codex, OpenCode, and your own commands. Click it again to flip the order. Inside each group projects are listed A–Z.</li>
@@ -1481,6 +1485,18 @@
     </div>
   </div>
 
+  <!-- "AI not installed yet" helper (shown when Launch can't find the command) -->
+  <div class="modal-overlay" id="setupClaudeModal">
+    <div class="modal" style="width: 520px;">
+      <h2 id="setupClaudeTitle">One more step — install Claude Code</h2>
+      <div style="font-size: 13px; color: #bbb; line-height: 1.7; margin-bottom: 16px;" id="setupClaudeBody"></div>
+      <div class="modal-buttons">
+        <button class="btn btn-ghost" onclick="hideSetupClaude()">Close</button>
+        <button class="btn btn-primary" onclick="retrySetupClaude()">I've installed it — try again</button>
+      </div>
+    </div>
+  </div>
+
   <!-- No brain/ folder prompt (when status button clicked and no brain/ exists) -->
   <div class="modal-overlay" id="noBrainModal">
     <div class="modal" style="width: 460px;">
@@ -1610,7 +1626,7 @@
           return false;
         });
         if (matches.length === 1) {
-          window.api.openTerminal(matches[0].path);
+          openTerminal(matches[0].path);
         }
       }
     }
@@ -1803,7 +1819,48 @@
       }
     }
 
-    function openTerminal(path) { window.api.openTerminal(path); }
+    async function openTerminal(path) { handleLaunchResult(await window.api.openTerminal(path), path, null); }
+
+    // ---- "AI not installed yet" helper ----
+    let setupRetry = null; // {path, cmd} for the Try-again button
+    function handleLaunchResult(res, path, cmd) {
+      if (!res || !res.missingCmd) return;
+      setupRetry = { path, cmd };
+      const isClaude = res.missingCmd === 'claude';
+      const installCmd = res.isMac
+        ? 'curl -fsSL https://claude.ai/install.sh | bash'
+        : 'irm https://claude.ai/install.ps1 | iex';
+      const shellName = res.isMac ? 'Terminal (in Applications → Utilities)' : 'PowerShell (search for it in the Start menu)';
+      document.getElementById('setupClaudeTitle').textContent = isClaude
+        ? 'One more step — install Claude Code'
+        : `"${res.missingCmd}" isn't installed yet`;
+      document.getElementById('setupClaudeBody').innerHTML = isClaude ? `
+        This dashboard organises your projects, but the AI itself — <strong>Claude Code</strong> — is a separate (free to install) program, and it isn't on this computer yet. Two steps:
+        <ol style="margin: 10px 0 10px 20px;">
+          <li style="margin-bottom:8px;"><strong>Get a Claude account</strong> at <strong>claude.ai</strong> with a paid plan (Pro is the cheapest that includes Claude Code).</li>
+          <li><strong>Install Claude Code</strong> — open ${shellName}, paste this line, and press Enter:
+            <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+              <code id="setupInstallCmd" style="flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:8px 10px; font-size:12px; user-select:all;">${installCmd}</code>
+              <button class="btn btn-secondary btn-small" onclick="copyInstallCmd(this)">Copy</button>
+            </div>
+          </li>
+        </ol>
+        When it finishes, type <strong>claude</strong> in that same window and follow the sign-in. Then <strong style="color:#e94560;">restart this dashboard</strong> and click Launch again.` : `
+        The Launch button for this project is set to run <strong>${escapeHtml(res.missingCmd)}</strong>, but that program isn't installed on this computer. Install it first, restart this dashboard, and try again — or click the <strong>▾</strong> next to Launch to pick a different AI.`;
+      document.getElementById('setupClaudeModal').classList.add('active');
+    }
+    function copyInstallCmd(btn) {
+      navigator.clipboard.writeText(document.getElementById('setupInstallCmd').textContent);
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+    }
+    function hideSetupClaude() { document.getElementById('setupClaudeModal').classList.remove('active'); setupRetry = null; }
+    async function retrySetupClaude() {
+      if (!setupRetry) { hideSetupClaude(); return; }
+      const { path, cmd } = setupRetry;
+      hideSetupClaude();
+      handleLaunchResult(await window.api.openTerminal(path, cmd || undefined), path, cmd);
+    }
     function openClaudeMd(path) { window.api.openClaudeMd(path); }
     function openGlobalClaudeMd() { window.api.openGlobalClaudeMd(); }
     function openExplorer(path) { window.api.openExplorer(path); }
@@ -2069,7 +2126,7 @@
       const p = launchMenuPath; if (!p) return;
       launchOverrides[p] = cmd;   // remembered server-side too by open-terminal
       try { renderFolders(); } catch (e) {}
-      await window.api.openTerminal(p, cmd);
+      handleLaunchResult(await window.api.openTerminal(p, cmd), p, cmd);
     }
     function launchWithCustom() {
       hideLaunchMenu();
@@ -2543,7 +2600,7 @@
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        hideCreateModal(); hideAbout(); hideShortcuts(); hideEditSummary(); hideSummariesTable(); hideCtxMenu(); hideNoBrainModal(); hideUpdateModal();
+        hideCreateModal(); hideAbout(); hideShortcuts(); hideEditSummary(); hideSummariesTable(); hideCtxMenu(); hideNoBrainModal(); hideUpdateModal(); hideSetupClaude();
       }
       // Ctrl+F or "/" → focus search (when not typing in another input)
       const inField = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
