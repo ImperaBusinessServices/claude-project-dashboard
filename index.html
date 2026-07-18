@@ -658,6 +658,28 @@
       color: white;
     }
 
+    /* Favorite star — same footprint as the archive checkbox, sits next to it */
+    .fav-check {
+      width: 22px;
+      height: 22px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      font-size: 13px;
+      color: transparent;
+    }
+    .fav-check:hover { border-color: #f5a623; }
+    .fav-check.checked {
+      background: rgba(245,166,35,0.15);
+      border-color: #f5a623;
+      color: #f5a623;
+    }
+
     .folder-card.archived-card { opacity: 0.6; }
     .folder-card.archived-card:hover { opacity: 0.9; }
 
@@ -945,6 +967,7 @@
       </div>
       <div class="view-toggle">
         <button class="view-btn active" id="view-active" onclick="setView('active')">Active</button>
+        <button class="view-btn" id="view-favorites" onclick="setView('favorites')">&#9733; Favorites</button>
         <button class="view-btn" id="view-archived" onclick="setView('archived')">Archived</button>
         <button class="view-btn" id="view-all" onclick="setView('all')">All</button>
       </div>
@@ -970,7 +993,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.10.3</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.11.0</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1032,16 +1055,21 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.10.3:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.11.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>Sort by AI</strong> — a new <strong>AI</strong> button next to the other Sort by buttons groups your projects by whichever AI their Launch button starts: Claude first, then Codex, OpenCode, and your own commands. Click it again to flip the order. Inside each group projects are listed A–Z.</li>
-          <li><strong>🧠 Other AIs now understand your notes</strong> — Codex and OpenCode can't read CLAUDE.md, so they had no idea what your <strong>brain/</strong> folder was for, and shortcuts like "where were we?" meant nothing to them. Launching one of them in a project now writes an <strong>AGENTS.md</strong> (the file those tools do read) explaining the whole thing. It never overwrites a file you already have, and only happens if you've got the memory protocol switched on.</li>
-          <li><strong>Note:</strong> spend tracking still only counts Claude — Codex sessions won't show up on the chart.</li>
+          <li><strong>⭐ Favorites</strong> — every project card now has a star box (above the archive checkbox). Click it to mark a project as a favorite; click again to unstar. Hover either box to see what it does.</li>
+          <li><strong>New "★ Favorites" tab</strong> — next to Active in the view toggle, showing just your starred projects. Search works inside it like everywhere else.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.10.3:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>Sort by AI</strong> — a new <strong>AI</strong> button next to the other Sort by buttons groups your projects by whichever AI their Launch button starts: Claude first, then Codex, OpenCode, and your own commands. Click it again to flip the order. Inside each group projects are listed A–Z.</li>
+              <li><strong>🧠 Other AIs now understand your notes</strong> — Codex and OpenCode can't read CLAUDE.md, so they had no idea what your <strong>brain/</strong> folder was for, and shortcuts like "where were we?" meant nothing to them. Launching one of them in a project now writes an <strong>AGENTS.md</strong> (the file those tools do read) explaining the whole thing. It never overwrites a file you already have, and only happens if you've got the memory protocol switched on.</li>
+              <li><strong>Note:</strong> spend tracking still only counts Claude — Codex sessions won't show up on the chart.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.10.2:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>🤖 Launch a different AI, per project</strong> — the Launch button now has a small <strong>▾</strong> next to it. Click it to start <strong>Codex CLI</strong> (OpenAI), <strong>OpenCode</strong>, or your own command in that project instead of Claude Code. It launches straight away and remembers your pick for that project next time. Clicking the button itself still just launches Claude, exactly as before.</li>
@@ -1602,6 +1630,7 @@
       // (Searching under "Active" only surfaces active projects; switch to
       // Archived or All to find archived ones.)
       if (currentView === 'active') filtered = folders.filter(f => !f.archived);
+      else if (currentView === 'favorites') filtered = folders.filter(f => f.favorite);
       else if (currentView === 'archived') filtered = folders.filter(f => f.archived);
       const searching = currentSearch.length > 0;
       if (searching) {
@@ -1626,6 +1655,8 @@
       if (sorted.length === 0) {
         const msg = searching
           ? `No projects match "${currentSearch}". Try a different keyword, or fill in summaries via Settings → Edit Summaries.`
+          : currentView === 'favorites'
+          ? 'No favorites yet. Click the ★ on a project card to add one.'
           : currentView === 'archived'
           ? 'No archived projects. Check a project card to archive it.'
           : currentView === 'active'
@@ -1644,6 +1675,7 @@
         const badge = f.hasClaudeMd ? '<span class="badge">CLAUDE.md</span>' : '';
         const archivedClass = f.archived ? ' archived-card' : '';
         const checkClass = f.archived ? ' checked' : '';
+        const favClass = f.favorite ? ' checked' : '';
         let subLine = '';
         if (f.subprojects && f.subprojects.length > 0) {
           const list = f.subprojects.map(s => s.split('/').slice(1).join('/')).join('\\n');
@@ -1668,7 +1700,10 @@
               ${summaryBadge}
               ${badge}
             </div>
-            <div class="archive-check${checkClass}" onclick="toggleArchive('${escapedPath}')" title="${f.archived ? 'Unarchive' : 'Archive'}">&#10003;</div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div class="fav-check${favClass}" onclick="toggleFavorite('${escapedPath}')" title="${f.favorite ? 'Remove from favorites' : 'Add to favorites'}">&#9733;</div>
+              <div class="archive-check${checkClass}" onclick="toggleArchive('${escapedPath}')" title="${f.archived ? 'Unarchive' : 'Archive'}">&#10003;</div>
+            </div>
           </div>
           <div class="folder-meta">
             <span>Modified: ${formatDate(f.modified)}</span>
@@ -1961,6 +1996,13 @@
       await window.api.toggleArchive(realPath);
       const folder = folders.find(f => f.path === realPath);
       if (folder) folder.archived = !folder.archived;
+      renderFolders();
+    }
+    async function toggleFavorite(escapedPath) {
+      const realPath = escapedPath.replace(/\\\\/g, '\\');
+      await window.api.toggleFavorite(realPath);
+      const folder = folders.find(f => f.path === realPath);
+      if (folder) folder.favorite = !folder.favorite;
       renderFolders();
     }
     async function deleteFolder(escapedPath, name) {

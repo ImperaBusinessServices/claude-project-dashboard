@@ -493,11 +493,13 @@ ipcMain.handle('get-folders', async () => {
     return [];
   }
   const archived = settings.archived || {};
+  const favorites = settings.favorites || {};
   const summaries = settings.summaries || {};
   const projects = findProjects(settings.projectRoot);
   return projects.map(p => ({
     ...p,
     archived: !!archived[p.path],
+    favorite: !!favorites[p.path],
     summary: summaries[p.path] ? summaries[p.path].text : null,
     summaryManual: summaries[p.path] ? !!summaries[p.path].manual : false,
     hasBrain: hasBrainFolder(p.path),
@@ -515,6 +517,18 @@ ipcMain.handle('toggle-archive', async (event, folderPath) => {
   }
   saveSettings(settings);
   return settings.archived[folderPath] || false;
+});
+
+// Toggle favorite status for a project
+ipcMain.handle('toggle-favorite', async (event, folderPath) => {
+  if (!settings.favorites) settings.favorites = {};
+  if (settings.favorites[folderPath]) {
+    delete settings.favorites[folderPath];
+  } else {
+    settings.favorites[folderPath] = true;
+  }
+  saveSettings(settings);
+  return settings.favorites[folderPath] || false;
 });
 
 // Delete a project folder (send to Recycle Bin). Guarded: only archived projects
@@ -538,6 +552,7 @@ ipcMain.handle('delete-folder', async (event, folderPath) => {
     await shell.trashItem(target);
     // Clean up any settings that referenced this folder.
     if (settings.archived) delete settings.archived[folderPath];
+    if (settings.favorites) delete settings.favorites[folderPath];
     if (settings.summaries) delete settings.summaries[folderPath];
     saveSettings(settings);
     return { success: true };

@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('api', {
   getSettings: () => ipcRenderer.invoke('get-settings'),
   chooseFolder: () => ipcRenderer.invoke('choose-folder'),
   toggleArchive: (path) => ipcRenderer.invoke('toggle-archive', path),
+  toggleFavorite: (path) => ipcRenderer.invoke('toggle-favorite', path),
   deleteFolder: (path) => ipcRenderer.invoke('delete-folder', path),
   getBeepEnabled: () => ipcRenderer.invoke('get-beep-enabled'),
   setBeepEnabled: (enabled) => ipcRenderer.invoke('set-beep-enabled', enabled),
