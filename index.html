@@ -802,6 +802,7 @@
     .btn-ai-claude   { background: #e94560; }
     .btn-ai-codex    { background: #2f6fe4; }
     .btn-ai-opencode { background: #16a34a; }
+    .btn-ai-localai  { background: #d97706; }
     .btn-ai-custom   { background: #6d4aa8; }
     .ai-dot {
       display: inline-block; width: 8px; height: 8px;
@@ -810,7 +811,29 @@
     .ai-dot-claude   { background: #e94560; }
     .ai-dot-codex    { background: #2f6fe4; }
     .ai-dot-opencode { background: #16a34a; }
+    .ai-dot-localai  { background: #d97706; }
     .ai-dot-custom   { background: #6d4aa8; }
+
+    /* Settings: per-AI enable rows (v2.12) */
+    .ai-toggle-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; }
+    .ai-row-name { flex: 1; font-size: 12px; color: #ddd; }
+    .ai-row-sub { color: #888; font-size: 11px; margin-left: 6px; }
+    .ai-badge {
+      font-size: 10px; padding: 2px 7px; border-radius: 8px; white-space: nowrap;
+      background: rgba(255,255,255,0.06); color: #888;
+    }
+    .ai-badge.ok   { background: rgba(22,163,74,0.15); color: #4ade80; }
+    .ai-badge.warn { background: rgba(217,119,6,0.18); color: #fbbf24; }
+    .ai-row-note { font-size: 11px; color: #fbbf24; margin: 0 0 4px 16px; display: none; }
+
+    /* New Project modal: AI picker pills (v2.12) */
+    .ai-pill {
+      display: inline-flex; align-items: center; padding: 5px 11px;
+      border-radius: 14px; border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.04); color: #ccc; font-size: 12px; cursor: pointer;
+    }
+    .ai-pill:hover { border-color: rgba(179,136,255,0.5); }
+    .ai-pill.sel { border-color: #b388ff; background: rgba(179,136,255,0.15); color: #fff; }
 
     /* Summaries table modal */
     .summaries-table {
@@ -993,7 +1016,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.11.1</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.12.0</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1055,14 +1078,22 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.11.1:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.12.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>Friendly first-run help</strong> — if Claude Code isn't installed on this computer yet, clicking Launch now shows a clear step-by-step screen (get an account, copy-paste one install line) instead of opening a broken terminal window. Works for the other AIs too.</li>
+          <li><strong>Choose which AIs appear in the Launch menu</strong> — Settings now has an on/off switch for each non-Claude AI (Codex CLI, OpenCode, Local AI), with a badge showing whether it's actually installed on this computer. Fresh installs show just Claude until you switch more on.</li>
+          <li><strong>🖥️ New: Local AI (Ollama)</strong> — a Launch option that runs AI models <em>on your own computer</em> (free, private, works offline) via OpenCode + Ollama. Its tile colour is amber, and you can set exactly what command it runs in Settings.</li>
+          <li><strong>Pick the AI when you create a project</strong> — the New Project window now asks "Which AI will you use here?" (only once you've enabled a second AI).</li>
+          <li><strong>Memory files are set up for every AI</strong> — new projects get both CLAUDE.md and AGENTS.md, so you can switch a project between Claude, Codex, OpenCode, or Local AI later and they all understand your brain/ notes.</li>
+          <li><strong>Better "not installed" help</strong> — the helper screen now gives the exact install steps for whichever AI is missing (Codex, OpenCode, or Ollama), not just Claude.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.11.1:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>Friendly first-run help</strong> — if Claude Code isn't installed on this computer yet, clicking Launch now shows a clear step-by-step screen (get an account, copy-paste one install line) instead of opening a broken terminal window. Works for the other AIs too.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.11.0:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>⭐ Favorites</strong> — every project card now has a star box (above the archive checkbox). Click it to mark a project as a favorite; click again to unstar. Hover either box to see what it does.</li>
@@ -1214,7 +1245,7 @@
       <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div style="flex: 1; padding-right: 14px;">
-              <strong style="color: #b388ff; font-size: 13px;">Which AI runs when you click Launch <span style="background:#e94560;color:#fff;font-size:9px;font-weight:700;padding:1px 6px;border-radius:6px;vertical-align:middle;letter-spacing:.4px;">TEST</span></strong>
+              <strong style="color: #b388ff; font-size: 13px;">Which AI runs when you click Launch</strong>
               <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">The default for every project. Each tile's little <b>▾</b> next to Launch can pick a different AI for just that project — it launches right away and the tile remembers. Any AI other than Claude must already be installed on your computer.</div>
             </div>
             <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
@@ -1222,9 +1253,51 @@
                 <option value="claude">Claude Code (default)</option>
                 <option value="codex">Codex CLI (OpenAI)</option>
                 <option value="opencode">OpenCode</option>
+                <option value="localai">Local AI (Ollama)</option>
                 <option value="custom">Custom command…</option>
               </select>
               <input id="launchCmdCustom" type="text" placeholder="e.g. aider" onchange="changeLaunchCmdCustom(this.value)" style="display:none; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none;">
+            </div>
+          </div>
+          <!-- Per-AI enable toggles (v2.12): the menus only offer what you switch on -->
+          <div id="aiTogglesWrap" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
+            <div style="font-size: 11px; color: #999; margin-bottom: 4px; line-height: 1.5;">Which other AIs show up in the Launch menus. Claude Code is always available. Switching one on just adds it to the menus — the badge shows whether it's actually installed on this computer.</div>
+            <div class="ai-toggle-row">
+              <span class="ai-dot ai-dot-codex"></span>
+              <span class="ai-row-name">Codex CLI <span class="ai-row-sub">OpenAI's "ChatGPT" coding terminal</span></span>
+              <span class="ai-badge" id="aiBadge-codex">…</span>
+              <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0;">
+                <input type="checkbox" id="aiToggle-codex" onchange="toggleAiEnabled('codex', this.checked)" style="opacity:0; width:0; height:0;">
+                <span id="aiSlider-codex" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#333; border-radius:12px; transition:0.3s;"></span>
+                <span id="aiKnob-codex" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:#888; border-radius:50%; transition:0.3s;"></span>
+              </label>
+            </div>
+            <div class="ai-row-note" id="aiRowNote-codex"></div>
+            <div class="ai-toggle-row">
+              <span class="ai-dot ai-dot-opencode"></span>
+              <span class="ai-row-name">OpenCode <span class="ai-row-sub">free &amp; open-source, works with many AIs</span></span>
+              <span class="ai-badge" id="aiBadge-opencode">…</span>
+              <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0;">
+                <input type="checkbox" id="aiToggle-opencode" onchange="toggleAiEnabled('opencode', this.checked)" style="opacity:0; width:0; height:0;">
+                <span id="aiSlider-opencode" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#333; border-radius:12px; transition:0.3s;"></span>
+                <span id="aiKnob-opencode" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:#888; border-radius:50%; transition:0.3s;"></span>
+              </label>
+            </div>
+            <div class="ai-row-note" id="aiRowNote-opencode"></div>
+            <div class="ai-toggle-row">
+              <span class="ai-dot ai-dot-localai"></span>
+              <span class="ai-row-name">Local AI (Ollama) <span class="ai-row-sub">models that run on this computer</span></span>
+              <span class="ai-badge" id="aiBadge-localai">…</span>
+              <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0;">
+                <input type="checkbox" id="aiToggle-localai" onchange="toggleAiEnabled('localai', this.checked)" style="opacity:0; width:0; height:0;">
+                <span id="aiSlider-localai" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#333; border-radius:12px; transition:0.3s;"></span>
+                <span id="aiKnob-localai" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:#888; border-radius:50%; transition:0.3s;"></span>
+              </label>
+            </div>
+            <div class="ai-row-note" id="aiRowNote-localai"></div>
+            <div id="localAiCmdWrap" style="display:none; margin: 4px 0 4px 16px;">
+              <input id="localAiCmdInput" type="text" onchange="changeLocalAiCommand(this.value)" style="width: 100%; box-sizing: border-box; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none;">
+              <div style="font-size: 11px; color: #888; margin-top: 4px; line-height: 1.5;">The command Local AI runs — OpenCode picks up your Ollama models automatically if you've configured it. Example: <code style="color:#b388ff;">opencode -m ollama/qwen3.5:9b</code></div>
             </div>
           </div>
         </div>
@@ -1464,6 +1537,11 @@
       <h2>Create New Project</h2>
       <input type="text" id="newFolderName" placeholder="Project folder name..."
              onkeydown="if(event.key==='Enter') createFolder()">
+      <!-- AI picker (v2.12) — hidden until a second AI is switched on in Settings -->
+      <div id="createAiRow" style="display:none; margin: 2px 0 12px;">
+        <div style="font-size: 12px; color: #999; margin-bottom: 6px;">Which AI will you use here?</div>
+        <div id="createAiPills" style="display:flex; flex-wrap: wrap; gap: 6px;"></div>
+      </div>
       <div class="error-text" id="createError"></div>
       <div class="modal-buttons">
         <button class="btn btn-ghost" onclick="hideCreateModal()">Cancel</button>
@@ -1565,7 +1643,7 @@
 
     // Grouping order for the AI sort — matches the ▾ menu, so the tiles come out
     // in the same order (and the same colour run) as the menu that sets them.
-    const AI_SORT_ORDER = ['claude', 'codex', 'opencode', 'custom'];
+    const AI_SORT_ORDER = ['claude', 'codex', 'opencode', 'localai', 'custom'];
 
     function sortFolders(list) {
       const dir = sortAscending ? 1 : -1;
@@ -1793,11 +1871,30 @@
       document.getElementById('createModal').classList.add('active');
       document.getElementById('newFolderName').value = '';
       document.getElementById('createError').textContent = '';
+      renderCreateAiPicker();
       setTimeout(() => document.getElementById('newFolderName').focus(), 100);
     }
 
     function hideCreateModal() {
       document.getElementById('createModal').classList.remove('active');
+    }
+
+    // New Project AI picker (v2.12). Hidden while no non-Claude AI is enabled —
+    // the default on fresh installs — so the modal looks exactly as before.
+    let createAiPick = 'claude';
+    function renderCreateAiPicker() {
+      const row = document.getElementById('createAiRow');
+      createAiPick = 'claude';
+      if (!AI_TOGGLE_KEYS.some(k => enabledAIs[k])) { row.style.display = 'none'; return; }
+      const opts = LAUNCH_MENU.filter(([c]) => c === 'claude' || enabledAIs[c]);
+      document.getElementById('createAiPills').innerHTML = opts.map(([c, label]) =>
+        `<span class="ai-pill${c === createAiPick ? ' sel' : ''}" data-ai="${c}" onclick="pickCreateAi('${c}')"><span class="ai-dot ai-dot-${c}"></span>${label}</span>`
+      ).join('');
+      row.style.display = 'block';
+    }
+    function pickCreateAi(c) {
+      createAiPick = c;
+      document.querySelectorAll('#createAiPills .ai-pill').forEach(p => p.classList.toggle('sel', p.dataset.ai === c));
     }
 
     async function createFolder() {
@@ -1810,8 +1907,11 @@
         document.getElementById('createError').textContent = 'Name contains invalid characters';
         return;
       }
-      const result = await window.api.createFolder(name);
+      const result = await window.api.createFolder(name, createAiPick);
       if (result.success) {
+        // The picked AI was saved as this project's override — mirror it in the
+        // local cache so the new tile renders with the right colour immediately.
+        if (result.path) launchOverrides[result.path] = createAiPick;
         hideCreateModal();
         await refreshFolders();
       } else {
@@ -1831,22 +1931,58 @@
         ? 'curl -fsSL https://claude.ai/install.sh | bash'
         : 'irm https://claude.ai/install.ps1 | iex';
       const shellName = res.isMac ? 'Terminal (in Applications → Utilities)' : 'PowerShell (search for it in the Start menu)';
-      document.getElementById('setupClaudeTitle').textContent = isClaude
-        ? 'One more step — install Claude Code'
-        : `"${res.missingCmd}" isn't installed yet`;
-      document.getElementById('setupClaudeBody').innerHTML = isClaude ? `
+      // Which AI was being launched? cmd is null on main-button launches (the
+      // common case) — fall back to the tile's remembered AI. First word only,
+      // so "codex --profile x" still gets the Codex guidance.
+      const rawKey = String(cmd || tileLaunchCmd(path) || '');
+      const kw = rawKey.trim().split(/\s+/)[0];
+      const isLocalAi = kw === 'localai' || res.missingCmd === 'ollama';
+      const codeRow = c => `
+        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+          <code id="setupInstallCmd" style="flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:8px 10px; font-size:12px; user-select:all;">${c}</code>
+          <button class="btn btn-secondary btn-small" onclick="copyInstallCmd(this)">Copy</button>
+        </div>`;
+      const restartNote = `When it finishes, <strong style="color:#e94560;">restart this dashboard</strong> and click Launch again.`;
+      const nodeNote = `You'll need <strong>Node.js</strong> first if it isn't installed — free from <strong>nodejs.org</strong>.`;
+      let title, body;
+      if (isClaude) {
+        title = 'One more step — install Claude Code';
+        body = `
         This dashboard organises your projects, but the AI itself — <strong>Claude Code</strong> — is a separate (free to install) program, and it isn't on this computer yet. Two steps:
         <ol style="margin: 10px 0 10px 20px;">
           <li style="margin-bottom:8px;"><strong>Get a Claude account</strong> at <strong>claude.ai</strong> with a paid plan (Pro is the cheapest that includes Claude Code).</li>
-          <li><strong>Install Claude Code</strong> — open ${shellName}, paste this line, and press Enter:
-            <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-              <code id="setupInstallCmd" style="flex:1; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:6px; padding:8px 10px; font-size:12px; user-select:all;">${installCmd}</code>
-              <button class="btn btn-secondary btn-small" onclick="copyInstallCmd(this)">Copy</button>
-            </div>
+          <li><strong>Install Claude Code</strong> — open ${shellName}, paste this line, and press Enter:${codeRow(installCmd)}
           </li>
         </ol>
-        When it finishes, type <strong>claude</strong> in that same window and follow the sign-in. Then <strong style="color:#e94560;">restart this dashboard</strong> and click Launch again.` : `
+        When it finishes, type <strong>claude</strong> in that same window and follow the sign-in. Then <strong style="color:#e94560;">restart this dashboard</strong> and click Launch again.`;
+      } else if (res.missingCmd === 'ollama') {
+        title = 'One more step — install Ollama';
+        body = `
+        This project runs <strong>Local AI</strong> — models that live on this computer, powered by a free program called <strong>Ollama</strong> — and Ollama isn't installed yet.
+        <div style="margin: 10px 0;"><button class="btn btn-secondary btn-small" onclick="window.api.openExternal('https://ollama.com/download')">Get Ollama from ollama.com</button></div>
+        Install it, download a model inside Ollama (it walks you through it), then ${restartNote}`;
+      } else if (isLocalAi) {
+        title = 'One more step — install OpenCode';
+        body = `
+        This project runs <strong>Local AI</strong> through a free program called <strong>${escapeHtml(res.missingCmd)}</strong>, which isn't installed on this computer yet. ${nodeNote} Then open ${shellName}, paste this line, and press Enter:${codeRow('npm install -g opencode-ai')}
+        <div style="margin-top:10px;">It also needs <strong>Ollama</strong> (free, from <strong>ollama.com</strong>) to run the models. ${restartNote}</div>`;
+      } else if (kw === 'codex') {
+        title = 'One more step — install Codex CLI';
+        body = `
+        The Launch button for this project is set to run <strong>Codex CLI</strong> — OpenAI's coding terminal — and it isn't installed on this computer yet. You'll need a <strong>ChatGPT account</strong> to sign in. ${nodeNote} Then open ${shellName}, paste this line, and press Enter:${codeRow('npm install -g @openai/codex')}
+        <div style="margin-top:10px;">${restartNote}</div>`;
+      } else if (kw === 'opencode') {
+        title = 'One more step — install OpenCode';
+        body = `
+        The Launch button for this project is set to run <strong>OpenCode</strong> — a free, open-source coding terminal — and it isn't installed on this computer yet. ${nodeNote} Then open ${shellName}, paste this line, and press Enter:${codeRow('npm install -g opencode-ai')}
+        <div style="margin-top:10px;">${restartNote}</div>`;
+      } else {
+        title = `"${res.missingCmd}" isn't installed yet`;
+        body = `
         The Launch button for this project is set to run <strong>${escapeHtml(res.missingCmd)}</strong>, but that program isn't installed on this computer. Install it first, restart this dashboard, and try again — or click the <strong>▾</strong> next to Launch to pick a different AI.`;
+      }
+      document.getElementById('setupClaudeTitle').textContent = title;
+      document.getElementById('setupClaudeBody').innerHTML = body;
       document.getElementById('setupClaudeModal').classList.add('active');
     }
     function copyInstallCmd(btn) {
@@ -2079,14 +2215,18 @@
         alert('Could not delete: ' + ((res && res.error) || 'unknown error'));
       }
     }
-    // ---- Multi-CLI launch (feature-branch test) ----
+    // ---- Multi-CLI launch ----
     // Global default (Settings) + per-project override remembered from the
     // tile's ▾ menu. A project is just a folder — any AI can work in it, so
     // the choice is made per launch and merely *remembered* per project.
+    // enabledAIs (v2.12): which non-Claude AIs the menus offer — visibility
+    // only; a stored default/override to a switched-off AI still launches.
     let launchGlobal = 'claude';
     let launchOverrides = {};
-    const LAUNCH_PRESETS = { claude: 'Launch Claude', codex: 'Launch Codex', opencode: 'Launch OpenCode' };
-    const LAUNCH_MENU = [['claude', 'Claude Code'], ['codex', 'Codex CLI'], ['opencode', 'OpenCode']];
+    let enabledAIs = { codex: false, opencode: false, localai: false };
+    const AI_TOGGLE_KEYS = ['codex', 'opencode', 'localai'];
+    const LAUNCH_PRESETS = { claude: 'Launch Claude', codex: 'Launch Codex', opencode: 'Launch OpenCode', localai: 'Launch Local AI' };
+    const LAUNCH_MENU = [['claude', 'Claude Code'], ['codex', 'Codex CLI'], ['opencode', 'OpenCode'], ['localai', 'Local AI (Ollama)']];
     function tileLaunchCmd(path) { return launchOverrides[path] || launchGlobal; }
     function tileLaunchLabel(path) {
       const c = tileLaunchCmd(path);
@@ -2101,6 +2241,7 @@
         if (s) {
           launchGlobal = s.global || 'claude';
           launchOverrides = s.overrides || {};
+          if (s.enabled) enabledAIs = s.enabled;
           try { renderFolders(); } catch (e) {}
         }
       } catch (e) {}
@@ -2111,7 +2252,8 @@
       launchMenuPath = path;
       const m = document.getElementById('launchMenu');
       const cur = tileLaunchCmd(path);
-      m.innerHTML = LAUNCH_MENU.map(([c, label]) =>
+      // Only offer what's switched on in Settings (Claude + Custom always stay).
+      m.innerHTML = LAUNCH_MENU.filter(([c]) => c === 'claude' || enabledAIs[c]).map(([c, label]) =>
         `<div class="ctx-item" onclick="launchWith('${c}')"><span class="ai-dot ai-dot-${c}"></span>${label}${cur === c ? '<span class="cur">●</span>' : ''}</div>`
       ).join('') + `<div class="ctx-sep"></div><div class="ctx-item" onclick="launchWithCustom()"><span class="ai-dot ai-dot-custom"></span>Custom command…</div>`;
       m.style.display = 'block';
@@ -2136,6 +2278,13 @@
     function syncLaunchCmdUI() {
       const sel = document.getElementById('launchCmdSelect');
       const custom = document.getElementById('launchCmdCustom');
+      // Hide options for AIs that are switched off — visibility only. If the
+      // stored default IS a hidden AI (reachable via the custom input), its
+      // option un-hides so the select can still show the truth.
+      for (const key of AI_TOGGLE_KEYS) {
+        const opt = sel.querySelector(`option[value="${key}"]`);
+        if (opt) opt.hidden = !(enabledAIs[key] || launchGlobal === key);
+      }
       if (LAUNCH_PRESETS[launchGlobal]) { sel.value = launchGlobal; custom.style.display = 'none'; }
       else { sel.value = 'custom'; custom.style.display = 'block'; custom.value = launchGlobal; }
     }
@@ -2152,9 +2301,76 @@
       try { renderFolders(); } catch (e) {}
     }
 
+    // ---- AI launcher toggles + Local AI (v2.12) ----
+    async function refreshAiToggleRows() {
+      try { enabledAIs = await window.api.getEnabledAIs(); } catch (e) {}
+      for (const key of AI_TOGGLE_KEYS) {
+        const cb = document.getElementById('aiToggle-' + key);
+        if (cb) { cb.checked = !!enabledAIs[key]; updateAiToggleVisual(key, !!enabledAIs[key]); }
+      }
+      syncLocalAiUI();
+      try { syncLaunchCmdUI(); } catch (e) {}   // hidden options follow the fresh map
+      detectAndBadge();   // async — badges fill in as the checks land
+    }
+    function updateAiToggleVisual(key, on) {
+      const slider = document.getElementById('aiSlider-' + key);
+      const knob = document.getElementById('aiKnob-' + key);
+      slider.style.background = on ? '#533483' : '#333';
+      knob.style.background = on ? '#b388ff' : '#888';
+      knob.style.left = on ? '22px' : '2px';
+    }
+    async function toggleAiEnabled(key, on) {
+      const res = await window.api.setEnabledAI(key, on);
+      if (res && res.enabled) enabledAIs = res.enabled;
+      updateAiToggleVisual(key, !!enabledAIs[key]);
+      const note = document.getElementById('aiRowNote-' + key);
+      if (note) {
+        note.style.display = 'none';
+        if (res && res.resetDefault) {
+          launchGlobal = 'claude';
+          note.textContent = 'was your default — Launch now uses Claude Code';
+          note.style.display = 'block';
+        }
+      }
+      try { syncLaunchCmdUI(); } catch (e) {}
+      syncLocalAiUI();
+      try { renderFolders(); } catch (e) {}
+    }
+    function syncLocalAiUI() {
+      document.getElementById('localAiCmdWrap').style.display = enabledAIs.localai ? 'block' : 'none';
+      if (enabledAIs.localai) {
+        // Prefill by assigning .value — never by HTML interpolation.
+        window.api.getLocalAiCommand()
+          .then(v => { document.getElementById('localAiCmdInput').value = v; })
+          .catch(() => {});
+      }
+    }
+    async function changeLocalAiCommand(v) {
+      if (!String(v).trim()) return;
+      const clean = await window.api.setLocalAiCommand(String(v).trim());
+      // Show what will actually run (set-time sanitizing may have trimmed it).
+      document.getElementById('localAiCmdInput').value = clean;
+    }
+    async function detectAndBadge() {
+      try {
+        const d = await window.api.detectAiClis();
+        setAiBadge('codex', d.codex ? 'ok' : 'no');
+        setAiBadge('opencode', d.opencode ? 'ok' : 'no');
+        // Local AI needs its command's binary AND ollama (the model engine).
+        setAiBadge('localai', d.localaiBin && d.ollama ? 'ok' : d.localaiBin ? 'warn' : 'no');
+      } catch (e) {}
+    }
+    function setAiBadge(key, state) {
+      const b = document.getElementById('aiBadge-' + key);
+      if (!b) return;
+      b.className = 'ai-badge' + (state === 'ok' ? ' ok' : state === 'warn' ? ' warn' : '');
+      b.textContent = state === 'ok' ? '✓ installed' : state === 'warn' ? 'needs Ollama' : 'not found';
+    }
+
     async function showAbout() {
       document.getElementById('aboutModal').classList.add('active');
       try { syncLaunchCmdUI(); } catch (e) {}
+      try { refreshAiToggleRows(); } catch (e) {}
       // 💸 Spend: the chart can't be drawn while the modal is hidden (it has no
       // width) — render now that it's visible, or kick off the first scan.
       if (spDays) spApplyAll(); else loadSpend(false);
