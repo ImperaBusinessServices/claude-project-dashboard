@@ -739,6 +739,24 @@ function listOllamaModels() {
 // Merge-only and idempotent: never removes or rewrites anything the user has;
 // an unparseable config is left strictly alone.
 const OPENCODE_CONFIG = path.join(HOME, '.config', 'opencode', 'opencode.json');
+
+// Turn a raw Ollama tag into something readable in OpenCode's model picker:
+// qwen3.6:35b -> "Qwen 3.6 35B (local)", gemma4:e4b-it-qat -> "Gemma 4 E4B IT
+// QAT (local)", llama3:latest -> "Llama 3 (local)". Cosmetic only.
+function prettyModelName(tag) {
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  const [family, variant] = String(tag).split(':');
+  const famParts = family.split('-');
+  // Split letters from digits only on a single-token family, so "qwen3.6"
+  // becomes "Qwen 3.6" without mangling "deepseek-r1" into "Deepseek-R 1".
+  const fam = famParts.length === 1
+    ? cap(family).replace(/([A-Za-z])(\d)/, '$1 $2')
+    : famParts.map(cap).join('-');
+  // Short chunks are acronyms/sizes (9b, e4b, it, qat); longer ones are words.
+  const size = (!variant || variant === 'latest') ? ''
+    : variant.split('-').map(p => (p.length <= 4 ? p.toUpperCase() : cap(p))).join(' ');
+  return [fam, size].filter(Boolean).join(' ') + ' (local)';
+}
 function syncOllamaIntoOpenCode(tags) {
   try {
     let cfg = { $schema: 'https://opencode.ai/config.json' };
@@ -755,7 +773,15 @@ function syncOllamaIntoOpenCode(tags) {
     p.models = p.models || {};
     let added = false;
     for (const tag of tags) {
-      if (!p.models[tag]) { p.models[tag] = { name: `${tag} (local)`, tools: true }; added = true; }
+      if (!p.models[tag]) {
+        p.models[tag] = { name: prettyModelName(tag), tools: true };
+        added = true;
+      } else if (p.models[tag].name === `${tag} (local)`) {
+        // Exactly the name an older build of ours generated -> ours to tidy.
+        // Any other name is the user's and is never touched.
+        p.models[tag].name = prettyModelName(tag);
+        added = true;
+      }
     }
     if (!added) return;
     fs.mkdirSync(path.dirname(OPENCODE_CONFIG), { recursive: true });
