@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Free AI Model Comparison</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --surface: #fff;
+    --surface2: #f0f2f5;
+    --text: #1a1d23;
+    --text2: #5a5e6a;
+    --border: #e0e3e8;
+    --accent: #6366f1;
+    --accent2: #818cf8;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --purple: #8b5cf6;
+    --pink: #ec4899;
+    --teal: #14b8a6;
+    --orange: #f97316;
+    --red: #ef4444;
+    --tag-bg: #eef2ff;
+    --tag-text: #4f46e5;
+    --shadow: 0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,.08);
+    --chart-total: #6366f1;
+    --chart-active: #a5b4fc;
+    --chart-bg: #e0e3e8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not(.light) {
+      --bg: #0f1117;
+      --surface: #1a1c25;
+      --surface2: #22242f;
+      --text: #e8eaed;
+      --text2: #9ca0aa;
+      --border: #2e3040;
+      --accent: #818cf8;
+      --accent2: #a5b4fc;
+      --tag-bg: #1e1f3a;
+      --tag-text: #a5b4fc;
+      --chart-total: #818cf8;
+      --chart-active: #4f46e5;
+      --chart-bg: #2e3040;
+      --shadow: 0 1px 3px rgba(0,0,0,.2),0 1px 2px rgba(0,0,0,.15);
+      --shadow-lg: 0 4px 12px rgba(0,0,0,.3);
+    }
+  }
+  :root.dark {
+    --bg: #0f1117;
+    --surface: #1a1c25;
+    --surface2: #22242f;
+    --text: #e8eaed;
+    --text2: #9ca0aa;
+    --border: #2e3040;
+    --accent: #818cf8;
+    --accent2: #a5b4fc;
+    --tag-bg: #1e1f3a;
+    --tag-text: #a5b4fc;
+    --chart-total: #818cf8;
+    --chart-active: #4f46e5;
+    --chart-bg: #2e3040;
+    --shadow: 0 1px 3px rgba(0,0,0,.2),0 1px 2px rgba(0,0,0,.15);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,.3);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 2rem 1.5rem;
+    line-height: 1.5;
+    transition: background .3s, color .3s;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+  }
+  header h1 {
+    font-size: 1.6rem; font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--pink));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  header p { color: var(--text2); font-size: .9rem; margin-top: .2rem; }
+  .toggle-wrap { display: flex; align-items: center; gap: .6rem; font-size: .85rem; color: var(--text2); }
+  .toggle {
+    position: relative; width: 44px; height: 24px; background: var(--border);
+    border-radius: 12px; cursor: pointer; transition: background .25s;
+    flex-shrink: 0; border: none;
+  }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; background: var(--surface); border-radius: 50%;
+    transition: transform .25s;
+  }
+  .toggle.on { background: var(--accent); }
+  .toggle.on::after { transform: translateX(20px); }
+
+  .notice {
+    background: var(--tag-bg); color: var(--tag-text);
+    padding: .8rem 1rem; border-radius: 10px; font-size: .82rem;
+    margin-bottom: 1.5rem; line-height: 1.5;
+  }
+
+  .section-title {
+    font-size: .95rem; font-weight: 600; padding: 1rem 1.25rem .5rem;
+    color: var(--text2); text-transform: uppercase; letter-spacing: .04em;
+  }
+
+  .panel {
+    background: var(--surface); border-radius: 12px; overflow: hidden;
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  thead th {
+    text-align: left; padding: .75rem 1rem; font-weight: 600;
+    border-bottom: 2px solid var(--border); color: var(--text2);
+    white-space: nowrap;
+  }
+  thead th:first-child { padding-left: 1.25rem; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: var(--accent); }
+  .sort-arrow { font-size: .7rem; margin-left: .3rem; }
+  th.sort-asc .sort-arrow::after { content: "\25B2"; }
+  th.sort-desc .sort-arrow::after { content: "\25BC"; }
+  tbody td { padding: .75rem 1rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  td.name { font-weight: 600; white-space: nowrap; }
+  .model-link { color: inherit; text-decoration: none; }
+  .model-link:hover { text-decoration: underline; text-decoration-color: currentColor; }
+  .link-arrow { font-size: .7rem; opacity: .5; transition: opacity .2s; }
+  .model-link:hover .link-arrow { opacity: 1; }
+
+  .charts-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .chart-card {
+    background: var(--surface); border-radius: 12px; padding: 1.25rem;
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+  }
+  .chart-card h3 { font-size: .9rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; }
+  .chart-card .chart-legend { display: flex; gap: 1rem; font-size: .78rem; color: var(--text2); margin-bottom: 1rem; }
+  .chart-card .chart-legend span { display: flex; align-items: center; gap: .35rem; }
+  .chart-card .chart-legend .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  .bar-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .4rem; }
+  .bar-label {
+    width: 120px; font-size: .78rem; font-weight: 500; text-align: right;
+    flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .bar-track { flex: 1; height: 22px; background: var(--chart-bg); border-radius: 5px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 5px; transition: width .6s ease; position: relative; }
+  .bar-fill.total { background: var(--chart-total); }
+  .bar-fill.active { background: var(--chart-active); }
+  .bar-track.double .bar-fill.total { position: absolute; top: 0; left: 0; }
+  .bar-track.double .bar-fill.active { position: absolute; top: 0; left: 0; opacity: .85; }
+  .bar-value { font-size: .72rem; color: var(--text2); width: 60px; flex-shrink: 0; }
+  .bar-row .color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  .card {
+    background: var(--surface); border-radius: 12px; padding: 1.25rem;
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .card h2 { font-size: 1.05rem; font-weight: 600; margin-bottom: .3rem; }
+  .card .company { font-size: .78rem; color: var(--text2); margin-bottom: .6rem; }
+  .card .specs { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .7rem; }
+  .card .specs span {
+    font-size: .72rem; padding: .15rem .5rem; border-radius: 6px;
+    font-weight: 500;
+  }
+  .spec-params { background: #eef2ff; color: #4f46e5; }
+  .spec-context { background: #fef3c7; color: #92400e; }
+  .spec-license { background: #dcfce7; color: #166534; }
+  .dark .spec-params { background: #1e1f3a; color: #a5b4fc; }
+  .dark .spec-context { background: #2a2318; color: #fbbf24; }
+  .dark .spec-license { background: #14281d; color: #4ade80; }
+  .card .what { font-size: .85rem; color: var(--text2); margin-bottom: .6rem; line-height: 1.5; }
+  .card .known { font-size: .84rem; margin-bottom: .6rem; }
+  .card .known strong { font-weight: 600; }
+  .card .tell {
+    font-size: .83rem; background: var(--surface2); padding: .6rem .7rem;
+    border-radius: 8px; font-style: italic; color: var(--text2);
+    border-left: 3px solid var(--accent2);
+  }
+  .card .tell::before { content: "Tell a friend: "; font-style: normal; font-weight: 600; color: var(--text); }
+
+  .footer { text-align: center; font-size: .8rem; color: var(--text2); padding-top: 1rem; }
+
+  @media (max-width: 760px) {
+    .charts-row { grid-template-columns: 1fr; }
+    .bar-label { width: 90px; font-size: .72rem; }
+  }
+  @media (max-width: 640px) {
+    body { padding: 1rem; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <p style="margin-bottom:1rem;"><a href="index.html" style="color:var(--accent-color);text-decoration:none;font-size:.9rem;">← Claude Project Dashboard</a></p>
+  <header>
+    <div>
+      <h1>Free AI Model Comparison</h1>
+      <p>All models available on OpenCode Zen — free for a limited time</p>
+    </div>
+    <div class="toggle-wrap">
+      <span>Light</span>
+      <button class="toggle" id="themeToggle"></button>
+      <span>Dark</span>
+    </div>
+  </header>
+
+  <div class="notice">
+    ⚠️  Privacy note: During the free period, data you send may be used to improve these models. Do not submit personal or confidential information.
+  </div>
+
+  <div class="panel">
+    <div class="section-title">Quick Reference Matrix</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th data-sort="name" class="sortable">Model <span class="sort-arrow"></span></th>
+            <th data-sort="totalParams" class="sortable">Params <span class="sort-arrow"></span></th>
+            <th data-sort="contextTokens" class="sortable">Context <span class="sort-arrow"></span></th>
+            <th data-sort="provider" class="sortable">Provider <span class="sort-arrow"></span></th>
+            <th data-sort="license" class="sortable">License <span class="sort-arrow"></span></th>
+            <th data-sort="bestfor" class="sortable">Best For <span class="sort-arrow"></span></th>
+          </tr>
+        </thead>
+        <tbody id="matrixBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <h3>Parameters</h3>
+      <div class="chart-legend">
+        <span><span class="swatch" style="background:var(--chart-total)"></span> Total params</span>
+        <span><span class="swatch" style="background:var(--chart-active)"></span> Active per token</span>
+      </div>
+      <div id="paramsChart"></div>
+    </div>
+    <div class="chart-card">
+      <h3>Context Window</h3>
+      <div class="chart-legend">
+        <span><span class="swatch" style="background:var(--chart-total)"></span> Context size</span>
+      </div>
+      <div id="contextChart"></div>
+    </div>
+  </div>
+
+  <div class="grid" id="cardGrid"></div>
+
+  <div class="footer">
+    Data sourced from OpenCode Zen docs &amp; model cards — July 2026
+  </div>
+</div>
+
+<script>
+const MODELS = [
+  {
+    name: "DeepSeek V4 Flash Free",
+    company: "DeepSeek (China)",
+    params: "284B total \u00b7 13B active",
+    totalParams: 284,
+    activeParams: 13,
+    contextTokens: 1000000,
+    context: "1,000,000 tokens",
+    license: "MIT",
+    provider: "DeepSeek",
+    color: "var(--blue)",
+    what: "Smaller, faster member of DeepSeek's V4 family. Supports thinking mode (non-think / high / max). Open weights.",
+    known: "Speed + giant context at near-zero cost. Top-tier for coding, agentic tasks, and long-document analysis.",
+    tell: "It's the smartest free model right now \u2014 reads a million tokens at once, great at coding, and costs nothing during this promo."
+  },
+  {
+    name: "Hy3 Free",
+    company: "Tencent (China)",
+    params: "295B total \u00b7 21B active",
+    totalParams: 295,
+    activeParams: 21,
+    contextTokens: 256000,
+    context: "256,000 tokens",
+    license: "Apache 2.0",
+    provider: "Tencent",
+    color: "var(--teal)",
+    what: "Tencent Hunyuan's latest open-source MoE. Configurable reasoning effort. 192 experts, top-8 routing.",
+    known: "Punches way above its weight on reasoning and science. Strong agentic coding and tool-calling.",
+    tell: "Tencent's open-source model that beats models 2-5x its size on science and math tasks."
+  },
+  {
+    name: "North Mini Code Free",
+    company: "Cohere (Canada)",
+    params: "30B total \u00b7 3B active",
+    totalParams: 30,
+    activeParams: 3,
+    contextTokens: 256000,
+    context: "256,000 tokens (64K output)",
+    license: "Apache 2.0",
+    provider: "Cohere",
+    color: "var(--orange)",
+    what: "Cohere's first coding-specific model. Tiny footprint \u2014 runs on a single GPU. 128 experts, top-8 routing.",
+    known: "Optimized for agentic coding and terminal tasks. Can run locally (~18 GB VRAM). Interleaved reasoning.",
+    tell: "A super-efficient coding model from Cohere small enough to run on your own computer."
+  },
+  {
+    name: "Nemotron 3 Ultra Free",
+    company: "NVIDIA (USA)",
+    params: "550B total \u00b7 55B active",
+    totalParams: 550,
+    activeParams: 55,
+    contextTokens: 1000000,
+    context: "1,000,000 tokens",
+    license: "OpenMDW-1.1",
+    provider: "NVIDIA",
+    color: "var(--green)",
+    what: "NVIDIA's flagship open model. Hybrid Mamba-Attention MoE with Multi-Token Prediction. 5-6x faster than peers.",
+    known: "Frontier reasoning, complex multi-step agents, long-context analysis. Highest throughput in its class.",
+    tell: "NVIDIA's most powerful open model \u2014 550B params, 1M context, built for hard reasoning."
+  },
+  {
+    name: "MiMo V2.5 Free",
+    company: "Xiaomi (China)",
+    params: "310B total \u00b7 15B active",
+    totalParams: 310,
+    activeParams: 15,
+    contextTokens: 1000000,
+    context: "1,000,000 tokens",
+    license: "MIT",
+    provider: "Xiaomi",
+    color: "var(--purple)",
+    what: "Native omnimodal MoE \u2014 handles text, image, video, AND audio in one unified architecture.",
+    known: "Swiss Army knife of AI models. Reads, sees, hears. Strong agentic capabilities across modalities.",
+    tell: "Xiaomi's model that can understand text, images, video, and audio all at once."
+  },
+  {
+    name: "Big Pickle",
+    company: "Stealth (routing to DeepSeek V4 Flash)",
+    params: "~284B total \u00b7 ~13B active",
+    totalParams: 284,
+    activeParams: 13,
+    contextTokens: 1000000,
+    context: "~1,000,000 tokens",
+    license: "Unknown (proprietary)",
+    provider: "OpenCode",
+    color: "var(--pink)",
+    what: "A 'stealth' model \u2014 OpenCode doesn't disclose what it is. Community has confirmed it currently routes to DeepSeek V4 Flash.",
+    known: "The mystery free model. Fast, decent quality, but the underlying model can change without notice.",
+    tell: "A free model on OpenCode \u2014 nobody knows exactly what it is, but it routes to DeepSeek V4 Flash right now."
+  }
+];
+
+const COLORS = ["var(--blue)","var(--teal)","var(--orange)","var(--green)","var(--purple)","var(--pink)"];
+
+function bar(val, max, cls, color) {
+  const pct = Math.min(val / max * 100, 100);
+  return `<div class="bar-fill ${cls}" style="width:${pct}%;${color?'background:'+color:''}"></div>`;
+}
+
+function renderParamsChart() {
+  const maxTotal = Math.max(...MODELS.map(m => m.totalParams));
+  const el = document.getElementById('paramsChart');
+  el.innerHTML = MODELS.map((m, i) => `
+    <div class="bar-row">
+      <div class="bar-label" style="color:${COLORS[i]}">${m.name}</div>
+      <div class="bar-track double">
+        ${bar(m.totalParams, maxTotal, 'total')}
+        ${bar(m.activeParams, maxTotal, 'active')}
+      </div>
+      <div class="bar-value">${m.totalParams}B / ${m.activeParams}B</div>
+    </div>
+  `).join('');
+}
+
+function renderContextChart() {
+  const maxCtx = Math.max(...MODELS.map(m => m.contextTokens));
+  const el = document.getElementById('contextChart');
+  el.innerHTML = MODELS.map((m, i) => {
+    const label = m.contextTokens >= 1000000 ? '1M' : (m.contextTokens / 1000).toFixed(0) + 'K';
+    return `
+    <div class="bar-row">
+      <div class="bar-label" style="color:${COLORS[i]}">${m.name}</div>
+      <div class="bar-track">
+        ${bar(m.contextTokens, maxCtx, 'total', COLORS[i])}
+      </div>
+      <div class="bar-value">${label}</div>
+    </div>
+  `}).join('');
+}
+
+function renderCards() {
+  const grid = document.getElementById('cardGrid');
+  grid.innerHTML = MODELS.map(m => `
+    <div class="card">
+      <h2 style="color:${m.color}">${m.name}</h2>
+      <div class="company">${m.company}</div>
+      <div class="specs">
+        <span class="spec-params">${m.params}</span>
+        <span class="spec-context">${m.context}</span>
+        <span class="spec-license">${m.license}</span>
+      </div>
+      <div class="what">${m.what}</div>
+      <div class="known"><strong>Known for:</strong> ${m.known}</div>
+      <div class="tell">${m.tell}</div>
+    </div>
+  `).join('');
+}
+
+let sortKey = null;
+let sortDir = 'asc';
+
+function compare(a, b) {
+  let va, vb;
+  switch (sortKey) {
+    case 'name': va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
+    case 'totalParams': va = a.totalParams; vb = b.totalParams; break;
+    case 'contextTokens': va = a.contextTokens; vb = b.contextTokens; break;
+    case 'provider': va = a.provider.toLowerCase(); vb = b.provider.toLowerCase(); break;
+    case 'license': va = a.license.toLowerCase(); vb = b.license.toLowerCase(); break;
+    case 'bestfor': va = a.known.toLowerCase(); vb = b.known.toLowerCase(); break;
+    default: return 0;
+  }
+  if (va < vb) return sortDir === 'asc' ? -1 : 1;
+  if (va > vb) return sortDir === 'asc' ? 1 : -1;
+  return 0;
+}
+
+const LINKS = {
+  "DeepSeek V4 Flash Free": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+  "Hy3 Free": "https://huggingface.co/tencent/Hy3",
+  "North Mini Code Free": "https://huggingface.co/CohereLabs/North-Mini-Code-1.0",
+  "Nemotron 3 Ultra Free": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-NVFP4",
+  "MiMo V2.5 Free": "https://huggingface.co/XiaomiMiMo/MiMo-V2.5",
+  "Big Pickle": "https://opencode.ai/docs/zen/"
+};
+
+function renderMatrix() {
+  const tbody = document.getElementById('matrixBody');
+  const sorted = sortKey ? [...MODELS].sort(compare) : MODELS;
+  tbody.innerHTML = sorted.map(m => `
+    <tr>
+      <td class="name" style="color:${m.color}"><a href="${LINKS[m.name]}" target="_blank" rel="noopener" class="model-link">${m.name} <span class="link-arrow">↗</span></a></td>
+      <td>${m.params}</td>
+      <td>${m.context}</td>
+      <td>${m.provider}</td>
+      <td>${m.license}</td>
+      <td>${m.known.split('.')[0]}</td>
+    </tr>
+  `).join('');
+}
+
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if (sortKey === key) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortKey = key;
+      sortDir = 'asc';
+    }
+    document.querySelectorAll('th.sortable').forEach(h => {
+      h.classList.remove('sort-asc', 'sort-desc');
+    });
+    th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+    renderMatrix();
+  });
+});
+
+const toggle = document.getElementById('themeToggle');
+const root = document.documentElement;
+const stored = localStorage.getItem('model-comp-theme');
+if (stored === 'dark') { root.classList.add('dark'); toggle.classList.add('on'); }
+else if (stored === 'light') { root.classList.remove('dark'); root.classList.remove('light'); }
+else if (window.matchMedia('(prefers-color-scheme: dark)').matches) { root.classList.add('dark'); toggle.classList.add('on'); }
+
+toggle.addEventListener('click', () => {
+  const isDark = toggle.classList.toggle('on');
+  root.classList.toggle('dark', isDark);
+  if (isDark) root.classList.remove('light');
+  localStorage.setItem('model-comp-theme', isDark ? 'dark' : 'light');
+});
+
+renderMatrix();
+renderParamsChart();
+renderContextChart();
+renderCards();
+</script>
+</body>
+</html>

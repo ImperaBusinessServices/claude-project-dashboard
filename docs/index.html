@@ -604,7 +604,7 @@
          (so nobody mistakes this for Claude Desktop / claude.ai). -->
     <div class="app-showcase intro d3" id="appShowcase">
       <div class="app-glow"></div>
-      <div class="hs-track" id="hsTrack">
+      <div class="hs-track s1" id="hsTrack">
       <div class="hs-slide">
       <div class="demo-hint">✨ This preview is live — try the sort buttons or “+ New Project”</div>
       <div class="appwin" id="appwin">
@@ -760,8 +760,8 @@
 
       <div class="hs-nav">
         <button class="hs-arrow" id="hsPrev" aria-label="Previous slide">‹</button>
-        <span class="hs-dot on" data-s="0" role="button" aria-label="The dashboard"></span>
-        <span class="hs-dot" data-s="1" role="button" aria-label="The terminals it launches"></span>
+        <span class="hs-dot" data-s="0" role="button" aria-label="The dashboard"></span>
+        <span class="hs-dot on" data-s="1" role="button" aria-label="The terminals it launches"></span>
         <button class="hs-arrow" id="hsNext" aria-label="Next slide">›</button>
       </div>
     </div>
@@ -1076,6 +1076,34 @@
   </div>
 </section>
 
+<!-- ============ AI LANDSCAPE ============ -->
+<section class="band" id="ai-landscape">
+  <div class="wrap">
+    <div class="reveal">
+      <span class="kicker">Going further</span>
+      <h2>Curious what else is out <em>there</em>?</h2>
+      <p class="section-lede">The Dashboard isn’t tied to one AI — it can launch whatever you’ve got. Here’s some homework we did while figuring out our own setup.</p>
+    </div>
+    <div class="features">
+      <div class="card reveal">
+        <div class="ic">🆓</div>
+        <h3>Explore other “free” LLMs</h3>
+        <p>A handful of AI models are free to use right now through OpenCode (DeepSeek, Hy3, North Mini Code, and others). We built a side-by-side comparison of what each is good at — and a heads-up on the catch: “free” usually means your conversations may be used to improve the model, so keep anything private off of them.</p>
+        <p style="margin-top:14px;"><a href="free-ai-models.html" style="color:var(--coral-br);text-decoration:none;font-weight:600;">See the comparison →</a></p>
+      </div>
+      <div class="card reveal">
+        <div class="ic">🖥️</div>
+        <h3>Build your own local LLM</h3>
+        <p>Prefer something private that runs entirely on your own computer, free forever, no internet required? That’s a <em>local</em> AI (via a free tool called Ollama) instead of a cloud one. We wrote up how we picked our own lineup and built a free interactive tool that recommends models based on your machine’s specs.</p>
+        <p style="margin-top:14px;">
+          <a href="build-your-own-local-ai.html" style="color:var(--coral-br);text-decoration:none;font-weight:600;">Read how we built ours →</a><br>
+          <a href="local-ai-picker.html" style="color:var(--coral-br);text-decoration:none;font-weight:600;">Try the interactive picker →</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ DOWNLOAD ============ -->
 <section class="band" id="download">
   <div class="wrap">
@@ -1143,6 +1171,7 @@
       <a class="brand" href="#top"><img src="favicon.svg" alt=""><b>Claude Project Dashboard</b></a>
       <div class="foot-links">
         <a href="#setup">How it works</a>
+        <a href="#ai-landscape">Free &amp; local AI</a>
         <a href="#download">Download</a>
         <a href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener">GitHub</a>
         <a href="https://imperabusinessservices.com" target="_blank" rel="noopener">Impera Business Services</a>
@@ -1500,7 +1529,7 @@
   var track = document.getElementById('hsTrack');
   if (!track) return;
   var dots = Array.prototype.slice.call(document.querySelectorAll('.hs-dot'));
-  var cur = 0, timer = null;
+  var cur = 1, timer = null; // default to slide 2 (the terminal windows) this cycle
   function go(n) {
     cur = (n + 2) % 2;
     track.classList.toggle('s1', cur === 1);

@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Which Local AI Should I Run? — interactive picker</title>
+<style>
+  :root {
+    color-scheme: light;
+    --plane: #f9f9f7; --surface-1: #fcfcfb;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
+    --fit-fast: #2a78d6; --fit-ram: #e87ba4; --fit-slow: #008300;
+    --accent: #2a78d6; --good: #006300; --warn: #b97a10;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane: #0d0d0d; --surface-1: #1a1a19;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+    --fit-fast: #3987e5; --fit-ram: #d55181; --fit-slow: #008300;
+    --accent: #3987e5; --good: #0ca30c; --warn: #c98500;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane: #0d0d0d; --surface-1: #1a1a19;
+      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+      --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+      --fit-fast: #3987e5; --fit-ram: #d55181; --fit-slow: #008300;
+      --accent: #3987e5; --good: #0ca30c; --warn: #c98500;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--plane); color: var(--ink-1); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.55; padding: 28px 18px 60px; }
+  .wrap { max-width: 1400px; margin: 0 auto; }
+  h1 { font-size: 27px; letter-spacing: -0.3px; }
+  .sub { color: var(--ink-2); font-size: 14px; margin: 4px 0 18px; max-width: 78ch; }
+  h2 { font-size: 19px; margin: 34px 0 4px; }
+  .h2sub { color: var(--ink-2); font-size: 13px; margin-bottom: 12px; max-width: 82ch; }
+  .themeToggle { position: fixed; top: 14px; right: 14px; z-index: 50; background: var(--surface-1); border: 1px solid var(--ring); color: var(--ink-1); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  .panel { background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px; padding: 18px; }
+
+  /* Hardware selector */
+  .hwPanel { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; margin-bottom: 8px; }
+  .hwGroup { display: flex; flex-direction: column; gap: 4px; }
+  .hwGroup label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-3); }
+  .hwGroup select { background: var(--plane); color: var(--ink-1); border: 1px solid var(--ring); border-radius: 8px; padding: 7px 10px; font-size: 13.5px; min-width: 170px; }
+  .machineTabs { display: flex; gap: 0; border: 1px solid var(--ring); border-radius: 9px; overflow: hidden; }
+  .machineTabs button { border: none; background: transparent; color: var(--ink-2); padding: 8px 14px; font-size: 13px; cursor: pointer; border-right: 1px solid var(--ring); }
+  .machineTabs button:last-child { border-right: none; }
+  .machineTabs button.on { background: var(--accent); color: #fff; }
+  .hwSummary { font-size: 12.5px; color: var(--ink-2); margin-top: 10px; }
+  .hwSummary b { color: var(--ink-1); }
+  .specsHelp { margin-top: 12px; border-top: 1px solid var(--grid); padding-top: 10px; }
+  .specsHelp summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--accent); }
+  .specsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; margin-top: 12px; }
+  .specsGrid .sh { font-size: 13px; display: block; margin-bottom: 4px; margin-top: 2px; }
+  .specsGrid ol { margin: 0 0 12px 20px; font-size: 12.8px; color: var(--ink-2); }
+  .specsGrid li { margin-bottom: 3px; }
+  /* beats .mono's nowrap — these commands must wrap, not scroll */
+  .cmdRow code.specsCmd { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 10.5px; line-height: 1.5; max-height: 88px; overflow-y: auto; }
+  .shareRow { margin-top: 12px; border-top: 1px solid var(--grid); padding-top: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  /* Use-case chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0 4px; }
+  .ucChip { border: 1px solid var(--ring); background: var(--surface-1); color: var(--ink-2); border-radius: 999px; padding: 5px 13px; font-size: 12.5px; cursor: pointer; }
+  .ucChip.on { border-color: var(--accent); color: var(--ink-1); background: color-mix(in srgb, var(--accent) 12%, transparent); font-weight: 600; }
+  .ucChip:hover { border-color: var(--accent); }
+
+  .quadLayout { display: grid; grid-template-columns: 320px 1fr; gap: 18px; }
+  @media (max-width: 920px) { .quadLayout { grid-template-columns: 1fr; } }
+  /* The side column holds two sliding views: the levers, and the selected-model card */
+  .quadSide { position: relative; overflow: hidden; }
+  .sideView { transition: transform 0.4s cubic-bezier(.4,.1,.2,1), opacity 0.3s; }
+  .sideView.offL { position: absolute; inset: 0 0 auto 0; transform: translateX(-112%); opacity: 0; pointer-events: none; }
+  .sideView.offR { position: absolute; inset: 0 0 auto 0; transform: translateX(112%); opacity: 0; pointer-events: none; }
+  #sideCard .card { border-color: var(--accent); }
+  .lever { margin-bottom: 12px; }
+  .lever label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; margin-bottom: 3px; gap: 8px; }
+  .lever label small { color: var(--ink-3); font-weight: 400; }
+  .lever input { width: 100%; accent-color: var(--accent); }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 14px; }
+  .preset { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--ring); background: transparent; color: var(--ink-2); cursor: pointer; }
+  .preset:hover { border-color: var(--accent); color: var(--ink-1); }
+  .top3 { border-top: 1px solid var(--grid); padding-top: 12px; }
+  .top3 h3 { font-size: 13px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .top3 .row { display: flex; gap: 8px; align-items: baseline; margin-bottom: 8px; font-size: 13.5px; }
+  .top3 .medal { font-size: 15px; }
+  .top3 .why { color: var(--ink-2); font-size: 12px; display: block; }
+
+  .chartBox { position: relative; overflow-x: auto; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .dot g.mark { transition: transform 0.55s cubic-bezier(.4,.1,.2,1), opacity 0.4s; cursor: pointer; }
+  .dotLabel { font-size: 11.5px; fill: var(--ink-1); paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; stroke-linejoin: round; }
+  .quadTag { font-size: 11px; fill: var(--ink-3); }
+  .axisLabel { font-size: 12px; fill: var(--ink-2); }
+  .tick { font-size: 10.5px; fill: var(--ink-3); }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 10px; font-size: 12.5px; color: var(--ink-2); align-items: center; }
+  .legend .sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+  .hiddenNote { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+  #tip { position: fixed; display: none; z-index: 60; background: var(--surface-1); border: 1px solid var(--ring); box-shadow: 0 6px 24px rgba(0,0,0,0.18); border-radius: 10px; padding: 10px 13px; font-size: 12.5px; max-width: 300px; pointer-events: none; color: var(--ink-2); }
+  #tip b { color: var(--ink-1); font-size: 13px; }
+  #tip .trow { display: flex; justify-content: space-between; gap: 14px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px; overflow: hidden; }
+  .tableWrap { overflow-x: auto; border-radius: 12px; }
+  th { text-align: left; color: var(--ink-3); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 10px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th[data-key] { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; user-select: none; }
+  th[data-key]:hover { color: var(--ink-1); }
+  .sortInd { color: var(--accent); font-size: 10px; margin-left: 4px; }
+  .sortInd sup { font-size: 8px; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; }
+  tr.wont td { opacity: 0.45; }
+  tr.wont .modelName { text-decoration: line-through; }
+  .chip { display: inline-block; min-width: 30px; text-align: center; border-radius: 6px; padding: 2px 7px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12px; background: var(--plane); border: 1px solid var(--ring); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+  .modelName { font-weight: 600; color: var(--ink-1); white-space: nowrap; }
+  .modelFam { color: var(--ink-3); font-size: 11.5px; display: block; }
+  .h1{background:#cde2fb;color:#0b0b0b}.h2{background:#b7d3f6;color:#0b0b0b}.h3{background:#9ec5f4;color:#0b0b0b}.h4{background:#86b6ef;color:#0b0b0b}.h5{background:#6da7ec;color:#0b0b0b}.h6{background:#5598e7;color:#0b0b0b}.h7{background:#3987e5;color:#fff}.h8{background:#256abf;color:#fff}.h9{background:#1c5cab;color:#fff}.h10{background:#104281;color:#fff}
+  :root[data-theme="dark"] .h1{background:#0d366b;color:#fff}:root[data-theme="dark"] .h2{background:#104281;color:#fff}:root[data-theme="dark"] .h3{background:#184f95;color:#fff}:root[data-theme="dark"] .h4{background:#1c5cab;color:#fff}:root[data-theme="dark"] .h5{background:#256abf;color:#fff}:root[data-theme="dark"] .h6{background:#2a78d6;color:#fff}:root[data-theme="dark"] .h7{background:#3987e5;color:#fff}:root[data-theme="dark"] .h8{background:#5598e7;color:#0b0b0b}:root[data-theme="dark"] .h9{background:#86b6ef;color:#0b0b0b}:root[data-theme="dark"] .h10{background:#b7d3f6;color:#0b0b0b}
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .h1{background:#0d366b;color:#fff} :root:not([data-theme="light"]) .h2{background:#104281;color:#fff} :root:not([data-theme="light"]) .h3{background:#184f95;color:#fff} :root:not([data-theme="light"]) .h4{background:#1c5cab;color:#fff} :root:not([data-theme="light"]) .h5{background:#256abf;color:#fff} :root:not([data-theme="light"]) .h6{background:#2a78d6;color:#fff} :root:not([data-theme="light"]) .h7{background:#3987e5;color:#fff} :root:not([data-theme="light"]) .h8{background:#5598e7;color:#0b0b0b} :root:not([data-theme="light"]) .h9{background:#86b6ef;color:#0b0b0b} :root:not([data-theme="light"]) .h10{background:#b7d3f6;color:#0b0b0b}
+  }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+  .card { background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
+  .card h3 { font-size: 15px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .card .fam { color: var(--ink-3); font-size: 11.5px; font-weight: 400; }
+  .card .one { color: var(--ink-2); font-size: 12.8px; margin: 6px 0 10px; }
+  .card ul { list-style: none; font-size: 12.5px; margin-bottom: 8px; }
+  .card li { padding-left: 18px; position: relative; margin-bottom: 3px; color: var(--ink-2); }
+  .card li.plus::before { content: "✓"; position: absolute; left: 0; color: var(--good); font-weight: 700; }
+  .card li.minus::before { content: "✕"; position: absolute; left: 0; color: var(--ink-3); font-weight: 700; }
+  .card .best { font-size: 12.5px; margin: 4px 0 10px; color: var(--ink-1); background: var(--plane); border: 1px solid var(--ring); border-radius: 8px; padding: 7px 10px; }
+  .cmdRow { margin-top: auto; display: flex; gap: 8px; align-items: center; }
+  .cmdRow code { flex: 1; overflow-x: auto; }
+  .copyBtn { font-size: 11.5px; border: 1px solid var(--ring); background: transparent; color: var(--ink-2); border-radius: 6px; padding: 3px 10px; cursor: pointer; white-space: nowrap; }
+  .copyBtn:hover { border-color: var(--accent); color: var(--ink-1); }
+  .estBadge { font-size: 10px; background: var(--plane); border: 1px solid var(--ring); color: var(--ink-3); border-radius: 999px; padding: 1px 8px; }
+  .fitBadge { font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 2px 10px; }
+  .tierDot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .card.flash { animation: cardFlash 1.8s ease-out; }
+  @keyframes cardFlash { 0%, 55% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 3px transparent; } }
+
+  /* Recommendation section */
+  .recoBox { border: 1px solid var(--accent); }
+  .recoKicker { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--accent); margin-bottom: 2px; }
+  .recoName { font-size: 21px; font-weight: 700; letter-spacing: -0.2px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .recoWhy { list-style: none; margin: 10px 0 4px; }
+  .recoWhy li { padding-left: 20px; position: relative; margin-bottom: 5px; font-size: 13.5px; color: var(--ink-2); }
+  .recoWhy li::before { content: "✓"; position: absolute; left: 0; color: var(--good); font-weight: 700; }
+  .recoVs { font-size: 13px; color: var(--ink-2); background: var(--plane); border: 1px solid var(--ring); border-radius: 8px; padding: 8px 12px; margin: 10px 0; }
+  .castRow { display: flex; gap: 8px; align-items: baseline; font-size: 13px; color: var(--ink-2); margin: 6px 0; flex-wrap: wrap; }
+  .recoFoot { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 12px; border-top: 1px solid var(--grid); padding-top: 12px; justify-content: space-between; }
+  .specsHelp .qa { font-size: 12.8px; color: var(--ink-2); margin: 2px 0 10px; }
+
+  .askBox { border: 1px solid var(--accent); }
+  .askBox textarea { width: 100%; min-height: 150px; background: var(--plane); color: var(--ink-2); border: 1px solid var(--ring); border-radius: 8px; padding: 10px; font-size: 12px; font-family: Consolas, monospace; margin: 10px 0; resize: vertical; }
+  .bigBtn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
+  .note { background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px; padding: 14px 16px; font-size: 13px; color: var(--ink-2); }
+  .note b { color: var(--ink-1); display: block; margin-bottom: 4px; font-size: 13.5px; }
+  details.finePrint { background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px; padding: 12px 16px; margin-top: 14px; }
+  details.finePrint summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  details.finePrint li { font-size: 12.8px; color: var(--ink-2); margin: 8px 0 8px 18px; }
+  .foot { color: var(--ink-3); font-size: 11.5px; margin-top: 30px; }
+</style>
+</head>
+<body>
+<button class="themeToggle" id="themeBtn">☀️ / 🌙</button>
+<div class="wrap">
+  <p style="margin-bottom:10px;"><a href="index.html" style="color:var(--accent);text-decoration:none;font-size:13px;">← Claude Project Dashboard</a></p>
+  <h1>🧭 Which Local AI Should I Run?</h1>
+  <div class="sub">A free, self-contained picker for AI models that run on <em>your own computer</em> (via <b>Ollama</b> — the free engine that runs them). Tell it what machine you have and what you want to do; the chart, scores, and recommendations adapt. No account, no tracking, nothing leaves this page. Researched &amp; fact-checked 2026-07-18.</div>
+
+  <h2>1 · Your machine</h2>
+  <div class="h2sub">Two numbers decide everything: your <b>graphics-card memory</b> (VRAM — the AI's fast desk) and your <b>regular RAM</b> (the slower overflow table). Plus one housekeeping check: <b>free disk space</b> — these models are big one-time downloads. Windows: Task Manager → Performance → GPU → "Dedicated GPU memory".</div>
+  <div class="panel">
+    <div class="hwPanel">
+      <div class="hwGroup"><label>Machine type</label>
+        <div class="machineTabs" id="machineTabs">
+          <button data-k="pc" class="on">🖥️ PC with NVIDIA card</button>
+          <button data-k="mac">🍎 Apple Silicon Mac</button>
+          <button data-k="nogpu">💻 No graphics card</button>
+        </div>
+      </div>
+      <div class="hwGroup" id="g-vram"><label>Graphics memory (VRAM)</label>
+        <select id="sel-vram">
+          <option value="4">4 GB — older laptop cards</option>
+          <option value="6">6 GB — RTX 2060/3050 class</option>
+          <option value="8" selected>8 GB — RTX 3060/4060/5060 class</option>
+          <option value="12">12 GB — RTX 3060-12G/4070 class</option>
+          <option value="16">16 GB — RTX 4060 Ti/5060 Ti class</option>
+          <option value="24">24 GB — RTX 3090/4090 class</option>
+          <option value="32">32 GB — RTX 5090 class</option>
+        </select>
+      </div>
+      <div class="hwGroup" id="g-ram"><label>Regular RAM</label>
+        <select id="sel-ram">
+          <option value="16">16 GB</option>
+          <option value="32">32 GB</option>
+          <option value="64" selected>64 GB</option>
+          <option value="128">128 GB</option>
+        </select>
+      </div>
+      <div class="hwGroup" id="g-macmem" style="display:none;"><label>Unified memory</label>
+        <select id="sel-macmem">
+          <option value="16">16 GB</option>
+          <option value="32" selected>32 GB</option>
+          <option value="64">64 GB</option>
+          <option value="128">128 GB</option>
+        </select>
+      </div>
+      <div class="hwGroup" id="g-macchip" style="display:none;"><label>Chip</label>
+        <select id="sel-macchip">
+          <option value="base" selected>M1 / M2 / M3 / M4 (base)</option>
+          <option value="promax">M Pro / M Max</option>
+        </select>
+      </div>
+      <div class="hwGroup" id="g-disk"><label>Free disk space</label>
+        <select id="sel-disk">
+          <option value="15">Under 20 GB — very tight</option>
+          <option value="40">~40 GB</option>
+          <option value="80">~80 GB</option>
+          <option value="150">~150 GB</option>
+          <option value="400" selected>250 GB+ — plenty</option>
+        </select>
+      </div>
+    </div>
+    <div class="hwSummary" id="hwSummary"></div>
+    <details class="specsHelp">
+      <summary>🔍 Not sure what you have? Find out in 30 seconds</summary>
+      <div class="specsGrid">
+        <div>
+          <b class="sh">Windows — the clicking way</b>
+          <ol>
+            <li>Press <b>Ctrl + Shift + Esc</b> (Task Manager)</li>
+            <li>Click <b>Performance</b> on the left</li>
+            <li>Click <b>GPU</b> → read <b>"Dedicated GPU memory"</b> — that's your graphics memory</li>
+            <li>Click <b>Memory</b> → the big number at the top is your RAM</li>
+            <li>For disk: open <b>File Explorer</b> → <b>This PC</b> — each drive shows "<b>x GB free</b>"</li>
+          </ol>
+          <b class="sh">Windows — the copy-paste way</b>
+          <div style="font-size:12.5px; color:var(--ink-2); margin:4px 0;">Press the Windows key, type <b>powershell</b>, open it, paste this, press Enter. It prints your three numbers — you can send them to whoever is helping you choose.</div>
+          <div class="cmdRow"><code class="mono specsCmd" id="winCmd">$g=Get-CimInstance Win32_VideoController | Select-Object -First 1; $v=(Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0*" -Name HardwareInformation.qwMemorySize -EA SilentlyContinue | ForEach-Object { $_.'HardwareInformation.qwMemorySize' } | Sort-Object -Descending | Select-Object -First 1); $r=[math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB); "Graphics card: $($g.Name)"; "Graphics memory: $([math]::Round($v/1GB)) GB"; "Regular RAM: $r GB"; "Free disk (C:): $([math]::Round((Get-PSDrive C).Free/1GB)) GB"</code><button class="copyBtn" onclick="navigator.clipboard.writeText(document.getElementById('winCmd').textContent); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy',1400)">Copy</button></div>
+        </div>
+        <div>
+          <b class="sh">Mac</b>
+          <ol>
+            <li>Click the <b>Apple menu</b> → <b>About This Mac</b></li>
+            <li>The <b>Chip</b> line tells you the model (M1/M2/M3/M4, and whether it's Pro or Max)</li>
+            <li>The <b>Memory</b> line is your unified memory — on a Mac that's both your RAM <em>and</em> your graphics memory</li>
+            <li>Free disk: Apple menu → <b>About This Mac</b> → <b>More Info</b> → <b>Storage</b></li>
+          </ol>
+          <div class="cmdRow"><code class="mono specsCmd" id="macCmd">system_profiler SPHardwareDataType | grep -E "Chip|Memory"; df -h / | awk 'NR==2 {print "Free disk: "$4}'</code><button class="copyBtn" onclick="navigator.clipboard.writeText(document.getElementById('macCmd').textContent); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy',1400)">Copy</button></div>
+          <div style="margin-top:12px;"><b class="sh">No idea / no dedicated graphics?</b><div style="font-size:12.5px; color:var(--ink-2);">If Task Manager shows no "GPU 1" with dedicated memory — or the card says "Intel/AMD Graphics" rather than NVIDIA — pick <b>No graphics card</b> above. Plenty still works; the page will show you what.</div></div>
+        </div>
+      </div>
+    </details>
+    <details class="specsHelp">
+      <summary>💭 What about processor speed, cooling, or drive type?</summary>
+      <div class="specsGrid">
+        <div>
+          <b class="sh">Processor speed — barely matters</b>
+          <div class="qa">When a model fits on the graphics card, the card does virtually all the work — any desktop processor from the last several years is fine, and a faster one wouldn't make answers arrive faster. It only starts to matter on machines with no graphics card, and even there <em>memory speed</em> counts for more than processor speed.</div>
+        </div>
+        <div>
+          <b class="sh">Cooling — nothing special needed</b>
+          <div class="qa">Running a model works the machine about as hard as playing a 3D game. A normal desktop with stock cooling handles it all day — no overclocking, no extra fans. Thin laptops will get warm and loud on long jobs and may quietly slow themselves down to stay safe. Annoying, not harmful.</div>
+        </div>
+        <div>
+          <b class="sh">Disk — the one to actually check</b>
+          <div class="qa">Every model is a one-time download that lives on your drive (the ones here run ~3–24 GB each; a starter set can total 40–60 GB). Keep <b>15–20 GB of headroom</b> beyond the downloads so the system has breathing room. Drive <em>type</em> barely matters: an SSD loads models quicker, but answering speed is identical once loaded.</div>
+        </div>
+      </div>
+    </details>
+    <div class="shareRow">
+      <button class="copyBtn" id="shareBtn">🔗 Copy a link with this setup</button>
+      <span style="font-size:12px; color:var(--ink-3);">Sends someone this page pre-set to a machine and job list — handy when you're helping a friend choose.</span>
+    </div>
+  </div>
+
+  <h2>2 · What do you want it to do?</h2>
+  <div class="h2sub">Pick up to <b>4 jobs</b> (click to toggle), then weight how much each matters. Or grab a preset.</div>
+  <div class="chips" id="ucChips"></div>
+
+  <h2>3 · The Magic Quadrant</h2>
+  <div class="h2sub"><b>Four dimensions:</b> ↔ smarts for your chosen jobs · ↕ how nicely it runs on <em>your</em> machine · dot size = download size · color = where it lives. Hover any dot for its report card — <b>click it and its full card opens right here beside the chart</b> (one click brings the levers back). Models that can't run on your machine are hidden (noted below the chart).</div>
+  <div class="panel quadLayout">
+    <div class="quadSide">
+      <div class="sideView" id="sideLevers">
+        <div id="levers"></div>
+        <div class="lever"><label>⚡ Speed matters <small id="v-spd">5</small></label><input type="range" min="0" max="10" value="5" id="w-spd"></div>
+        <div class="presets" id="presets"></div>
+        <div class="top3"><h3>Best for this mix</h3><div id="top3"></div></div>
+      </div>
+      <div class="sideView offR" id="sideCard"></div>
+    </div>
+    <div class="chartBox"><svg id="quad" viewBox="0 0 800 560" width="100%" role="img" aria-label="Quadrant chart: model smarts for the chosen jobs versus how well each runs on the selected hardware"></svg>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--fit-fast)"></span>Fits fully on the graphics card — fast</span>
+        <span><span class="sw" style="background:var(--fit-ram)"></span>Runs from regular RAM — big brain, patient</span>
+        <span><span class="sw" style="background:var(--fit-slow)"></span>Runs, but slowly</span>
+      </div>
+      <div class="hiddenNote" id="hiddenNote"></div>
+    </div>
+  </div>
+
+  <h2>4 · 👉 The recommendation</h2>
+  <div class="h2sub">No hedging: for the machine and jobs you picked above, this is the one to install first — and the small supporting cast to add after. It re-computes live when you change anything above.</div>
+  <div class="panel recoBox" id="reco"></div>
+
+  <h2>5 · The full report card</h2>
+  <div class="h2sub">Scores are 1–10 <em>within this local lineup</em> (10 = the best you can run at home, not the best that exists). Speed and fit columns are computed for the machine you picked above. Click headers to sort — your previous sort becomes the tiebreaker. Darker chip = better.</div>
+  <div class="tableWrap"><table id="matrix"></table></div>
+
+  <h2>6 · Model cards — with the exact install command</h2>
+  <div class="h2sub">After installing Ollama (ollama.com), each command goes in a terminal: click Copy, paste, press Enter. It downloads the model and starts a chat. The colored badge shows how each runs on YOUR selected machine. Each card also has an <b>🛠️ Install prompt</b> button — a ready-made brief to paste into Claude Code so it sets everything up for you.</div>
+  <div class="cards" id="cards"></div>
+
+  <h2>7 · Want a fresh, personalized write-up?</h2>
+  <div class="panel askBox">
+    <div style="font-size:13.5px; color:var(--ink-2);">This page is a snapshot (researched 2026-07-18) — the model world moves monthly. If you use Claude, ChatGPT, or any capable AI, click the button: it builds a ready-to-paste prompt containing your hardware and chosen jobs, asking <em>your</em> AI for an up-to-the-minute version of these model cards and recommendations. Costs the page's author nothing; uses your own AI account. You can also save this whole page with <b>Ctrl+S</b> — it works offline.</div>
+    <textarea id="askPrompt" readonly></textarea>
+    <button class="bigBtn" onclick="navigator.clipboard.writeText(document.getElementById('askPrompt').value); this.textContent='Copied — paste it into your AI'; setTimeout(()=>this.textContent='📋 Copy the prompt for my AI',2200)">📋 Copy the prompt for my AI</button>
+  </div>
+
+  <h2>8 · Straight talk — read before downloading</h2>
+  <div class="notes" id="notes"></div>
+  <details class="finePrint">
+    <summary>🔬 The hardware fine print (how the speed estimates work)</summary>
+    <ul>
+      <li><b>The master rule:</b> answer speed ≈ your memory speed divided by how much the model must read per word. A regular model re-reads its whole file for every word; a "mixture-of-experts" (MoE) model reads only a small active slice — that's why 30-billion-brain MoEs run acceptably from ordinary RAM.</li>
+      <li><b>Fitting on the graphics card</b> needs the download size + ~2 GB (for a normal conversation). Long documents cost more: at ~32K words allow 4–5 GB extra. Apps often default to short conversations, hiding this — raise the context setting deliberately.</li>
+      <li><b>Speeds by card class</b> (7–9B models, standard compression): 24 GB flagships ≈ 90–135 words/sec · 16 GB mid-range (4060 Ti class) ≈ 35–45 · 8–12 GB ≈ 40–60 · Apple base M chips ≈ 14–24 (M1 is the low end) · M Pro/Max ≈ 30–70.</li>
+      <li><b>MoE from RAM</b> (any 6 GB+ card + fast DDR5): ≈ 15–35 words/sec. A regular model spilling into RAM instead: 2–5. No graphics card at all: small 2–4B models ≈ 6–15; a MoE on 32 GB+ RAM ≈ 12–15 — the best no-card experience.</li>
+      <li><b>Apple Silicon:</b> roughly 66–75% of unified memory is usable for models — a 64 GB Mac acts like a ~48 GB card, letting it run models no consumer PC card can hold. Trade-off: Macs take noticeably longer to read long documents before starting to answer.</li>
+      <li><b>Two cheap wins:</b> RAM running at its rated speed (XMP/EXPO on in the BIOS) is worth ~1.2–1.7×; and two RAM sticks instead of one is worth ~2× (single-stick machines run at half speed). The OS itself needs ~4–6 GB of RAM before any model loads.</li>
+      <li>All speeds assume the standard compressed version of each model, one user, and moderate-length prompts — treat them as honest ballparks, not lab measurements.</li>
+    </ul>
+  </details>
+
+  <h2>9 · ☁️ Beyond home hardware — the giants</h2>
+  <div class="h2sub">These are the biggest downloadable models on Earth. They're free and legal to download — and none of them will run on any machine in the selector above, or any machine you can buy for a normal budget. Here's what they'd actually take, and the sane way to use them instead.</div>
+  <div class="tableWrap"><table id="frontier"></table></div>
+  <div class="notes" style="margin-top:14px;" id="frontierNotes"></div>
+
+  <div class="foot">Built from a fact-checked multi-agent research run (web sweeps → scoring → independent skeptics), 2026-07-18. Capability scores are informed judgments grounded in public benchmarks; entries marked "specs partly estimated" carry unverified sizes. Speed figures are computed ballparks from the fine-print rules. Colors validated for colorblind safety in light and dark mode. Verify any install command against ollama.com/library before running it.</div>
+</div>
+<div id="tip"></div>
+
+<script>
+const DATA = {
+ "useCases": [
+  {
+   "key": "docqa",
+   "label": "📄 Chat with my documents",
+   "blurb": "Ask questions about your own files and get answers that quote their sources."
+  },
+  {
+   "key": "hypothesis",
+   "label": "🔬 Weighing evidence",
+   "blurb": "Read material, form theories, and judge how likely a conclusion really is."
+  },
+  {
+   "key": "strategy",
+   "label": "🧭 Plans & strategy",
+   "blurb": "Deep step-by-step thinking: methodologies, project plans, business processes."
+  },
+  {
+   "key": "transcripts",
+   "label": "🎙️ Meeting & report digestion",
+   "blurb": "Long transcripts and reports in, faithful summaries and how-to docs out."
+  },
+  {
+   "key": "everydayWriting",
+   "label": "✉️ Everyday writing",
+   "blurb": "Emails, posts, quick rewrites, and proofreading."
+  },
+  {
+   "key": "longformWriting",
+   "label": "✍️ Long-form writing",
+   "blurb": "Client-ready pieces where tone and craft actually matter."
+  },
+  {
+   "key": "coding",
+   "label": "💻 Coding assistant",
+   "blurb": "Write, explain, and fix code."
+  },
+  {
+   "key": "extraction",
+   "label": "🗂️ Messy text → clean data",
+   "blurb": "Turn messy text into tidy tables, tags, and structured data."
+  },
+  {
+   "key": "brainstorm",
+   "label": "💡 Brainstorming",
+   "blurb": "Idea generation and creative riffing with a knowledgeable partner."
+  },
+  {
+   "key": "tutoring",
+   "label": "🎓 Learning & tutoring",
+   "blurb": "Clear, accurate explanations of any topic, at your pace."
+  },
+  {
+   "key": "translation",
+   "label": "🌍 Translation",
+   "blurb": "Translation and working across languages."
+  },
+  {
+   "key": "companion",
+   "label": "🔒 Private chat & journaling",
+   "blurb": "Thinking out loud on your own machine — privacy is the whole point."
+  },
+  {
+   "key": "mathlogic",
+   "label": "🧮 Math & logic",
+   "blurb": "Calculation, careful arithmetic, and puzzle-grade logic."
+  }
+ ],
+ "models": [
+  {
+   "name": "Qwen3.5 9B",
+   "tag": "qwen3.5:9b",
+   "family": "Qwen (Alibaba)",
+   "diskGb": 6.6,
+   "params": "9B dense",
+   "moe": false,
+   "activeB": 9,
+   "ctx": "256K",
+   "est": false,
+   "oneLiner": "The best small all-rounder of 2026: reasoning that rivals models ten times its size, in a download that fits almost any modern computer.",
+   "strengths": [
+    "Elite thinking for its size — scores 81.7% on a PhD-level science exam (GPQA Diamond), beating models 13x bigger",
+    "Reads very long documents (256K window) cheaply and summarizes them faithfully",
+    "Speaks 201 languages and dialects — the standout translator of the small class",
+    "Disciplined, tidy output when you ask for tables, lists, or structured data"
+   ],
+   "weaknesses": [
+    "Its writing is competent but has a detectable AI flavor — not the model for client-ready prose",
+    "Serious multi-file coding work is better handled by the bigger models on this list",
+    "A little stiff as a conversational companion compared with the Gemma family"
+   ],
+   "bestFor": "The one model to install if your computer is ordinary and you want maximum brains per gigabyte — research, documents, math, and translation.",
+   "s": {
+    "docqa": 8,
+    "hypothesis": 9,
+    "strategy": 8,
+    "transcripts": 8,
+    "everydayWriting": 7,
+    "longformWriting": 6,
+    "coding": 7,
+    "extraction": 8,
+    "brainstorm": 7,
+    "tutoring": 8,
+    "translation": 9,
+    "companion": 6,
+    "mathlogic": 9
+   }
+  },
+  {
+   "name": "Qwen3.6 35B-A3B",
+   "tag": "qwen3.6:35b",
+   "family": "Qwen (Alibaba)",
+   "diskGb": 24,
+   "params": "35B MoE",
+   "moe": true,
+   "activeB": 3,
+   "ctx": "256K",
+   "est": false,
+   "oneLiner": "Big-model brains at small-model speed: only a thin slice of its 35B wakes up for each word, so it answers 3-5x faster than same-quality regular models.",
+   "strengths": [
+    "Near-top reasoning and strong real-world coding (73.4% on the toughest coding test, SWE-bench Verified)",
+    "The bulk-work champion: long 256K reading window plus fast responses make it ideal for piles of transcripts and documents",
+    "Runs surprisingly well on a normal PC with lots of regular memory — no monster graphics card required"
+   ],
+   "weaknesses": [
+    "The 24 GB download needs a machine with plenty of memory (32 GB of RAM or more)",
+    "Trained with an agent-and-tools focus — its prose is serviceable rather than beautiful",
+    "Its own dense 27B sibling beats it on quality when you have the hardware to run that at full speed"
+   ],
+   "bestFor": "Machines with 32 GB+ of RAM that want near-frontier quality with quick responses — the daily workhorse for heavy document and coding work.",
+   "s": {
+    "docqa": 9,
+    "hypothesis": 9,
+    "strategy": 8,
+    "transcripts": 9,
+    "everydayWriting": 7,
+    "longformWriting": 6,
+    "coding": 9,
+    "extraction": 8,
+    "brainstorm": 8,
+    "tutoring": 8,
+    "translation": 8,
+    "companion": 6,
+    "mathlogic": 8
+   }
+  },
+  {
+   "name": "gpt-oss 20B",
+   "tag": "gpt-oss:20b",
+   "family": "OpenAI",
+   "diskGb": 14,
+   "params": "21B MoE",
+   "moe": true,
+   "activeB": 3.6,
+   "ctx": "128K",
+   "est": false,
+   "oneLiner": "OpenAI's open model from 2025: a careful, methodical reasoner with that familiar ChatGPT explaining style — now feeling its age against the 2026 generation.",
+   "strengths": [
+    "Still excellent at math when set to think hard (~80% on the AIME competition exam) with concise, readable working",
+    "Clear, well-organized explanations in the recognizable OpenAI voice",
+    "Fast for its size thanks to its mixture-of-experts design"
+   ],
+   "weaknesses": [
+    "Famously refusal-happy — it declines harmless requests far more than any other model here",
+    "Trained mostly on English, so translation and multilingual work are weak by design",
+    "Prone to confidently making things up when answering from your documents"
+   ],
+   "bestFor": "Fans of the OpenAI style who mainly want a fast, careful reasoner for math and clear English explanations.",
+   "s": {
+    "docqa": 6,
+    "hypothesis": 7,
+    "strategy": 7,
+    "transcripts": 6,
+    "everydayWriting": 6,
+    "longformWriting": 4,
+    "coding": 7,
+    "extraction": 6,
+    "brainstorm": 5,
+    "tutoring": 7,
+    "translation": 3,
+    "companion": 3,
+    "mathlogic": 9
+   }
+  },
+  {
+   "name": "Gemma 4 E4B",
+   "tag": "gemma4:e4b-it-qat",
+   "readB": 4,
+   "family": "Gemma (Google)",
+   "diskGb": 6.1,
+   "params": "8B raw / 4B effective",
+   "moe": false,
+   "activeB": 4,
+   "ctx": "128K",
+   "est": false,
+   "oneLiner": "Google's friendly laptop model: sounds more human than anything its size and is built to run on thin laptops with no graphics card at all.",
+   "strengths": [
+    "Reads 'more human' than rivals in head-to-head comparisons — great tone for quick writing and chat",
+    "Genuinely light: comfortable on machines where bigger models won't even load",
+    "Covers 140+ languages, just behind the Qwen family's coverage"
+   ],
+   "weaknesses": [
+    "Thinking depth is shallow — multi-step reasoning and hard planning visibly break down",
+    "Drifts and drops threads on hour-long transcripts and big document sets",
+    "Not a real coding tool beyond small snippets"
+   ],
+   "bestFor": "Everyday chat, quick writing help, and translation on a modest laptop — warmth over brainpower.",
+   "s": {
+    "docqa": 5,
+    "hypothesis": 4,
+    "strategy": 5,
+    "transcripts": 4,
+    "everydayWriting": 7,
+    "longformWriting": 6,
+    "coding": 4,
+    "extraction": 5,
+    "brainstorm": 6,
+    "tutoring": 5,
+    "translation": 7,
+    "companion": 7,
+    "mathlogic": 5
+   }
+  },
+  {
+   "name": "DeepSeek-R1 8B distill",
+   "tag": "deepseek-r1:8b",
+   "family": "DeepSeek",
+   "diskGb": 5.2,
+   "params": "8B dense",
+   "moe": false,
+   "activeB": 8,
+   "ctx": "128K",
+   "est": false,
+   "oneLiner": "The 2025 model that made 'thinking out loud' famous — historically important, but every current small model now out-reasons it without the rambling.",
+   "strengths": [
+    "Shows its reasoning step by step, which some people find useful for learning how problems are solved",
+    "Still respectable at math puzzles — it set the 8B standard back in 2025"
+   ],
+   "weaknesses": [
+    "Thinks aloud for paragraphs before answering, and that thinking often leaks into what should be clean output",
+    "Poor at following format instructions — the wrong tool when you need tidy tables or JSON",
+    "Outclassed at its own size: Qwen3.5 9B does everything it does, better and faster"
+   ],
+   "bestFor": "Mostly curiosity value in 2026 — pick Qwen3.5 9B instead unless you specifically enjoy watching a model think.",
+   "s": {
+    "docqa": 4,
+    "hypothesis": 5,
+    "strategy": 5,
+    "transcripts": 4,
+    "everydayWriting": 3,
+    "longformWriting": 3,
+    "coding": 4,
+    "extraction": 3,
+    "brainstorm": 5,
+    "tutoring": 4,
+    "translation": 3,
+    "companion": 2,
+    "mathlogic": 6
+   }
+  },
+  {
+   "name": "Ministral 3 8B",
+   "tag": "ministral-3:8b",
+   "family": "Mistral (France)",
+   "diskGb": 6,
+   "params": "8B dense",
+   "moe": false,
+   "activeB": 8,
+   "ctx": "256K",
+   "est": false,
+   "oneLiner": "Mistral's no-nonsense workhorse: a practical 8B with a huge 256K reading window, built for getting real work done rather than showing off.",
+   "strengths": [
+    "Its 256K window can swallow a whole day of meetings or a big document set in one pass",
+    "Disciplined, production-grade output — a favorite for automation and structured tasks",
+    "Solid coverage of European languages plus Chinese, Japanese, Korean, and Arabic",
+    "Relaxed and low-refusal in normal conversation"
+   ],
+   "weaknesses": [
+    "No deep-thinking mode — hard multi-step problems are beyond it at 8B",
+    "Writing is clean but terse and plain; long-form craft isn't its thing"
+   ],
+   "bestFor": "Practical document-and-automation work on modest hardware, especially in European languages.",
+   "s": {
+    "docqa": 7,
+    "hypothesis": 6,
+    "strategy": 6,
+    "transcripts": 7,
+    "everydayWriting": 6,
+    "longformWriting": 5,
+    "coding": 6,
+    "extraction": 7,
+    "brainstorm": 6,
+    "tutoring": 6,
+    "translation": 7,
+    "companion": 6,
+    "mathlogic": 6
+   }
+  },
+  {
+   "name": "IBM Granite 4.1 8B",
+   "tag": "granite4.1:8b",
+   "family": "Granite (IBM)",
+   "diskGb": 5.35,
+   "params": "8B dense",
+   "moe": false,
+   "activeB": 8,
+   "ctx": "131K",
+   "est": false,
+   "oneLiner": "IBM's buttoned-up business model: built to answer strictly from your documents and produce spotless tables and data — not to be your friend.",
+   "strengths": [
+    "The extraction bargain of 2026 — its table-extraction score (86.5) beats even top hosted models costing thousands of times more",
+    "Purpose-built to stay factual when answering from your files, with built-in checks against making things up",
+    "Small (5 GB) and efficient — runs comfortably on ordinary office laptops"
+   ],
+   "weaknesses": [
+    "Dry, corporate register — lessons are accurate but lifeless, and nobody journals with Granite",
+    "Weak at open-ended reasoning, creativity, and anything that needs imagination",
+    "Never the pick for translation or writing that needs a human touch"
+   ],
+   "bestFor": "Turning messy documents into clean data, and trustworthy answer-from-my-files work on a modest machine.",
+   "s": {
+    "docqa": 8,
+    "hypothesis": 5,
+    "strategy": 5,
+    "transcripts": 7,
+    "everydayWriting": 5,
+    "longformWriting": 4,
+    "coding": 6,
+    "extraction": 9,
+    "brainstorm": 4,
+    "tutoring": 5,
+    "translation": 5,
+    "companion": 3,
+    "mathlogic": 5
+   }
+  },
+  {
+   "name": "Phi-4 reasoning-plus 14B",
+   "tag": "phi4-reasoning:plus",
+   "family": "Phi (Microsoft)",
+   "diskGb": 11,
+   "params": "14B dense",
+   "moe": false,
+   "activeB": 14,
+   "ctx": "32K",
+   "est": false,
+   "oneLiner": "Microsoft's math specialist: brilliant at step-by-step math and logic puzzles, exhausting at nearly everything else.",
+   "strengths": [
+    "One of the best pure-math models you can run at home under 20B — tuned for competition-level problems (81.3 on AIME)",
+    "Excellent patient, step-by-step teaching for math and science topics"
+   ],
+   "weaknesses": [
+    "Thinks aloud for 800-1000 words even on simple requests — a two-line email becomes an essay",
+    "Small 32K reading window cramps long documents and transcripts",
+    "Rambling and thin outside math and science; weak at following formatting instructions"
+   ],
+   "bestFor": "Math homework, puzzles, and STEM tutoring — and only that.",
+   "s": {
+    "docqa": 4,
+    "hypothesis": 7,
+    "strategy": 6,
+    "transcripts": 4,
+    "everydayWriting": 4,
+    "longformWriting": 3,
+    "coding": 5,
+    "extraction": 3,
+    "brainstorm": 5,
+    "tutoring": 6,
+    "translation": 4,
+    "companion": 2,
+    "mathlogic": 8
+   }
+  },
+  {
+   "name": "Qwen3.5 4B",
+   "tag": "qwen3.5:4b",
+   "family": "Qwen (Alibaba)",
+   "diskGb": 3.4,
+   "params": "4B dense",
+   "moe": false,
+   "activeB": 4,
+   "ctx": "256K",
+   "est": false,
+   "oneLiner": "A shockingly capable little model: real reasoning ability, a deep-thinking mode, and 201 languages in a download about the size of a movie.",
+   "strengths": [
+    "The best reasoning and math of any tiny model — its thinking mode gives it abilities no other 4B has",
+    "Inherits the family's 201-language coverage — remarkable translation value per gigabyte",
+    "Fits on 4-6 GB machines with room to spare"
+   ],
+   "weaknesses": [
+    "Depth runs out on genuinely hard problems and long multi-document jobs",
+    "Writing gets noticeably template-y on anything nuanced",
+    "Loses cross-references when digesting many meetings at once"
+   ],
+   "bestFor": "Older or low-memory computers that still want a genuinely useful daily model.",
+   "s": {
+    "docqa": 6,
+    "hypothesis": 6,
+    "strategy": 6,
+    "transcripts": 5,
+    "everydayWriting": 5,
+    "longformWriting": 4,
+    "coding": 6,
+    "extraction": 6,
+    "brainstorm": 5,
+    "tutoring": 6,
+    "translation": 7,
+    "companion": 5,
+    "mathlogic": 7
+   }
+  },
+  {
+   "name": "Llama 3.1 8B",
+   "tag": "llama3.1:8b",
+   "family": "Llama (Meta)",
+   "moe": false,
+   "diskGb": 4.9,
+   "params": "8B dense",
+   "activeB": 8,
+   "ctx": "128K",
+   "est": false,
+   "oneLiner": "The 2024 classic that started the home-AI boom: friendly and familiar, but two full generations behind on brains.",
+   "strengths": [
+    "Warm, natural chat voice that still holds up for casual conversation",
+    "The largest community of custom personality versions of any model — the companion/roleplay ecosystem keeps it alive",
+    "Small, well-understood, and runs on nearly anything"
+   ],
+   "weaknesses": [
+    "Mid-2024 knowledge and no reasoning training — every 2026 model here beats it on real thinking, even the 4B ones",
+    "Officially supports only ~8 languages — thin next to Qwen's 201 or Gemma's 140+",
+    "Loses the thread on long documents where modern models cruise"
+   ],
+   "bestFor": "Casual companionship and private chat, where its huge community of custom versions is the real draw.",
+   "s": {
+    "docqa": 4,
+    "hypothesis": 3,
+    "strategy": 3,
+    "transcripts": 4,
+    "everydayWriting": 5,
+    "longformWriting": 4,
+    "coding": 3,
+    "extraction": 4,
+    "brainstorm": 5,
+    "tutoring": 4,
+    "translation": 4,
+    "companion": 6,
+    "mathlogic": 3
+   }
+  },
+  {
+   "name": "GLM-4.7-Flash",
+   "tag": "glm-4.7-flash",
+   "family": "GLM (Zhipu AI)",
+   "diskGb": 19,
+   "params": "30B MoE",
+   "moe": true,
+   "activeB": 3,
+   "ctx": "200K",
+   "est": false,
+   "oneLiner": "The community's favorite budget coding agent: near-frontier math and coding scores from a model that runs fast on mid-range hardware.",
+   "strengths": [
+    "The best math score on this entire list — 91.6% on the AIME competition exam",
+    "The default local coding agent of early 2026, with the best real-world coding result in its 30B class",
+    "A 200K reading window plus small-model speed — it digests whole projects or meeting archives in one go"
+   ],
+   "weaknesses": [
+    "English prose is workmanlike — built by engineers, for engineering",
+    "Excellent in Chinese and English, but language coverage narrows quickly beyond the majors",
+    "An engineer-brained personality — fast and capable, not warm"
+   ],
+   "bestFor": "Coding and technical problem-solving on a machine with around 24 GB of memory.",
+   "s": {
+    "docqa": 8,
+    "hypothesis": 8,
+    "strategy": 8,
+    "transcripts": 8,
+    "everydayWriting": 7,
+    "longformWriting": 6,
+    "coding": 9,
+    "extraction": 8,
+    "brainstorm": 7,
+    "tutoring": 7,
+    "translation": 6,
+    "companion": 5,
+    "mathlogic": 9
+   }
+  },
+  {
+   "name": "Gemma 4 26B A4B",
+   "tag": "gemma4:26b",
+   "family": "Gemma (Google)",
+   "diskGb": 18,
+   "params": "26B MoE",
+   "moe": true,
+   "activeB": 4,
+   "ctx": "256K",
+   "est": false,
+   "oneLiner": "The people's champion: the local model whose answers real humans prefer — the warmest writer and best explainer you can run at home.",
+   "strengths": [
+    "Best everyday and long-form writing here — the least AI-sounding prose of any local model",
+    "A top-3 human-preference ranking (people literally pick its answers over bigger models')",
+    "The standout teacher: warm, well-paced explanations, plus it can look at images and listen to audio",
+    "140+ languages with big-model fluency in the output language"
+   ],
+   "weaknesses": [
+    "A half-step behind the Qwen3.6 flagships on the hardest reasoning and coding problems",
+    "The 16 GB download wants a machine with generous memory to run comfortably"
+   ],
+   "bestFor": "Writing, tutoring, and daily conversation — when how it says things matters as much as what it knows.",
+   "s": {
+    "docqa": 8,
+    "hypothesis": 8,
+    "strategy": 8,
+    "transcripts": 8,
+    "everydayWriting": 9,
+    "longformWriting": 8,
+    "coding": 6,
+    "extraction": 7,
+    "brainstorm": 8,
+    "tutoring": 9,
+    "translation": 8,
+    "companion": 8,
+    "mathlogic": 8
+   }
+  },
+  {
+   "name": "Qwen3.5 2B",
+   "tag": "qwen3.5:2b",
+   "family": "Qwen (Alibaba)",
+   "diskGb": 2.7,
+   "params": "2B dense",
+   "moe": false,
+   "activeB": 2,
+   "ctx": "256K",
+   "est": false,
+   "oneLiner": "The tiny-tier pick for 2026: a 2B that can see images and out-reason everything its size, running on plain CPU or built-in graphics.",
+   "strengths": [
+    "Leads the 2-3B tiny class on reasoning tests (45.6% on the tough GPQA science exam) while keeping the full 256K reading window and image input of its bigger siblings",
+    "At ~2-3 GB it leaves breathing room on a 4 GB or graphics-card-free laptop where even the 4B gets tight — an extra-compressed 1.9 GB version exists for the tightest machines"
+   ],
+   "weaknesses": [
+    "Tiny-model limits apply: it makes things up more often and struggles with multi-step work — reviewers call this class fine for gadgets, not serious desktop use",
+    "If your machine has 6 GB+ of graphics memory, its sibling Qwen3.5 4B is the better daily driver"
+   ],
+   "bestFor": "The weakest hardware — old laptops and 4 GB machines where nothing bigger will run acceptably.",
+   "s": {
+    "docqa": 3,
+    "hypothesis": 3,
+    "strategy": 3,
+    "transcripts": 3,
+    "everydayWriting": 4,
+    "longformWriting": 2,
+    "coding": 3,
+    "extraction": 4,
+    "brainstorm": 3,
+    "tutoring": 3,
+    "translation": 4,
+    "companion": 3,
+    "mathlogic": 4
+   }
+  },
+  {
+   "name": "Qwen3-Coder 30B-A3B",
+   "tag": "qwen3-coder:30b",
+   "family": "Qwen (Alibaba)",
+   "diskGb": 19,
+   "params": "30B MoE",
+   "moe": true,
+   "activeB": 3.3,
+   "ctx": "256K (stretches toward 1M)",
+   "est": false,
+   "oneLiner": "The default local coding specialist: a fast, tool-using code model with a massive reading window that pairs naturally with Claude Code-style terminal workflows.",
+   "strengths": [
+    "Purpose-built for hands-on coding work — exploring a project, editing many files, calling tools — and the most-downloaded local coder anywhere (7.4M+ downloads)",
+    "The biggest practical coding memory in its class: 256K natively, stretchable toward 1M — it can hold your whole project in its head",
+    "Fast despite its size: only a small slice runs per word, so it stays snappy even partly in regular RAM"
+   ],
+   "weaknesses": [
+    "A coding specialist through and through — noticeably weaker general chat and no deep-thinking mode",
+    "Its newer successor is stronger but needs a 52 GB download, out of home-hardware reach — so this 9-month-old model is no longer the family's cutting edge",
+    "Writes prose like a README; the wrong tool for anything human-facing"
+   ],
+   "bestFor": "Dedicated coding work over big projects, especially with agent-style coding tools in the terminal.",
+   "s": {
+    "docqa": 5,
+    "hypothesis": 5,
+    "strategy": 5,
+    "transcripts": 5,
+    "everydayWriting": 4,
+    "longformWriting": 3,
+    "coding": 8,
+    "extraction": 7,
+    "brainstorm": 5,
+    "tutoring": 4,
+    "translation": 4,
+    "companion": 3,
+    "mathlogic": 5
+   }
+  },
+  {
+   "name": "Gemma 4 12B",
+   "tag": "gemma4:12b",
+   "family": "Gemma (Google)",
+   "diskGb": 7.6,
+   "params": "12B dense",
+   "moe": false,
+   "activeB": 12,
+   "ctx": "256K",
+   "est": false,
+   "oneLiner": "The dense mid-size sweet spot (June 2026): near-Gemma-4-26B quality that fits cleanly in 8–16 GB of graphics memory. The model itself understands images, audio, and video — though the standard Ollama build currently accepts text and images only.",
+   "strengths": [
+    "Punches far above its size — beats the older, twice-as-big Gemma 3 27B on tough science and document tests (78.8 on GPQA Diamond), close to its own 26B sibling",
+    "The first mid-size open model that natively understands text, images, audio, and video in one system — hand it the meeting recording itself",
+    "The Gemma writing voice with real 12B accuracy — excellent emails, teaching, and translation (140+ languages)"
+   ],
+   "weaknesses": [
+    "Trails the Qwen models on serious coding — pick it for general and multimodal work, not big programming jobs",
+    "Audio and video input are NOT available through the standard Ollama version (text + images only — the fancier inputs need a different runtime)",
+    "Trails the Qwen coding models on serious programming tasks — pick it for general and image work"
+   ],
+   "bestFor": "The 8-16 GB sweet spot: great writing, teaching, and translation, with photos and recordings understood natively.",
+   "s": {
+    "docqa": 7,
+    "hypothesis": 7,
+    "strategy": 7,
+    "transcripts": 7,
+    "everydayWriting": 8,
+    "longformWriting": 7,
+    "coding": 6,
+    "extraction": 7,
+    "brainstorm": 7,
+    "tutoring": 8,
+    "translation": 8,
+    "companion": 8,
+    "mathlogic": 7
+   }
+  },
+  {
+   "name": "Qwen3.6 27B",
+   "tag": "qwen3.6:27b",
+   "family": "Qwen (Alibaba)",
+   "diskGb": 17,
+   "params": "27B dense",
+   "moe": false,
+   "activeB": 27,
+   "ctx": "256K",
+   "est": false,
+   "oneLiner": "The best model a 24 GB graphics card can run in mid-2026: sees images, thinks deeply, and beats models 15x its size at real-world coding — entirely on your machine.",
+   "strengths": [
+    "The strongest coding result of any home-runnable model: 77.2% on the hardest real-world coding test (SWE-bench Verified) — beating a hosted model with 15x the parameters",
+    "The benchmark ceiling of this list across reasoning, planning, and structured work — the best local evidence reasoner, full stop",
+    "Sees images, reads documents and video, and has a deep-thinking mode — a complete flagship in 17 GB",
+    "The family's 200-language coverage at full 27B quality — the strongest translator of the set"
+   ],
+   "weaknesses": [
+    "Every word makes it read all 27B of itself, so it responds noticeably slower than the fast mixture-of-experts alternatives on the same hardware",
+    "Effectively out of reach below ~18 GB of graphics-card (or Mac unified) memory — on an ordinary 8 GB PC it would crawl",
+    "A shade more formal and less warm than the Gemmas in casual conversation"
+   ],
+   "bestFor": "The overall top pick if you have a 24 GB graphics card or 24 GB+ Mac — the best local model here for coding, reasoning, and hard work of any kind.",
+   "s": {
+    "docqa": 9,
+    "hypothesis": 10,
+    "strategy": 9,
+    "transcripts": 9,
+    "everydayWriting": 8,
+    "longformWriting": 8,
+    "coding": 10,
+    "extraction": 9,
+    "brainstorm": 9,
+    "tutoring": 9,
+    "translation": 9,
+    "companion": 7,
+    "mathlogic": 9
+   }
+  }
+ ],
+ "notes": [
+  "Scores are 1-10 within this 16-model local lineup, not against hosted frontier models — a 10 here means 'the best you can run at home,' not 'the best that exists.'",
+  "est:true marks the two entries whose numbers were estimated rather than fully verified during roster research (GLM-4.7-Flash and Gemma 4 26B A4B); their specs matched later spot-checks but keep the flag for honesty. All four late additions (Qwen3.5 2B, Qwen3-Coder 30B-A3B, Gemma 4 12B, Qwen3.6 27B) were verified against Ollama's library, Google's Gemma 4 model card, and mid-2026 coverage (VentureBeat, InsiderLLM, llm-stats).",
+  "Disk sizes are for the standard compressed version each service ships by default; several models also offer smaller, lower-quality compressed versions for tight machines.",
+  "All speed figures are single-user speeds with short-to-moderate prompts; very long prompts shift the wait to reading time, which the rules don't model.",
+  "Context ('ctx') is the model's reading window — how much text it can hold in mind at once. 256K tokens is roughly 200,000 words or a 500-page book.",
+  "Sources consulted for verification: ollama.com/library (qwen3.5:2b, gemma4:e4b, glm-4.7-flash), ai.google.dev Gemma 4 model card, venturebeat.com Gemma 4 12B coverage, insiderllm.com Qwen 3.6 guide, llm-stats.com Qwen3.6-27B, unsloth.ai GLM-4.7-Flash guide."
+ ]
+};
+const UC = {}; DATA.useCases.forEach(u => UC[u.key] = u);
+const MODELS = DATA.models;
+const shortNames = {
+  'Qwen3.5 9B':'Qwen3.5 9B','Qwen3.6 35B-A3B':'Qwen3.6 35B','gpt-oss 20B':'gpt-oss 20B','Gemma 4 E4B':'Gemma4 E4B',
+  'DeepSeek-R1 8B distill':'R1 8B','Ministral 3 8B':'Ministral 8B','IBM Granite 4.1 8B':'Granite 8B',
+  'Phi-4 reasoning-plus 14B':'Phi-4-R+','Qwen3.5 4B':'Qwen3.5 4B','Llama 3.1 8B':'Llama3.1 8B',
+  'GLM-4.7-Flash':'GLM-4.7','Gemma 4 26B A4B':'Gemma4 26B','Qwen3.5 2B':'Qwen3.5 2B',
+  'Qwen3-Coder 30B-A3B':'Qwen3-Coder','Gemma 4 12B':'Gemma4 12B','Qwen3.6 27B':'Qwen3.6 27B',
+};
+MODELS.forEach(m => { m.shortName = shortNames[m.name] || m.name; });
+const $ = id => document.getElementById(id);
+
+// ---------- Theme ----------
+(function initTheme(){
+  const saved = localStorage.getItem('lamp-theme');
+  if (saved) document.documentElement.setAttribute('data-theme', saved);
+  $('themeBtn').addEventListener('click', () => {
+    const dark = getComputedStyle(document.body).backgroundColor !== 'rgb(249, 249, 247)';
+    const next = dark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('lamp-theme', next);
+  });
+})();
+
+// ---------- Shared-setup link (#s=...) — a link wins over saved settings ----------
+let shared = null;
+try {
+  const h = location.hash.match(/[#&]s=([^&]+)/);
+  if (h) shared = JSON.parse(decodeURIComponent(h[1]));
+} catch (e) { shared = null; }
+
+// ---------- Hardware state + fit engine ----------
+let hw = (shared && shared.hw) || JSON.parse(localStorage.getItem('lamp-hw') || 'null') || { kind:'pc', vram:8, ram:64, macmem:32, macchip:'base', disk:400 };
+if (hw.disk == null) hw.disk = 400; // settings saved before the disk question existed
+function saveHw(){ localStorage.setItem('lamp-hw', JSON.stringify(hw)); }
+// True when a model's one-time download (plus ~10 GB of system headroom) exceeds the free disk the user reported
+function diskWarn(m){ return m.diskGb + 10 > hw.disk; }
+// Memory bandwidth per VRAM tier (GB/s, representative card each) × a 0.70
+// real-world efficiency factor. CALIBRATED AGAINST MEASURED RESULTS on an
+// RTX 5060 8 GB (2026-07-18): qwen3.5:9b predicted 48 / measured 53;
+// gemma4:e4b predicted 98 / measured 90; qwen3.6:35b (from RAM) predicted 17 /
+// measured 15.7. These are empirical — don't "tidy" them toward round numbers.
+const GPU_BW = { 4:160, 6:260, 8:448, 12:430, 16:360, 24:950, 32:1500 };
+const GPU_EFF = 0.70;
+const RAM_MOE_BW = 45;    // effective GB/s for experts streamed from DDR5 under
+                          // stock Ollama (no --n-cpu-moe tuning)
+const FIT_OVERHEAD = 1.2; // GB for runtime + a normal-length conversation
+function fitModel(m) {
+  // returns {status:'fast'|'ram'|'slow'|'wont', tok, why}
+  // Speed depends on how much the model READS per word, not its file size.
+  // MoE models read only their active slice; so do "effective-parameter"
+  // models like Gemma's MatFormer builds (readB), which is why an E4B is far
+  // faster than its 6 GB file suggests.
+  const sparseB = m.readB || (m.moe ? m.activeB : 0);
+  const readGb = sparseB ? (0.6 * sparseB + 0.8) : m.diskGb;
+  if (hw.kind === 'mac') {
+    const usable = hw.macmem <= 36 ? hw.macmem * 0.66 : hw.macmem * 0.75;
+    if (m.diskGb + FIT_OVERHEAD <= usable) {
+      const bw = hw.macchip === 'base' ? 130 : 400;
+      const tok = Math.round(bw * 0.75 / readGb);
+      return { status: tok >= 12 ? 'fast' : 'slow', tok, why: 'runs in unified memory' };
+    }
+    return { status:'wont', tok:0, why:`needs ~${Math.ceil(m.diskGb+FIT_OVERHEAD)} GB but only ~${Math.floor(usable)} GB of unified memory is usable for models` };
+  }
+  if (hw.kind === 'nogpu') {
+    if (hw.ram < m.diskGb + 8) return { status:'wont', tok:0, why:`needs ~${Math.ceil(m.diskGb+8)} GB RAM (file + working room); you have ${hw.ram}` };
+    const tok = Math.round(75 * (m.moe ? 0.35 : 0.45) / readGb);
+    if (tok < 4) return { status:'wont', tok, why:'CPU-only would crawl below 4 words/sec' };
+    return { status: m.moe ? 'ram' : 'slow', tok, why: m.moe ? 'MoE running from RAM — the best no-card option' : 'small enough to run on the processor' };
+  }
+  // PC with NVIDIA
+  if (m.diskGb + FIT_OVERHEAD <= hw.vram) {
+    const tok = Math.round((GPU_BW[hw.vram] || 300) * GPU_EFF / readGb);
+    return { status:'fast', tok: Math.min(tok, 135), why:'fits fully in graphics memory (very long documents may still spill)' };
+  }
+  if (hw.ram < m.diskGb + 8) return { status:'wont', tok:0, why:`needs ~${Math.ceil(m.diskGb+8)} GB RAM to overflow into; you have ${hw.ram}` };
+  if (m.moe && hw.vram >= 6) {
+    const tok = Math.max(6, Math.min(30, Math.round(RAM_MOE_BW / readGb)));
+    return { status:'ram', tok, why:'big MoE brain running from regular RAM (the RAM trick)' };
+  }
+  const spill = 1 - Math.max(0, hw.vram - FIT_OVERHEAD) / m.diskGb;
+  const tok = spill <= 0.15 ? 12 : spill <= 0.3 ? 7 : spill <= 0.5 ? 4 : 2;
+  if (tok < 4) return { status:'wont', tok, why:'would spill heavily into RAM and crawl below 4 words/sec' };
+  return { status:'slow', tok, why: spill <= 0.15 ? 'just barely spills into RAM — a touch slower than a clean fit' : 'partly spills into RAM — noticeably slow' };
+}
+function speedScore(tok){ return Math.max(1, Math.min(10, 1.5 + 8.5 * Math.pow(Math.min(tok, 90) / 90, 0.65))); }
+function pracScore(f, m){
+  if (f.status === 'fast') return Math.max(7, 10 - m.diskGb / 12);
+  if (f.status === 'ram') return 6;
+  return 3.5;
+}
+const FIT_COLOR = { fast:'var(--fit-fast)', ram:'var(--fit-ram)', slow:'var(--fit-slow)' };
+const FIT_LABEL = { fast:'🟦 Fits fully — fast', ram:'🩷 Runs from RAM — patient', slow:'🟩 Runs, slowly', wont:'⛔ Won’t run here' };
+
+// ---------- Use-case selection ----------
+let active = (shared && shared.uc) || JSON.parse(localStorage.getItem('lamp-uc') || 'null') || ['hypothesis','strategy','transcripts'];
+let weights = (shared && shared.w) || JSON.parse(localStorage.getItem('lamp-w') || 'null') || {};
+active.forEach(k => { if (weights[k] == null) weights[k] = 5; });
+function saveUc(){ localStorage.setItem('lamp-uc', JSON.stringify(active)); localStorage.setItem('lamp-w', JSON.stringify(weights)); }
+
+const PRESETS = [
+  { name:'🧑‍💼 Keith’s mix', uc:['hypothesis','strategy','transcripts'], spd:5 },
+  { name:'📚 Researcher', uc:['docqa','hypothesis','tutoring'], spd:4 },
+  { name:'✍️ Writer', uc:['longformWriting','everydayWriting','brainstorm'], spd:4 },
+  { name:'💻 Coder', uc:['coding','extraction'], spd:6 },
+  { name:'🙋 Everyday helper', uc:['everydayWriting','tutoring','brainstorm'], spd:7 },
+  { name:'🔒 Private diary', uc:['companion','everydayWriting'], spd:7 },
+];
+
+function buildChips(){
+  $('ucChips').innerHTML = DATA.useCases.map(u =>
+    `<button class="ucChip${active.includes(u.key) ? ' on' : ''}" data-k="${u.key}" title="${u.blurb}">${u.label}</button>`).join('');
+}
+$('ucChips').addEventListener('click', e => {
+  const b = e.target.closest('.ucChip'); if (!b) return;
+  const k = b.dataset.k;
+  if (active.includes(k)) { if (active.length === 1) return; active = active.filter(x => x !== k); }
+  else { active.push(k); if (active.length > 4) active.shift(); if (weights[k] == null) weights[k] = 5; }
+  saveUc(); buildChips(); buildLevers(); refresh();
+});
+function buildLevers(){
+  $('levers').innerHTML = active.map(k => `
+    <div class="lever"><label>${UC[k].label} <small id="v-${k}">${weights[k]}</small></label>
+    <input type="range" min="0" max="10" value="${weights[k]}" data-k="${k}" class="ucw"></div>`).join('');
+  document.querySelectorAll('.ucw').forEach(inp => inp.addEventListener('input', () => {
+    weights[inp.dataset.k] = +inp.value; $('v-' + inp.dataset.k).textContent = inp.value; saveUc(); refresh();
+  }));
+}
+function buildPresets(){
+  $('presets').innerHTML = PRESETS.map((p, i) => `<button class="preset" data-i="${i}">${p.name}</button>`).join('');
+  $('presets').addEventListener('click', e => {
+    const b = e.target.closest('.preset'); if (!b) return;
+    const p = PRESETS[+b.dataset.i];
+    active = [...p.uc]; active.forEach(k => { if (weights[k] == null) weights[k] = 5; });
+    $('w-spd').value = p.spd; saveUc(); buildChips(); buildLevers(); refresh();
+  });
+}
+
+// ---------- Hardware UI ----------
+$('machineTabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  hw.kind = b.dataset.k; saveHw(); syncHwUI(); refresh();
+});
+['sel-vram','sel-ram','sel-macmem','sel-macchip','sel-disk'].forEach(id => $(id).addEventListener('change', () => {
+  hw.vram = +$('sel-vram').value; hw.ram = +$('sel-ram').value;
+  hw.macmem = +$('sel-macmem').value; hw.macchip = $('sel-macchip').value;
+  hw.disk = +$('sel-disk').value;
+  saveHw(); refresh();
+}));
+function syncHwUI(){
+  document.querySelectorAll('#machineTabs button').forEach(b => b.classList.toggle('on', b.dataset.k === hw.kind));
+  $('g-vram').style.display = hw.kind === 'pc' ? '' : 'none';
+  $('g-ram').style.display = hw.kind !== 'mac' ? '' : 'none';
+  $('g-macmem').style.display = hw.kind === 'mac' ? '' : 'none';
+  $('g-macchip').style.display = hw.kind === 'mac' ? '' : 'none';
+  $('sel-vram').value = hw.vram; $('sel-ram').value = hw.ram;
+  $('sel-macmem').value = hw.macmem; $('sel-macchip').value = hw.macchip;
+  $('sel-disk').value = hw.disk;
+}
+function diskDesc(){ return hw.disk >= 400 ? 'plenty of free disk space' : `~${hw.disk} GB of free disk space`; }
+function hwDesc(){
+  if (hw.kind === 'mac') return `an Apple Silicon Mac (${hw.macchip === 'base' ? 'base M-series' : 'M Pro/Max'}, ${hw.macmem} GB unified memory), with ${diskDesc()}`;
+  if (hw.kind === 'nogpu') return `a computer with no dedicated graphics card and ${hw.ram} GB RAM, with ${diskDesc()}`;
+  return `a PC with an NVIDIA graphics card (${hw.vram} GB VRAM) and ${hw.ram} GB RAM, with ${diskDesc()}`;
+}
+
+// ---------- Quadrant ----------
+const W = 800, H = 560, M = { l: 46, r: 18, t: 24, b: 46 };
+const DMIN = 2, DMAX = 10, SPLIT = 6;
+const sx = v => M.l + (v - DMIN) / (DMAX - DMIN) * (W - M.l - M.r);
+const sy = v => H - M.b - (v - DMIN) / (DMAX - DMIN) * (H - M.t - M.b);
+const rOf = m => 6 + Math.sqrt(m.diskGb) * 2.2;
+
+function xy(m, fit) {
+  let tw = 0, xs = 0;
+  active.forEach(k => { tw += weights[k]; xs += m.s[k] * weights[k]; });
+  const x = tw === 0 ? active.reduce((a, k) => a + m.s[k], 0) / active.length : xs / tw;
+  const wspd = +$('w-spd').value;
+  const y = (speedScore(fit.tok) * wspd + pracScore(fit, m) * (10 - wspd)) / 10;
+  return { x: Math.max(DMIN, Math.min(DMAX, x)), y: Math.max(DMIN, Math.min(DMAX, y)) };
+}
+
+function buildQuad() {
+  const svg = $('quad');
+  let g = `<rect x="${M.l}" y="${M.t}" width="${W-M.l-M.r}" height="${H-M.t-M.b}" fill="var(--surface-1)" stroke="var(--axis)" stroke-width="1"/>`;
+  for (let v = 3; v <= 9; v++) {
+    g += `<line x1="${sx(v)}" y1="${M.t}" x2="${sx(v)}" y2="${H-M.b}" stroke="var(--grid)" stroke-width="1"/>`;
+    g += `<line x1="${M.l}" y1="${sy(v)}" x2="${W-M.r}" y2="${sy(v)}" stroke="var(--grid)" stroke-width="1"/>`;
+    g += `<text class="tick" x="${sx(v)}" y="${H-M.b+16}" text-anchor="middle">${v}</text>`;
+    g += `<text class="tick" x="${M.l-8}" y="${sy(v)+3.5}" text-anchor="end">${v}</text>`;
+  }
+  g += `<line x1="${sx(SPLIT)}" y1="${M.t}" x2="${sx(SPLIT)}" y2="${H-M.b}" stroke="var(--axis)" stroke-width="1.5"/>`;
+  g += `<line x1="${M.l}" y1="${sy(SPLIT)}" x2="${W-M.r}" y2="${sy(SPLIT)}" stroke="var(--axis)" stroke-width="1.5"/>`;
+  g += `<text class="quadTag" x="${W-M.r-8}" y="${M.t+16}" text-anchor="end">🏆 LEADERS — INSTALL THESE</text>`;
+  g += `<text class="quadTag" x="${M.l+8}" y="${M.t+16}">🍃 EASY BUT MODEST</text>`;
+  g += `<text class="quadTag" x="${W-M.r-8}" y="${H-M.b-8}" text-anchor="end">🧠 BIG BRAINS, PATIENCE REQUIRED</text>`;
+  g += `<text class="quadTag" x="${M.l+8}" y="${H-M.b-8}">🚫 PROBABLY SKIP</text>`;
+  g += `<text class="axisLabel" x="${(M.l+W-M.r)/2}" y="${H-8}" text-anchor="middle">Smarts for YOUR chosen jobs →</text>`;
+  g += `<text class="axisLabel" x="14" y="${(M.t+H-M.b)/2}" text-anchor="middle" transform="rotate(-90 14 ${(M.t+H-M.b)/2})">Runs nicely on YOUR machine →</text>`;
+  g += `<g id="dots"></g>`;
+  svg.innerHTML = g;
+  const dots = svg.querySelector('#dots');
+  MODELS.forEach((m, i) => {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    el.setAttribute('class', 'dot');
+    el.innerHTML = `<g class="mark" id="mark-${i}">
+      <circle id="dotc-${i}" r="${rOf(m)}" stroke="var(--surface-1)" stroke-width="2"/>
+      <text class="dotLabel" id="lbl-${i}" x="${rOf(m)+5}" y="4"></text>
+      <circle r="${rOf(m)+9}" fill="transparent"/>
+    </g>`;
+    dots.appendChild(el);
+    const mark = el.querySelector('.mark');
+    mark.addEventListener('mousemove', e => showTip(e, m));
+    mark.addEventListener('mouseleave', hideTip);
+    mark.addEventListener('click', () => selectModel(i));
+  });
+}
+
+// ---------- Selected-model side card (slides in over the levers) ----------
+let sideSel = null; // index of the model whose card is shown beside the chart
+function renderSideCard(){
+  if (sideSel == null) return;
+  $('sideCard').innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+      <span class="recoKicker" style="margin:0;">Selected from the chart</span>
+      <button class="copyBtn" id="sideBack">← Back to levers</button>
+    </div>
+    ${cardHtml(MODELS[sideSel], sideSel)}
+    <div style="margin-top:8px; text-align:right;"><button class="copyBtn" data-jump="${sideSel}">See it in the full list ↓</button></div>`;
+}
+function selectModel(i){
+  hideTip();
+  sideSel = i; renderSideCard();
+  $('sideLevers').classList.add('offL');
+  $('sideCard').classList.remove('offR');
+  updateDotSel();
+}
+function closeSideCard(){
+  sideSel = null;
+  $('sideLevers').classList.remove('offL');
+  $('sideCard').classList.add('offR');
+  updateDotSel();
+}
+// Ring the selected dot so you can see which one is open
+function updateDotSel(){
+  MODELS.forEach((m, i) => {
+    const c = $('dotc-' + i); if (!c) return;
+    c.setAttribute('stroke', i === sideSel ? 'var(--ink-1)' : 'var(--surface-1)');
+    c.setAttribute('stroke-width', i === sideSel ? 3.5 : 2);
+  });
+}
+$('sideCard').addEventListener('click', e => {
+  if (e.target.closest('#sideBack')) { closeSideCard(); return; }
+  const j = e.target.closest('[data-jump]'); if (j) jumpToCard(+j.dataset.jump);
+});
+
+// Scrolls to a model's card in the full list (section 6) and flashes it
+function jumpToCard(i){
+  hideTip();
+  const el = $('card-' + i); if (!el) return;
+  el.scrollIntoView({ behavior:'smooth', block:'center' });
+  el.classList.remove('flash'); void el.offsetWidth; // restart the animation if re-clicked
+  el.classList.add('flash');
+}
+
+function layoutQuad(fits) {
+  $('v-spd').textContent = $('w-spd').value;
+  const placed = [];
+  MODELS.forEach((m, i) => {
+    const f = fits[i], mark = $('mark-' + i);
+    if (f.status === 'wont') { mark.style.opacity = '0'; mark.style.pointerEvents = 'none'; return; }
+    mark.style.opacity = '1'; mark.style.pointerEvents = '';
+    const p = xy(m, f);
+    placed.push({ m, i, f, px: sx(p.x), py: sy(p.y), r: rOf(m), x: p.x, y: p.y });
+  });
+  const placedBoxes = [];
+  const candidates = (p, lw) => [
+    { dx: p.r + 5,    dy: 4,          anchor: 'start',  bx: p.px + p.r + 5 },
+    { dx: -(p.r + 5), dy: 4,          anchor: 'end',    bx: p.px - p.r - 5 - lw },
+    { dx: 0,          dy: p.r + 14,   anchor: 'middle', bx: p.px - lw / 2 },
+    { dx: 0,          dy: -(p.r + 8), anchor: 'middle', bx: p.px - lw / 2 },
+  ];
+  [...placed].sort((a, b) => b.r - a.r).forEach(p => {
+    const lw = p.m.shortName.length * 6.4, lh = 13;
+    let pick = null;
+    for (const c of candidates(p, lw)) {
+      const by = p.py + c.dy - lh + 3;
+      const clash = placed.some(q => q !== p &&
+          q.px + q.r > c.bx - 2 && q.px - q.r < c.bx + lw + 2 &&
+          q.py + q.r > by - 2 && q.py - q.r < by + lh + 2) ||
+        placedBoxes.some(b => b.x < c.bx + lw && b.x + b.w > c.bx && b.y < by + lh && b.y + b.h > by);
+      if (!clash) { pick = c; break; }
+    }
+    if (!pick) pick = candidates(p, lw)[2];
+    placedBoxes.push({ x: pick.bx, y: p.py + pick.dy - 13 + 3, w: lw, h: 13 });
+    const mark = $('mark-' + p.i);
+    mark.style.transform = `translate(${p.px}px, ${p.py}px)`;
+    $('dotc-' + p.i).setAttribute('fill', FIT_COLOR[p.f.status]);
+    const lbl = $('lbl-' + p.i);
+    lbl.textContent = p.m.shortName;
+    lbl.setAttribute('x', pick.dx); lbl.setAttribute('y', pick.dy); lbl.setAttribute('text-anchor', pick.anchor);
+  });
+  const hidden = MODELS.filter((m, i) => fits[i].status === 'wont');
+  $('hiddenNote').textContent = hidden.length
+    ? `${hidden.length} model${hidden.length > 1 ? 's' : ''} hidden — won’t run on this machine: ${hidden.map(m => m.shortName).join(', ')}.`
+    : 'Every model in the lineup can run on this machine.';
+  const ranked = placed.map(p => ({ ...p, score: 0.62 * p.x + 0.38 * p.y })).sort((a, b) => b.score - a.score).slice(0, 3);
+  $('top3').innerHTML = ranked.map((r, i) =>
+    `<div class="row"><span class="medal">${['🥇','🥈','🥉'][i]}</span><span><b>${r.m.name}</b><span class="why">${r.m.bestFor || r.m.oneLiner}</span></span></div>`).join('') || '<span style="font-size:12px;color:var(--ink-3)">Nothing runs on this machine — try a bigger RAM value.</span>';
+}
+
+const tip = $('tip');
+function showTip(e, m) {
+  const i = MODELS.indexOf(m); const f = fitCache[i];
+  tip.style.display = 'block';
+  tip.innerHTML = `<b>${m.name}</b> <span style="font-size:11px;">· ${m.family}</span><br>
+    <span style="font-size:12px;">${m.oneLiner}</span>
+    <div style="margin-top:6px;">
+    ${active.map(k => `<div class="trow"><span>${UC[k].label}</span><b>${m.s[k]}/10</b></div>`).join('')}
+    <div class="trow"><span>⚡ Est. speed here</span><b>~${f.tok} words/sec</b></div>
+    <div class="trow"><span>💾 Download</span><b>${m.diskGb} GB</b></div>
+    <div class="trow"><span>${FIT_LABEL[f.status]}</span></div></div>`;
+  tip.style.left = Math.min(e.clientX + 16, innerWidth - 320) + 'px';
+  tip.style.top = Math.min(e.clientY + 14, innerHeight - 250) + 'px';
+}
+function hideTip() { tip.style.display = 'none'; }
+$('w-spd').addEventListener('input', refresh);
+
+// ---------- Table ----------
+function chip(v) { return `<span class="chip h${Math.round(v)}">${v}</span>`; }
+let sortStack = [{ key: '_overall', dir: -1 }];
+function colVal(m, i, key) {
+  if (key === '_overall') return active.reduce((a, k) => a + m.s[k], 0);
+  if (key === '_tok') return fitCache[i].tok;
+  if (key === '_disk') return m.diskGb;
+  if (key === '_name') return m.name.toLowerCase();
+  return m.s[key];
+}
+function buildMatrix() {
+  const cols = [
+    { key:'_name', label:'Model', str:true, title:'Click to sort by name.' },
+    ...active.map(k => ({ key: k, label: UC[k].label, title: UC[k].blurb + ' (1–10; click to sort)' })),
+    { key:'_tok', label:'⚡ Est. speed', title:'Estimated words per second on YOUR selected machine (rough ballpark from the fine-print rules). Click to sort.' },
+    { key:'_disk', label:'Size', title:'Download size — the model file itself, saved once to your hard drive. Click to sort.' },
+  ];
+  sortStack = sortStack.filter(s => s.key === '_overall' || cols.some(c => c.key === s.key));
+  if (!sortStack.length) sortStack = [{ key:'_overall', dir:-1 }];
+  const order = MODELS.map((m, i) => ({ m, i })).sort((a, b) => {
+    const aw = fitCache[a.i].status === 'wont', bw = fitCache[b.i].status === 'wont';
+    if (aw !== bw) return aw ? 1 : -1;
+    for (const e of sortStack) {
+      const va = colVal(a.m, a.i, e.key), vb = colVal(b.m, b.i, e.key);
+      const c = typeof va === 'string' ? va.localeCompare(vb) : va - vb;
+      if (c !== 0) return c * e.dir;
+    }
+    return 0;
+  });
+  const ths = cols.map(c => {
+    const idx = sortStack.findIndex(e => e.key === c.key);
+    const ind = (idx > -1 && idx < 3) ? `<span class="sortInd">${sortStack[idx].dir > 0 ? '▲' : '▼'}${idx > 0 ? `<sup>${idx+1}</sup>` : ''}</span>` : '';
+    return `<th data-key="${c.key}" title="${c.title}">${c.label}${ind}</th>`;
+  }).join('') + `<th title="How this model runs on the machine you selected.">On your machine</th><th title="The command to run once Ollama is installed.">Install</th>`;
+  $('matrix').innerHTML = `<tr>${ths}</tr>` + order.map(({ m, i }) => {
+    const f = fitCache[i], wont = f.status === 'wont';
+    return `<tr class="${wont ? 'wont' : ''}">
+      <td><span class="tierDot" style="background:${wont ? 'var(--ink-3)' : FIT_COLOR[f.status]}"></span> <span class="modelName">${m.name}</span><span class="modelFam">${m.family}${m.est ? ' · specs partly estimated' : ''}</span></td>
+      ${active.map(k => `<td>${chip(m.s[k])}</td>`).join('')}
+      <td class="num">${wont ? '—' : '~' + f.tok + '/sec'}</td>
+      <td class="num">${m.diskGb} GB</td>
+      <td style="font-size:12px; color:var(--ink-2); max-width:210px;">${wont ? '⛔ ' + f.why : FIT_LABEL[f.status].slice(3) + ' — ' + f.why}${!wont && diskWarn(m) ? ' · <b style="color:var(--warn)">💾 check free disk</b>' : ''}</td>
+      <td><code class="mono">${m.tag}</code></td>
+    </tr>`;
+  }).join('');
+}
+$('matrix').addEventListener('click', e => {
+  const th = e.target.closest('th'); if (!th || !th.dataset.key) return;
+  const key = th.dataset.key;
+  if (sortStack[0] && sortStack[0].key === key) sortStack[0].dir *= -1;
+  else { sortStack = sortStack.filter(s => s.key !== key); sortStack.unshift({ key, dir: key === '_name' ? 1 : -1 }); }
+  buildMatrix();
+});
+
+// ---------- Cards ----------
+function copyBtn(cmd) { return `<button class="copyBtn" onclick="navigator.clipboard.writeText('${cmd.replace(/'/g, "\\'")}'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy',1400)">Copy</button>`; }
+function cardHtml(m, i, opts = {}) {
+  const f = fitCache[i], wont = f.status === 'wont';
+  const badgeCol = wont ? 'var(--ink-3)' : FIT_COLOR[f.status];
+  return `<div class="card"${opts.withId ? ` id="card-${i}"` : ''} style="${wont ? 'opacity:0.55;' : ''}">
+      <h3><span class="tierDot" style="background:${badgeCol}"></span>${m.name} <span class="fam">${m.family}</span>${m.est ? '<span class="estBadge">specs partly estimated</span>' : ''}</h3>
+      <div style="margin:6px 0 2px;"><span class="fitBadge" style="border:1px solid ${badgeCol}; color:${badgeCol};">${FIT_LABEL[f.status]}${wont ? '' : ' · ~' + f.tok + ' words/sec'}</span>${!wont && diskWarn(m) ? `<span class="fitBadge" style="border:1px solid var(--warn); color:var(--warn); margin-left:6px;">💾 Tight on your free disk</span>` : ''}</div>
+      <div class="one">${m.oneLiner}</div>
+      <ul>${(m.strengths||[]).map(s => `<li class="plus">${s}</li>`).join('')}${(m.weaknesses||[]).map(s => `<li class="minus">${s}</li>`).join('')}</ul>
+      <div class="best">👉 ${m.bestFor || ''}</div>
+      <div style="font-size:11.5px; color:var(--ink-3); margin-bottom:8px;">${m.params} · reading window: ${m.ctx} · ${m.diskGb} GB download</div>
+      <div class="cmdRow"><code class="mono">ollama run ${m.tag}</code>${copyBtn('ollama run ' + m.tag)}</div>
+      ${wont ? '' : `<div class="cmdRow" style="margin-top:8px;">
+        <span style="flex:1; font-size:11px; color:var(--ink-3);">Or let Claude Code install this + the browser chat for you:</span>
+        <button class="copyBtn" data-prompt="${i}" data-lbl="🛠️ Install prompt">🛠️ Install prompt</button>
+      </div>`}
+    </div>`;
+}
+function buildCards() {
+  $('cards').innerHTML = MODELS.map((m, i) => cardHtml(m, i, { withId: true })).join('');
+}
+
+// ---------- Section 4: the recommendation ----------
+let recoStack = []; // models covered by the big install prompt, top pick first
+function buildReco(){
+  const box = $('reco');
+  const cands = MODELS.map((m, i) => ({ m, i, f: fitCache[i] })).filter(c => c.f.status !== 'wont');
+  if (!cands.length){
+    box.innerHTML = '<div style="font-size:13px; color:var(--ink-2);">Nothing in the lineup runs on this machine — try a bigger RAM value above.</div>';
+    recoStack = []; return;
+  }
+  // Same scoring the Top-3 medals use: 62% smarts for your jobs, 38% comfort on your machine
+  const scored = cands.map(c => { const p = xy(c.m, c.f); return { ...c, x: p.x, y: p.y, score: 0.62 * p.x + 0.38 * p.y }; })
+    .sort((a, b) => b.score - a.score);
+  const top = scored[0], second = scored[1];
+  const jobBits = active.map(k => `${UC[k].label.replace(/^\S+ /, '')} <b>${top.m.s[k]}/10</b>`).join(' · ');
+  const why = [
+    `Best overall for your mix — <b>${top.x.toFixed(1)}/10</b> smarts on the jobs you picked (${jobBits})`,
+    `${FIT_LABEL[top.f.status].slice(3)} on this machine — about <b>~${top.f.tok} words/sec</b> (${top.f.why})`,
+    `A one-time <b>${top.m.diskGb} GB</b> download${diskWarn(top.m) ? ' — <span style="color:var(--warn)">⚠️ tight against your free disk space; clear room first</span>' : ''}`,
+  ];
+  let vs = '';
+  if (second) {
+    vs = second.x > top.x + 0.05
+      ? `<b>Honest footnote:</b> ${second.m.name} actually edges it on raw smarts for your jobs (${second.x.toFixed(1)} vs ${top.x.toFixed(1)}) — but at ~${second.f.tok} words/sec versus ~${top.f.tok} on your machine, it's the patient second opinion, not the daily driver. That's why it's the runner-up.`
+      : `<b>Runner-up:</b> ${second.m.name} (${second.x.toFixed(1)}/10 smarts, ~${second.f.tok} words/sec) — a fine second install, but ${top.m.shortName} beats it on the mix of brains and comfort here.`;
+  }
+  // Supporting cast: the deepest thinker (if smarter than the pick) + the warmest writer that fits fully on the card
+  const cast = [];
+  const brains = scored.filter(c => c !== top).sort((a, b) => b.x - a.x)[0];
+  if (brains && brains.x > top.x + 0.01) cast.push({ icon:'🧠', role:'Quality gear — deeper answers when you can wait', c: brains });
+  const wsc = c => c.m.s.longformWriting * 1.5 + c.m.s.everydayWriting + c.m.s.companion * 0.5;
+  const writer = scored.filter(c => c !== top && c.f.status === 'fast' && !cast.some(x => x.c === c)).sort((a, b) => wsc(b) - wsc(a))[0];
+  if (writer && wsc(writer) > wsc(top)) cast.push({ icon:'✍️', role:'The writer — warmer prose for anything human-facing', c: writer });
+  recoStack = [top.m, ...cast.map(x => x.c.m)];
+  const castHtml = cast.map(x =>
+    `<div class="castRow"><span>${x.icon}</span><span><b>${x.c.m.name}</b> — ${x.role} · <code class="mono">ollama pull ${x.c.m.tag}</code> <span style="font-size:11.5px; color:var(--ink-3);">(${x.c.m.diskGb} GB, ~${x.c.f.tok} words/sec here)</span></span></div>`).join('')
+    + `<div class="castRow"><span>🔎</span><span><b>qwen3-embedding:0.6b</b> — document search; install BEFORE uploading any documents · <code class="mono">ollama pull qwen3-embedding:0.6b</code> <span style="font-size:11.5px; color:var(--ink-3);">(~1.5 GB)</span></span></div>`;
+  const total = Math.ceil(recoStack.reduce((a, m) => a + m.diskGb, 0) + 1.5);
+  const topIsBrains = !cast.some(x => x.icon === '🧠') && scored.length > 1;
+  box.innerHTML = `
+    <div class="recoKicker">Install this one first</div>
+    <div class="recoName">🏆 ${top.m.name} <span style="font-size:13px; font-weight:400; color:var(--ink-3);">${top.m.family}</span> <span class="fitBadge" style="border:1px solid ${FIT_COLOR[top.f.status]}; color:${FIT_COLOR[top.f.status]};">${FIT_LABEL[top.f.status]} · ~${top.f.tok} words/sec</span></div>
+    <div class="one" style="font-size:13.5px; margin-top:6px;">${top.m.oneLiner}</div>
+    <ul class="recoWhy">${why.map(w => `<li>${w}</li>`).join('')}</ul>
+    ${vs ? `<div class="recoVs">${vs}</div>` : ''}
+    <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--ink-3); margin-top:12px;">Then add the supporting cast</div>
+    ${topIsBrains ? `<div class="castRow"><span>🧠</span><span>${top.m.shortName} is also the smartest thing that runs on this machine — no separate "quality gear" needed.</span></div>` : ''}
+    ${castHtml}
+    <div class="recoFoot">
+      <div style="font-size:12.5px; color:var(--ink-2);">Whole kit: <b>~${total} GB</b> of one-time downloads${total + 15 > hw.disk ? ' — <span style="color:var(--warn)">⚠️ more than your free disk allows; trim the list or clear space first</span>' : ''}.</div>
+      <div class="cmdRow" style="flex:0 0 auto;"><code class="mono">ollama run ${top.m.tag}</code>${copyBtn('ollama run ' + top.m.tag)}</div>
+    </div>
+    <div style="margin-top:12px; border-top:1px solid var(--grid); padding-top:12px;">
+      <div style="font-size:12.8px; color:var(--ink-2); margin-bottom:8px;">🛠️ <b>Don't want to do any of this by hand?</b> Copy the ready-made prompt below, open <b>Claude Code</b> in a brand-new project folder, and paste it. It installs everything above end to end — the models, the browser chat, the settings traps — and builds a live status page with a process-flow diagram and a click-to-track action list.</div>
+      <button class="bigBtn" data-prompt="reco" data-lbl="🛠️ Copy the install-it-all prompt for Claude Code">🛠️ Copy the install-it-all prompt for Claude Code</button>
+    </div>`;
+}
+
+// ---------- The paste-into-Claude-Code install prompt ----------
+function installPrompt(models){
+  const total = Math.ceil(models.reduce((a, m) => a + m.diskGb, 0) + 1.5);
+  const jobs = active.map(k => UC[k].label.replace(/^\S+ /, '') + ' (' + UC[k].blurb + ')').join('; ');
+  const modelLines = models.map(m => {
+    const f = fitCache[MODELS.indexOf(m)];
+    const speed = f && f.status !== 'wont' ? `expect roughly ~${f.tok} words/sec on this machine${f.status === 'ram' ? ' — it runs from regular RAM by design, so that speed is normal, not a problem' : ''}` : 'speed will depend on the machine';
+    return `   - ${m.name}: ollama pull ${m.tag}   (${m.diskGb} GB download; ${speed}). Role: ${m.bestFor}`;
+  }).join('\n');
+  return `I'm starting a brand-new project: set up a private, offline AI on this computer, end to end. Treat me as non-technical: do everything yourself, explain things in plain English, and only give me a manual step if there is truly no other way.
+
+MY MACHINE: ${hwDesc()}.
+WHAT I'LL USE IT FOR: ${jobs}.
+
+STEP 0 — PROJECT MEMORY + STATUS REPORT (create these FIRST, keep them updated as you go)
+- Create a brain/ folder with: STATE.md (where things stand), next.md (the next step if you wake up cold), changelog.md (dated YYYY-MM-DD entries of what changed), decisions.md (decisions with a one-line "Why:").
+- Create brain/status-report.html — a self-contained dashboard (light AND dark mode, with a visible toggle) containing:
+  1) a code-drawn SVG process-flow diagram of this install pipeline (Install Ollama → download models → Open WebUI → fix settings → verify), with each stage colored by its live status;
+  2) a click-to-cycle action-item checklist covering every step below — each click cycles blank → amber (in progress) → blue (done, awaiting my OK) → green (approved & closed), with the state saved in localStorage so it survives reloads;
+  3) a plain-English summary of what's installed and how to open everything.
+- After EVERY completed step: update the checklist, STATE.md, and changelog.md. Not just at the end.
+
+THE INSTALL
+1. Check free disk space first. The downloads below total ~${total} GB — confirm at least ${total + 20} GB free before starting, and tell me if it's short.
+2. Install Ollama (ollama.com) if it isn't already installed. Verify the version is 0.17.4 or newer — older versions cannot load the newest model architectures. Update it if needed.
+3. Download each model ONE AT A TIME, verifying each answers a test question at a sane speed before starting the next:
+${modelLines}
+4. Also pull the document-search model: ollama pull qwen3-embedding:0.6b (0.6 GB — the SIZE MATTERS: a bare "qwen3-embedding" pulls the 8B model at 4.7 GB, which competes with your chat model for memory. Machines with 16 GB+ of graphics memory can use :4b (2.5 GB) for better retrieval). It must exist before any documents are uploaded.
+5. Install Open WebUI (the ChatGPT-style browser front-end) and confirm it connects to Ollama. Everything runs at localhost, fully offline — confirm nothing needs an internet account.
+6. Fix the #1 silent trap: Ollama defaults every model to a ~4,096-token context window (num_ctx), which silently truncates long documents — the model then "forgets" the start without any warning. Do this properly, do not just mention it:
+   a. Set OLLAMA_CONTEXT_LENGTH=16384 as a persistent user environment variable (16K minimum for document work; higher costs graphics memory).
+   b. Fully restart the Ollama engine afterwards — an env var alone does nothing to an already-running server. Quitting the tray icon is NOT always enough; confirm the server process actually stopped and started again.
+   c. VERIFY it took effect: load a model, run "ollama ps", and confirm the CONTEXT column reads 16384 (not 4096). If it still says 4096, the restart did not take — fix that before continuing.
+7. In Open WebUI, set qwen3-embedding:0.6b as the embedding model BEFORE any documents are uploaded (changing it later forces a full re-index).
+8. Run one chat model at a time — a chat model plus the small embedding model together is fine.
+9. Two Windows traps that cost real time on a previous run of this exact install — pre-empt both:
+   a. If you install Open WebUI with uv on a OneDrive-backed path, "uv tool install" can fail with "os error 396". Use: uv tool install --link-mode=copy open-webui (OneDrive does not support the hard links uv prefers).
+   b. Ollama's tray app can silently fail to start the actual engine after a reboot — the icon appears but nothing is listening. Verify the server responds (e.g. "ollama ps", or open http://127.0.0.1:11434) rather than trusting the tray icon, and if it is unreliable, set up a small startup script that launches the engine directly.
+
+WHEN DONE, SHOW ME
+- A chat working in the browser (Open WebUI) and one working in the terminal.
+- Where the model files live on disk and how much space they used.
+- Exactly what to click tomorrow to use it all again — written into the status report.`;
+}
+// One listener handles every install-prompt button (they get re-rendered on refresh)
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-prompt]'); if (!b) return;
+  const models = b.dataset.prompt === 'reco' ? recoStack : [MODELS[+b.dataset.prompt]];
+  if (!models.length) return;
+  navigator.clipboard.writeText(installPrompt(models));
+  b.textContent = '✅ Copied — now paste it into Claude Code';
+  setTimeout(() => { b.textContent = b.dataset.lbl; }, 2400);
+});
+
+// ---------- Ask-your-own-AI prompt ----------
+function buildAsk() {
+  $('askPrompt').value = `I want to run an AI model locally on my own computer with Ollama. My machine: ${hwDesc()}. What I mainly want it for: ${active.map(k => UC[k].label.replace(/^\S+ /, '') + ' (' + UC[k].blurb + ')').join('; ')}.
+
+Please research the CURRENT best local models for this hardware and these jobs (the landscape changes monthly — please search rather than answer from memory), and give me:
+1. A short scored comparison of the top 5-8 models for MY jobs, with honest weaknesses.
+2. The exact "ollama run" command for each, verified against ollama.com/library.
+3. Which single model to install first, and why.
+4. Straight talk: what my hardware can and can't do, and any setup traps (context-size defaults, special install tags, memory needs).
+
+For reference, a fact-checked snapshot from 2026-07-18 recommended these for various hardware tiers: ${MODELS.map(m => m.tag).join(', ')} — please tell me what's changed since.`;
+}
+
+// ---------- Notes ----------
+const NOTES = [
+  ['🎯 What "10/10" means here','Scores compare these local models against EACH OTHER — a 10 means "the best you can run at home," not "the best AI that exists." Cloud models (Claude, GPT) remain clearly stronger for nuanced judgment. The smart split: local for volume, privacy, and drafts; cloud for the hardest thinking.'],
+  ['⚠️ The #1 silent gotcha','Ollama starts every model with a short memory (~4K words) no matter what the model supports — long documents get silently cut off. Raise the context setting (num_ctx) for document work, and know that longer context eats graphics memory.'],
+  ['🃏 The RAM loophole','"MoE" (mixture-of-experts) models only wake a small slice per word, so a 30-billion-brain model runs at usable speed from ordinary RAM with any decent graphics card. If you have 32+ GB of RAM, you can run far bigger brains than your graphics card suggests.'],
+  ['⏳ The thinking tax','Reasoning models write thousands of hidden "thinking" words before answering — at local speeds, that’s minutes per hard question. Use plain mode for summaries; save thinking mode for questions that deserve it.'],
+  ['🖥️ The recommended stack','Ollama (the engine, ollama.com) + Open WebUI (a ChatGPT-style face in your browser, runs fully offline). Open WebUI’s Knowledge feature takes a folder of documents and answers questions with citations.'],
+  ['🔄 Keep Ollama fresh','Update Ollama before pulling 2026-era models — several use new architectures that older versions can’t load. Run one model at a time; a chat model plus a small document-search model coexist fine.'],
+  ['🗑️ If a tutorial recommends these, it’s out of date','Llama 2/3 anything, Mistral 7B v0.x, Gemma 2/3, Qwen 2.x, QwQ-32B, Phi-3, Vicuna, or "GPT4All" as the runner. The models on this page superseded all of them by mid-2026.'],
+  ['🍎 Mac owners','Apple Silicon is quietly excellent at this: unified memory means a 64 GB Mac can hold models no consumer PC graphics card can. Trade-off: Macs are slower to READ long documents before answering. Everything on this page runs via the same Ollama.'],
+  ['🐙 The giants you keep reading about','Inkling (975 billion parameters, Thinking Machines), GLM-5.2, DeepSeek V4, Kimi K2.6/K3 — all genuinely downloadable, all far too big for any home machine (the smallest squashed Inkling needs ~290 GB of memory; a maxed-out enthusiast PC has 128 GB). They change nothing about the rankings above. Section 9 below lays out what each would really take and the sane way to use one.'],
+];
+function buildNotes(){ $('notes').innerHTML = NOTES.map(n => `<div class="note"><b>${n[0]}</b>${n[1]}</div>`).join(''); }
+
+// ---------- Section 8: the giants (researched + fact-checked 2026-07-18) ----------
+const FRONTIER = [
+  { name:'Kimi K3', lab:'Moonshot AI · China', size:'2.8 trillion parameters',
+    need:'Not yet known — weights were promised for 27 July 2026, days after this page was researched.',
+    use:'API only for now (~$3 in / $15 out per million words-ish). Treat as imminent, not downloadable.', flag:'just announced 2026-07-16' },
+  { name:'DeepSeek V4-Pro', lab:'DeepSeek · China', size:'1.6 trillion (49B active)',
+    need:'The official files are ~865 GB. Even squashed to the point of damage it needs 366 GB of memory. Multi-server territory.',
+    use:'Its API is startlingly cheap — about $0.44 in / $0.87 out per million. Self-hosters should target its little brother V4-Flash instead.' },
+  { name:'MiMo-V2.5-Pro', lab:'Xiaomi · China', size:'1.02 trillion (42B active)',
+    need:'Server-class. Among the very top open models on public leaderboards.',
+    use:'API, or rented multi-GPU servers. MIT licensed — genuinely unrestricted.' },
+  { name:'Kimi K2.6', lab:'Moonshot AI · China', size:'1 trillion (32B active)',
+    need:'The official compact version is ~594 GB. A squashed 2-bit build still needs ~350 GB of memory.',
+    use:'API (~$0.66 in / $3.41 out per million). Handles images and video natively.' },
+  { name:'Inkling', lab:'Thinking Machines · USA', size:'975 billion (41B active)',
+    need:'The most brutally compressed version is a 270 GB download needing ~290 GB of memory — about 4× the RAM of a maxed-out enthusiast PC. Full quality: 1.9 TB.',
+    use:'Thinking Machines\' own API, or rent ~8 top-tier server GPUs at roughly $35/hour. The leading US open-weights model, and unusually efficient — it uses about a third fewer words to finish a task than its rivals, which cuts the real bill.' },
+  { name:'GLM-5.2', lab:'Z.ai / Zhipu · China', size:'744 billion (40B active)',
+    need:'217 GB download at 1-bit, 239 GB at 2-bit (the better one) — needs ~245 GB of memory.',
+    use:'The current open-weights leader on Artificial Analysis\' index, and a coding standout. Cheap API (~$0.45 in / $3.31 out per million) or a ~$13/month coding plan.' },
+  { name:'Nemotron 3 Ultra', lab:'NVIDIA · USA', size:'550 billion (55B active)',
+    need:'~275 GB of graphics memory. NVIDIA suggests 8 datacenter GPUs.',
+    use:'Free to try on NVIDIA\'s own site. Unusually open — NVIDIA published the training data and recipes, not just the weights.' },
+  { name:'DeepSeek V4-Flash', lab:'DeepSeek · China', size:'284 billion (13B active)',
+    need:'~103 GB squashed — the most reachable model on this list. A single rented 80 GB server GPU, about $4.39/hour.',
+    use:'The one to pick if you actually want the "I ran a giant model myself" experience. Practitioners describe roughly 80% of flagship quality at a fraction of the cost. API: ~$0.05 in / $0.24 out per million.', flag:'most reachable' },
+  { name:'gpt-oss 120B', lab:'OpenAI · USA', size:'120 billion',
+    need:'~63 GB — the only one here a very high-end enthusiast machine (or a large-memory Mac) can genuinely attempt.',
+    use:'Runs locally on serious hardware; otherwise widely available via APIs.', flag:'borderline home-runnable' },
+  { name:'Inkling-Small', lab:'Thinking Machines · USA', size:'276 billion (12B active)',
+    need:'No official figures yet — the weights were still a preview when this was researched.',
+    use:'Worth watching: if released, it would be the first model of this family a big-memory workstation could hold. Claimed to match its huge sibling on several tests.', flag:'not released yet' },
+];
+const FRONTIER_NOTES = [
+  ['💡 The honest recommendation','For almost everyone: <b>don\'t run these — rent nothing, buy nothing, just use an API.</b> Hosted access to these exact models costs cents per million words. One hour of the server rig needed to run Inkling yourself (~$35) buys roughly ten million words of API usage instead. You\'d need enormous, continuous volume for owning to win.'],
+  ['🤝 The setup that actually wins','A small model on your own machine for the private, high-volume 80% of work — plus an API key for the hard 20%. That combination beats both extremes on cost AND quality. A $2,000 machine with a $30/month API bill outperforms a $20,000 rig running a giant model badly.'],
+  ['💸 Terrible timing for a big build','There\'s a global memory shortage: RAM contract prices roughly doubled, top graphics cards are selling far above list, and Apple has stopped selling its large-memory Mac Studio configurations altogether. The classic "buy a 256 GB Mac and run anything" answer isn\'t purchasable right now. If you can wait, wait.'],
+  ['🌏 Where your words go','Most of these giants are from Chinese labs. The weights are yours to run anywhere — but calling their <em>official</em> APIs sends your text to China. If that matters, route through a Western provider with data-retention turned off, or self-host. This is exactly the case where a local model earns its keep.'],
+  ['📊 A caution on leaderboard numbers','Ranking scales get re-based, so scores from different months aren\'t comparable — a model "scoring 54" in April and one "scoring 41" in July may be the other way round in reality. Compare models only within one source, published on one date. (This page\'s own fact-checkers caught exactly that trap.)'],
+];
+function buildFrontier(){
+  $('frontier').innerHTML = `<tr><th>Model</th><th>Size</th><th>What it would actually take</th><th>The realistic way to use it</th></tr>` +
+    FRONTIER.map(f => `<tr>
+      <td><span class="modelName">${f.name}</span><span class="modelFam">${f.lab}${f.flag ? ' · ' + f.flag : ''}</span></td>
+      <td style="font-size:12.5px; color:var(--ink-2); white-space:nowrap;">${f.size}</td>
+      <td style="font-size:12.5px; color:var(--ink-2);">${f.need}</td>
+      <td style="font-size:12.5px; color:var(--ink-2);">${f.use}</td>
+    </tr>`).join('');
+  $('frontierNotes').innerHTML = FRONTIER_NOTES.map(n => `<div class="note"><b>${n[0]}</b>${n[1]}</div>`).join('');
+}
+
+// ---------- Refresh pipeline ----------
+let fitCache = [];
+function refresh() {
+  fitCache = MODELS.map(m => fitModel(m));
+  $('hwSummary').innerHTML = `Currently set to: <b>${hwDesc()}</b> — the chart, speed estimates, and badges below all follow this.`;
+  layoutQuad(fitCache);
+  buildReco();
+  buildMatrix();
+  buildCards();
+  buildAsk();
+  // Keep the side card honest when hardware/jobs change under it
+  if (sideSel != null) {
+    if (fitCache[sideSel].status === 'wont') closeSideCard();
+    else renderSideCard();
+  }
+  updateDotSel();
+}
+// Share button — encodes the current machine + jobs into the page's own URL
+$('shareBtn').addEventListener('click', function () {
+  const payload = encodeURIComponent(JSON.stringify({ hw, uc: active, w: weights, spd: +$('w-spd').value }));
+  const url = location.href.split('#')[0] + '#s=' + payload;
+  navigator.clipboard.writeText(url);
+  this.textContent = '🔗 Link copied!';
+  setTimeout(() => { this.textContent = '🔗 Copy a link with this setup'; }, 1800);
+});
+if (shared && shared.spd != null) $('w-spd').value = shared.spd;
+if (shared) { saveHw(); saveUc(); }
+
+// Pasting a share link into an ALREADY-OPEN page changes only the part after
+// "#", which doesn't reload anything — so apply it live instead of silently
+// ignoring it.
+window.addEventListener('hashchange', () => {
+  const h = location.hash.match(/[#&]s=([^&]+)/);
+  if (!h) return;
+  try {
+    const s = JSON.parse(decodeURIComponent(h[1]));
+    if (s.hw) { hw = s.hw; if (hw.disk == null) hw.disk = 400; }
+    if (s.uc) active = s.uc;
+    if (s.w) weights = s.w;
+    if (s.spd != null) $('w-spd').value = s.spd;
+    active.forEach(k => { if (weights[k] == null) weights[k] = 5; });
+    saveHw(); saveUc(); syncHwUI(); buildChips(); buildLevers(); refresh();
+  } catch (e) {}
+});
+
+syncHwUI();
+buildChips();
+buildLevers();
+buildPresets();
+buildQuad();
+buildNotes();
+buildFrontier();
+refresh();
+</script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How We Built Our Own Local AI — the journey, step by step</title>
+<style>
+  :root {
+    color-scheme: light;
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink1:#0b0b0b; --ink2:#52514e; --ink3:#898781;
+    --line:rgba(11,11,11,0.10); --grid:#e1e0d9; --accent:#2a78d6; --good:#006300; --todo:#eda100;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19; --ink1:#ffffff; --ink2:#c3c2b7; --ink3:#898781;
+    --line:rgba(255,255,255,0.10); --grid:#2c2c2a; --accent:#3987e5; --good:#0ca30c; --todo:#c98500;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane:#0d0d0d; --surface:#1a1a19; --ink1:#ffffff; --ink2:#c3c2b7; --ink3:#898781;
+      --line:rgba(255,255,255,0.10); --grid:#2c2c2a; --accent:#3987e5; --good:#0ca30c; --todo:#c98500;
+    }
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--plane); color:var(--ink1); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.6; padding:32px 18px 70px; }
+  .wrap { max-width:860px; margin:0 auto; }
+  h1 { font-size:26px; letter-spacing:-0.3px; }
+  .sub { color:var(--ink2); font-size:14.5px; margin:6px 0 22px; max-width:70ch; }
+  .themeToggle { position:fixed; top:14px; right:14px; background:var(--surface); border:1px solid var(--line); color:var(--ink1); border-radius:8px; padding:6px 12px; cursor:pointer; font-size:13px; z-index:10; }
+  .flowBox { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 8px 8px; margin-bottom:30px; overflow-x:auto; }
+  .flowBox svg { display:block; min-width:780px; margin:0 auto; }
+  .flow-label { font-size:12px; font-weight:600; fill:var(--ink1); }
+  .flow-sub { font-size:9.5px; fill:var(--ink3); }
+  .flow-emoji { font-size:17px; }
+  .step { display:flex; gap:16px; margin-bottom:26px; }
+  .stepNum { flex-shrink:0; width:34px; height:34px; border-radius:50%; background:var(--accent); color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; font-size:15px; margin-top:2px; }
+  .step.todo .stepNum { background:var(--surface); color:var(--todo); border:2px dashed var(--todo); }
+  .stepBody { flex:1; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .stepBody h2 { font-size:16.5px; margin-bottom:6px; }
+  .stepBody p { font-size:13.8px; color:var(--ink2); margin-bottom:8px; }
+  .move { background:var(--plane); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:8px 12px; font-size:13px; color:var(--ink2); margin-top:8px; }
+  .move b { color:var(--ink1); }
+  .shot { border:2px dashed var(--grid); border-radius:10px; padding:22px; text-align:center; color:var(--ink3); font-size:12.5px; margin-top:10px; }
+  .shot.filled { border-style:solid; padding:6px; }
+  .shot img { max-width:100%; border-radius:8px; display:block; }
+  .art { font-size:12.5px; margin-top:8px; }
+  .art a { color:var(--accent); }
+  .badge { display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; border-radius:999px; padding:2px 10px; margin-left:8px; vertical-align:2px; }
+  .badge.done { background:color-mix(in srgb, var(--good) 14%, transparent); color:var(--good); }
+  .badge.now { background:color-mix(in srgb, var(--todo) 16%, transparent); color:var(--todo); }
+  .foot { color:var(--ink3); font-size:12px; margin-top:34px; }
+  code { background:var(--surface); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-family:Consolas,monospace; font-size:12px; }
+</style>
+</head>
+<body>
+<button class="themeToggle" onclick="const r=document.documentElement; const d=(getComputedStyle(document.body).backgroundColor!=='rgb(249, 249, 247)'); r.setAttribute('data-theme', d?'light':'dark'); localStorage.setItem('laj-theme', d?'light':'dark');">☀️ / 🌙</button>
+<script>(function(){const t=localStorage.getItem('laj-theme'); if(t) document.documentElement.setAttribute('data-theme',t);})();</script>
+<div class="wrap">
+  <p style="margin-bottom:10px;"><a href="index.html" style="color:var(--accent);text-decoration:none;font-size:13px;">← Claude Project Dashboard</a></p>
+  <h1>🗺️ How We Built Our Own Local AI</h1>
+  <div class="sub">The whole journey in plain English — every move, in order, so anyone can follow it and do the same. This page grows as we go: finished steps are solid, upcoming steps are dashed.</div>
+
+  <div class="flowBox">
+    <svg viewBox="0 0 780 150" role="img" aria-label="Process flow: idea, check hardware, research, fact-check, picker page, choose lineup, install, use it">
+      <defs>
+        <marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--ink3)"/></marker>
+      </defs>
+      <!-- top row -->
+      <g>
+        <rect x="8"   y="18" width="130" height="52" rx="10" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="73"  y="40" text-anchor="middle" class="flow-emoji">💡</text><text x="73" y="58" text-anchor="middle" class="flow-label">The idea</text>
+        <rect x="168" y="18" width="130" height="52" rx="10" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="233" y="40" text-anchor="middle" class="flow-emoji">🖥️</text><text x="233" y="58" text-anchor="middle" class="flow-label">Check the machine</text>
+        <rect x="328" y="18" width="130" height="52" rx="10" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="393" y="40" text-anchor="middle" class="flow-emoji">🔎</text><text x="393" y="58" text-anchor="middle" class="flow-label">Research</text>
+        <rect x="488" y="18" width="130" height="52" rx="10" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="553" y="40" text-anchor="middle" class="flow-emoji">⚖️</text><text x="553" y="58" text-anchor="middle" class="flow-label">Fact-check</text>
+        <rect x="648" y="18" width="124" height="52" rx="10" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="710" y="40" text-anchor="middle" class="flow-emoji">🧭</text><text x="710" y="58" text-anchor="middle" class="flow-label">The picker page</text>
+        <line x1="138" y1="44" x2="166" y2="44" stroke="var(--ink3)" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="298" y1="44" x2="326" y2="44" stroke="var(--ink3)" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="458" y1="44" x2="486" y2="44" stroke="var(--ink3)" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="618" y1="44" x2="646" y2="44" stroke="var(--ink3)" stroke-width="1.5" marker-end="url(#arr)"/>
+      </g>
+      <!-- wrap arrow down to bottom row -->
+      <path d="M 710 70 L 710 92" stroke="var(--ink3)" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+      <!-- bottom row (right to left) -->
+      <g>
+        <rect x="648" y="94" width="124" height="52" rx="10" fill="none" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="710" y="116" text-anchor="middle" class="flow-emoji">✅</text><text x="710" y="134" text-anchor="middle" class="flow-label">Choose the lineup</text>
+        <rect x="488" y="94" width="130" height="52" rx="10" fill="none" stroke="var(--todo)" stroke-width="1.5" stroke-dasharray="5 4"/>
+        <text x="553" y="116" text-anchor="middle" class="flow-emoji">📥</text><text x="553" y="134" text-anchor="middle" class="flow-label">Install</text>
+        <rect x="328" y="94" width="130" height="52" rx="10" fill="none" stroke="var(--todo)" stroke-width="1.5" stroke-dasharray="5 4"/>
+        <text x="393" y="116" text-anchor="middle" class="flow-emoji">💬</text><text x="393" y="134" text-anchor="middle" class="flow-label">Use it</text>
+        <line x1="646" y1="120" x2="620" y2="120" stroke="var(--ink3)" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="486" y1="120" x2="460" y2="120" stroke="var(--ink3)" stroke-width="1.5" marker-end="url(#arr)"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="step">
+    <div class="stepNum">1</div>
+    <div class="stepBody">
+      <h2>The idea <span class="badge done">done</span></h2>
+      <p>We wanted our own AI running on our own computer — private, free to use once installed, works with no internet. Cloud AIs (Claude, ChatGPT) stay in the toolbox for coding and the hardest thinking; the local AI handles volume, privacy, and drafts.</p>
+      <div class="move"><b>The move:</b> decide what the local AI is FOR before downloading anything. Ours: ① reading documents and judging hypotheses, ② consulting-style reasoning, ③ turning call transcripts into SOPs.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="stepNum">2</div>
+    <div class="stepBody">
+      <h2>Check the machine <span class="badge done">done</span></h2>
+      <p>Local AI lives or dies on one number: <b>graphics-card memory (VRAM)</b>. Ours is 8 GB (RTX 5060) — that's the desk the AI works at. Our 64 GB of regular RAM turned out to be a secret weapon: it's the overflow table that lets clever "MoE" models run far above our card's weight class.</p>
+      <div class="move"><b>The move:</b> find your VRAM (Windows: Task Manager → Performance → GPU → "Dedicated GPU memory") and your RAM. Those two numbers decide everything else.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="stepNum">3</div>
+    <div class="stepBody">
+      <h2>Research — a crew of scouts <span class="badge done">done</span></h2>
+      <p>The model world changes monthly, so we didn't trust memory: five AI research scouts searched the live web in parallel — one on the overall landscape for 8 GB cards, one on the Qwen family, one on every other family, one on reasoning models, one on the supporting tools (transcription, document search). A judge merged their 35 raw findings into one scored shortlist.</p>
+      <div class="move"><b>The move:</b> never pick a local model from a months-old article. The "best" list changes every season.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="stepNum">4</div>
+    <div class="stepBody">
+      <h2>Fact-check — three skeptics attack the list <span class="badge done">done</span></h2>
+      <p>Three independent fact-checkers then tried to tear the shortlist apart — one checked every install command and download size, one checked nothing was outdated or missing, one challenged the scores against public benchmarks. They caught <b>four wrong install commands</b>, several scores that didn't survive the evidence, and <b>two missing strong models</b>. All fixed.</p>
+      <div class="move"><b>The move:</b> whatever an AI tells you to download, verify the exact command against the official library before running it. One wrong tag and you get a 9.6 GB file that doesn't fit an 8 GB card.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="stepNum">5</div>
+    <div class="stepBody">
+      <h2>The picker page <span class="badge done">done</span></h2>
+      <p>Everything learned went into one interactive page: a Magic Quadrant where you slide levers for what matters to you and the model dots glide into place, a sortable report card, a card per model with its exact install command, and a "straight talk" section with the honest limits.</p>
+      <div class="art">📄 Try it yourself: <a href="local-ai-picker.html">the interactive picker</a> — open it, move the levers, hover the dots.</div>
+      <p style="margin-top:8px;">It then grew into an <b>anyone edition</b>: pick YOUR machine (PC, Mac, or no graphics card) and YOUR jobs from a menu of 13, and every chart, speed estimate, and recommendation adapts. A second research crew scored all 16 models on all 13 jobs and verified the speed rules; fact-checkers corrected five errors before anything shipped. There's even a button that writes a ready-to-paste prompt for your own Claude/ChatGPT, for an up-to-the-minute second opinion.</p>
+      <div class="shot filled" id="shot-picker"><img src="local-ai-picker-quadrant.png" alt="The picker's Magic Quadrant with levers, showing model dots colored by how they run on the selected machine"></div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="stepNum">6</div>
+    <div class="stepBody">
+      <h2>Choose the lineup <span class="badge done">done</span></h2>
+      <p>Not one model — a small team, each with a job: <b>Qwen3.5 9B</b> as the fast daily driver (fits fully on the card), <b>Qwen3.6 35B</b> as the slow big brain (lives in RAM), <b>Gemma 4 E4B</b> as the polished writer, plus the document-search and transcription plumbing. About 55 GB all-in.</p>
+      <div class="move"><b>The move:</b> pick 2–3 specialists instead of one compromise model. Storage is cheap; switching models is one click.</div>
+    </div>
+  </div>
+
+  <div class="step todo">
+    <div class="stepNum">7</div>
+    <div class="stepBody">
+      <h2>Install <span class="badge now">up next</span></h2>
+      <p>Install Ollama (the engine), pull the lineup, add Open WebUI (the friendly browser face), and set the two settings that everyone gets wrong: the context size (so long documents don't get silently chopped) and the document-search model (before uploading anything).</p>
+      <div class="shot" id="shot-ollama">📸 Screenshot: Ollama installed &amp; first model downloading</div>
+      <div class="shot" id="shot-webui">📸 Screenshot: Open WebUI's first chat</div>
+    </div>
+  </div>
+
+  <div class="step todo">
+    <div class="stepNum">8</div>
+    <div class="stepBody">
+      <h2>Use it <span class="badge now">coming</span></h2>
+      <p>First real jobs: load a document set and ask hypothesis questions with citations; feed in a call transcript and get an SOP draft back. Then compare answers against Claude to learn where the local AI is enough — and where it isn't.</p>
+      <div class="shot" id="shot-firstjob">📸 Screenshot: first real document Q&amp;A with citations</div>
+    </div>
+  </div>
+
+  <div class="foot">A living document — updated at every step. Full technical memory lives in this project's <code>brain/</code> folder; the friendly version is this page.</div>
+</div>
+</body>
+</html>
