@@ -718,6 +718,60 @@ function resolveLaunchCmdForExec(cmd) {
   return cmd === 'localai' ? getLocalAiCommand() : cmd;
 }
 
+// Which models has the user downloaded in Ollama? (`ollama list`, first column,
+// minus embedding models — those can't chat.) Empty array on any failure:
+// ollama missing, service down, or installed after launch (PATH is frozen).
+function listOllamaModels() {
+  return new Promise(resolve => {
+    execFile('ollama', ['list'], { timeout: 10000 }, (err, stdout) => {
+      if (err) return resolve([]);
+      const tags = String(stdout).split('\n').slice(1)
+        .map(l => l.trim().split(/\s+/)[0])
+        .filter(t => t && !/embed/i.test(t));
+      resolve(tags);
+    });
+  });
+}
+
+// Bridge those models into OpenCode's own config so they appear inside
+// OpenCode's /models picker — the one step a non-technical user could never be
+// expected to do by hand (hand-editing ~/.config/opencode/opencode.json).
+// Merge-only and idempotent: never removes or rewrites anything the user has;
+// an unparseable config is left strictly alone.
+const OPENCODE_CONFIG = path.join(HOME, '.config', 'opencode', 'opencode.json');
+function syncOllamaIntoOpenCode(tags) {
+  try {
+    let cfg = { $schema: 'https://opencode.ai/config.json' };
+    if (fs.existsSync(OPENCODE_CONFIG)) {
+      cfg = JSON.parse(fs.readFileSync(OPENCODE_CONFIG, 'utf-8'));
+    }
+    if (typeof cfg !== 'object' || cfg === null || Array.isArray(cfg)) return;
+    cfg.provider = cfg.provider || {};
+    const p = cfg.provider.ollama = cfg.provider.ollama || {
+      npm: '@ai-sdk/openai-compatible',
+      name: 'Ollama (local)',
+      options: { baseURL: 'http://127.0.0.1:11434/v1' }
+    };
+    p.models = p.models || {};
+    let added = false;
+    for (const tag of tags) {
+      if (!p.models[tag]) { p.models[tag] = { name: `${tag} (local)`, tools: true }; added = true; }
+    }
+    if (!added) return;
+    fs.mkdirSync(path.dirname(OPENCODE_CONFIG), { recursive: true });
+    fs.writeFileSync(OPENCODE_CONFIG, JSON.stringify(cfg, null, 2) + '\n');
+  } catch (e) {}
+}
+
+// The Settings dropdown: local models to offer + the current Local AI command.
+// Fetching also runs the OpenCode bridge, so simply opening Settings with the
+// toggle on keeps OpenCode's picker in step with what's downloaded in Ollama.
+ipcMain.handle('get-local-ai-models', async () => {
+  const models = await listOllamaModels();
+  if (models.length) syncOllamaIntoOpenCode(models);
+  return { models, current: getLocalAiCommand() };
+});
+
 ipcMain.handle('get-launch-setup', async () => ({
   global: getLaunchCommand(),
   overrides: settings.launchOverrides || {},
@@ -801,6 +855,11 @@ ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
   const storedCmd = launchCmd;
   if (storedCmd === 'localai' && !commandExists('ollama')) {
     return { missingCmd: 'ollama', isMac: IS_MAC };
+  }
+  // Safety net for models pulled since Settings last ran the bridge — fire and
+  // forget; OpenCode re-reads its config per session, so next launch has them.
+  if (storedCmd === 'localai') {
+    listOllamaModels().then(t => { if (t.length) syncOllamaIntoOpenCode(t); });
   }
   launchCmd = resolveLaunchCmdForExec(launchCmd);
 

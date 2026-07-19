@@ -1081,7 +1081,7 @@
         <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.12.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
           <li><strong>Choose which AIs appear in the Launch menu</strong> — Settings now has an on/off switch for each non-Claude AI (Codex CLI, OpenCode, Local AI), with a badge showing whether it's actually installed on this computer. Fresh installs show just Claude until you switch more on.</li>
-          <li><strong>🖥️ New: Local AI (Ollama)</strong> — a Launch option that runs AI models <em>on your own computer</em> (free, private, works offline) via OpenCode + Ollama. Its tile colour is amber, and you can set exactly what command it runs in Settings.</li>
+          <li><strong>🖥️ New: Local AI (Ollama)</strong> — a Launch option that runs AI models <em>on your own computer</em> (free, private, works offline) via OpenCode + Ollama. Its tile colour is amber. The app finds the models you've downloaded in Ollama by itself — just pick one from a dropdown in Settings — and it teaches OpenCode about them too, so they also appear inside OpenCode's <code>/models</code> picker.</li>
           <li><strong>Pick the AI when you create a project</strong> — the New Project window now asks "Which AI will you use here?" (only once you've enabled a second AI).</li>
           <li><strong>Memory files are set up for every AI</strong> — new projects get both CLAUDE.md and AGENTS.md, so you can switch a project between Claude, Codex, OpenCode, or Local AI later and they all understand your brain/ notes.</li>
           <li><strong>Better "not installed" help</strong> — the helper screen now gives the exact install steps for whichever AI is missing (Codex, OpenCode, or Ollama), not just Claude.</li>
@@ -1296,8 +1296,9 @@
             </div>
             <div class="ai-row-note" id="aiRowNote-localai"></div>
             <div id="localAiCmdWrap" style="display:none; margin: 4px 0 4px 16px;">
-              <input id="localAiCmdInput" type="text" onchange="changeLocalAiCommand(this.value)" style="width: 100%; box-sizing: border-box; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none;">
-              <div style="font-size: 11px; color: #888; margin-top: 4px; line-height: 1.5;">The command Local AI runs — OpenCode picks up your Ollama models automatically if you've configured it. Example: <code style="color:#b388ff;">opencode -m ollama/qwen3.5:9b</code></div>
+              <select id="localAiModelSel" onchange="changeLocalAiModel(this.value)" style="width: 100%; box-sizing: border-box; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none; cursor: pointer;"></select>
+              <input id="localAiCmdInput" type="text" onchange="changeLocalAiCommand(this.value)" placeholder="e.g. opencode -m ollama/qwen3.5:9b" style="display:none; margin-top: 6px; width: 100%; box-sizing: border-box; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none;">
+              <div id="localAiHint" style="font-size: 11px; color: #888; margin-top: 4px; line-height: 1.5;"></div>
             </div>
           </div>
         </div>
@@ -2332,18 +2333,52 @@
           note.style.display = 'block';
         }
       }
+      // First-time Local AI enable: if the command is still the bare default,
+      // point it at the first local model — otherwise Local AI would launch as
+      // an identical twin of OpenCode, which reads as "the button does nothing".
+      if (key === 'localai' && enabledAIs.localai) {
+        try {
+          const info = await window.api.getLocalAiModels();
+          if ((info.current || 'opencode') === 'opencode' && info.models && info.models.length) {
+            await window.api.setLocalAiCommand('opencode -m ollama/' + info.models[0]);
+          }
+        } catch (e) {}
+      }
       try { syncLaunchCmdUI(); } catch (e) {}
       syncLocalAiUI();
       try { renderFolders(); } catch (e) {}
     }
-    function syncLocalAiUI() {
-      document.getElementById('localAiCmdWrap').style.display = enabledAIs.localai ? 'block' : 'none';
-      if (enabledAIs.localai) {
-        // Prefill by assigning .value — never by HTML interpolation.
-        window.api.getLocalAiCommand()
-          .then(v => { document.getElementById('localAiCmdInput').value = v; })
-          .catch(() => {});
-      }
+    async function syncLocalAiUI() {
+      const wrap = document.getElementById('localAiCmdWrap');
+      wrap.style.display = enabledAIs.localai ? 'block' : 'none';
+      if (!enabledAIs.localai) return;
+      const sel = document.getElementById('localAiModelSel');
+      const input = document.getElementById('localAiCmdInput');
+      const hint = document.getElementById('localAiHint');
+      let info = { models: [], current: 'opencode' };
+      try { info = await window.api.getLocalAiModels(); } catch (e) {}
+      const models = info.models || [];
+      const cur = info.current || 'opencode';
+      // Which model does the stored command name? (Only our own dropdown-written
+      // shape parses; anything else is a custom command.)
+      const m = cur.match(/^opencode -m ollama\/(\S+)$/);
+      const curTag = m && models.includes(m[1]) ? m[1] : null;
+      sel.innerHTML = '<option value="">— choose a model —</option>'
+        + models.map(t => `<option value="${escapeAttr(t)}">${escapeHtml(t)} — on this computer</option>`).join('')
+        + '<option value="__custom__">Custom command…</option>';
+      if (curTag) { sel.value = curTag; input.style.display = 'none'; }
+      else if (cur !== 'opencode') { sel.value = '__custom__'; input.style.display = 'block'; input.value = cur; }
+      else { sel.value = ''; input.style.display = 'none'; }
+      hint.textContent = models.length
+        ? 'Pick which of your local models Launch starts. They all show up inside OpenCode too — type /models there to switch mid-session.'
+        : 'No local models found — install Ollama (free, from ollama.com), download a model in it, then restart this dashboard.';
+    }
+    async function changeLocalAiModel(v) {
+      const input = document.getElementById('localAiCmdInput');
+      if (v === '__custom__') { input.style.display = 'block'; input.focus(); return; }
+      input.style.display = 'none';
+      if (!v) return;
+      await window.api.setLocalAiCommand('opencode -m ollama/' + v);
     }
     async function changeLocalAiCommand(v) {
       if (!String(v).trim()) return;
