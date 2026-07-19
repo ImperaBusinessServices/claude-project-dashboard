@@ -1083,7 +1083,7 @@
           <li><strong>Choose which AIs appear in the Launch menu</strong> — Settings now has an on/off switch for each non-Claude AI (Codex CLI, OpenCode, Local AI), with a badge showing whether it's actually installed on this computer. Fresh installs show just Claude until you switch more on.</li>
           <li><strong>🖥️ New: Local AI (Ollama)</strong> — a Launch option that runs AI models <em>on your own computer</em> (free, private, works offline) via OpenCode + Ollama. Its tile colour is amber. The app finds the models you've downloaded in Ollama by itself — just pick one from a dropdown in Settings — and it teaches OpenCode about them too, so they also appear inside OpenCode's <code>/models</code> picker.</li>
           <li><strong>Pick the AI when you create a project</strong> — the New Project window now asks "Which AI will you use here?" (only once you've enabled a second AI).</li>
-          <li><strong>Memory files are set up for every AI</strong> — new projects get both CLAUDE.md and AGENTS.md, so you can switch a project between Claude, Codex, OpenCode, or Local AI later and they all understand your brain/ notes.</li>
+          <li><strong>Memory files are set up for every AI</strong> — with project memory switched on, new projects get both CLAUDE.md and AGENTS.md, so you can switch a project between Claude, Codex, OpenCode, or Local AI later and they all understand your brain/ notes.</li>
           <li><strong>Better "not installed" help</strong> — the helper screen now gives the exact install steps for whichever AI is missing (Codex, OpenCode, or Ollama), not just Claude.</li>
         </ul>
 
@@ -1882,16 +1882,23 @@
 
     // New Project AI picker (v2.12). Hidden while no non-Claude AI is enabled —
     // the default on fresh installs — so the modal looks exactly as before.
+    // An override is only saved when the picker was actually SHOWN: with the row
+    // hidden no pick was made, and writing 'claude' anyway would pin the new
+    // project — wrong for a custom global default, and it would silently stop
+    // the project following any future change of the global default.
     let createAiPick = 'claude';
+    let createAiPickerShown = false;
     function renderCreateAiPicker() {
       const row = document.getElementById('createAiRow');
       createAiPick = 'claude';
+      createAiPickerShown = false;
       if (!AI_TOGGLE_KEYS.some(k => enabledAIs[k])) { row.style.display = 'none'; return; }
       const opts = LAUNCH_MENU.filter(([c]) => c === 'claude' || enabledAIs[c]);
       document.getElementById('createAiPills').innerHTML = opts.map(([c, label]) =>
         `<span class="ai-pill${c === createAiPick ? ' sel' : ''}" data-ai="${c}" onclick="pickCreateAi('${c}')"><span class="ai-dot ai-dot-${c}"></span>${label}</span>`
       ).join('');
       row.style.display = 'block';
+      createAiPickerShown = true;
     }
     function pickCreateAi(c) {
       createAiPick = c;
@@ -1908,11 +1915,11 @@
         document.getElementById('createError').textContent = 'Name contains invalid characters';
         return;
       }
-      const result = await window.api.createFolder(name, createAiPick);
+      const result = await window.api.createFolder(name, createAiPickerShown ? createAiPick : null);
       if (result.success) {
         // The picked AI was saved as this project's override — mirror it in the
         // local cache so the new tile renders with the right colour immediately.
-        if (result.path) launchOverrides[result.path] = createAiPick;
+        if (result.path && createAiPickerShown) launchOverrides[result.path] = createAiPick;
         hideCreateModal();
         await refreshFolders();
       } else {
@@ -2369,9 +2376,21 @@
       if (curTag) { sel.value = curTag; input.style.display = 'none'; }
       else if (cur !== 'opencode') { sel.value = '__custom__'; input.style.display = 'block'; input.value = cur; }
       else { sel.value = ''; input.style.display = 'none'; }
-      hint.textContent = models.length
-        ? 'Pick which of your local models Launch starts. They all show up inside OpenCode too — type /models there to switch mid-session.'
-        : 'No local models found — install Ollama (free, from ollama.com), download a model in it, then restart this dashboard.';
+      if (models.length) {
+        hint.textContent = 'Pick which of your local models Launch starts. They all show up inside OpenCode too — type /models there to switch mid-session.';
+      } else {
+        // No models can mean two very different things: Ollama isn't installed,
+        // or it IS installed but isn't running right now (`ollama list` needs
+        // the service). Telling someone with a stopped Ollama to "install it"
+        // reads as broken — check which case this is before wording the hint.
+        hint.textContent = 'No local models found…';
+        try {
+          const d = await window.api.detectAiClis();
+          hint.textContent = d.ollama
+            ? 'No models found — Ollama is installed but doesn’t seem to be running. Start Ollama (and download a model in it if you haven’t), then reopen this Settings window.'
+            : 'No local models found — install Ollama (free, from ollama.com), download a model in it, then restart this dashboard.';
+        } catch (e) {}
+      }
     }
     async function changeLocalAiModel(v) {
       const input = document.getElementById('localAiCmdInput');

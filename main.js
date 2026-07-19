@@ -580,9 +580,10 @@ ipcMain.handle('create-folder', async (event, folderName, aiKey) => {
     if (settings.createBrainOnNewProject !== false) {
       scaffoldBrain(fullPath, folderName);
     }
-    // The picked AI is always written as this project's override — including
-    // 'claude' (if the global default is codex and you pick Claude, that pick
-    // must stick; claude is a valid preset key like any other).
+    // A real pick (the renderer showed the picker) is written as this project's
+    // override — including 'claude' (if the global default is codex and you pick
+    // Claude, that pick must stick). aiKey is null when the picker was hidden:
+    // no pick was made, so no override — the project follows the global default.
     const pickedAi = sanitizeLaunchCmd(aiKey);
     if (pickedAi) saveLaunchOverride(fullPath, pickedAi);
     // Memory belongs to the project, not the AI: seed AGENTS.md regardless of
