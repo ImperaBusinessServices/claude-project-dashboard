@@ -168,8 +168,8 @@
 <rect x="660" y="670" width="480" height="92" rx="14" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
 <rect x="661" y="680" width="6" height="72" rx="3" fill="#f97316"/>
 <text x="684" y="708.0" fill="#f97316" font-size="19" font-weight="700">North Mini Code</text>
-<text x="684" y="730.0" fill="var(--muted)" font-size="13.5">Tiny (30B). Runs on one graphics card. Built for coding in</text>
-<text x="684" y="747.0" fill="var(--muted)" font-size="13.5">the terminal.</text>
+<text x="684" y="730.0" fill="var(--muted)" font-size="13.5">The only one you could self-host — but it wants a ~18GB</text>
+<text x="684" y="747.0" fill="var(--muted)" font-size="13.5">graphics card. Smaller PC? Use Ollama instead.</text>
 <rect x="60" y="810" width="480" height="92" rx="14" fill="var(--qbg-last)" stroke="var(--line)" stroke-width="1.5"/>
 <circle cx="94" cy="856.0" r="16" fill="#3b82f6"/>
 <text x="94" y="862.0" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">✓</text>
@@ -230,6 +230,16 @@
     <b>Why "free" comes with a catch:</b> during the promo period, what you send to these models
     may be used to train them. Fine for your own side projects and experiments. Not fine for
     anything you wouldn't be happy posting in public.
+  </div>
+
+  <div class="warn">
+    <b>None of these run on your computer.</b> All six are large language models &mdash; a type of AI
+    &mdash; running on someone else's servers; you reach them over the internet through OpenCode.
+    Most are "open weights", meaning the file is published free, so in theory you could download and
+    run one yourself. In practice only <b>North Mini Code</b> is small enough to try, and it still
+    wants a serious graphics card (~18&nbsp;GB). For AI that genuinely runs on a normal PC &mdash;
+    offline, private, free forever &mdash; you want <b>Ollama</b> and much smaller models:
+    <a class="back" href="build-your-own-local-ai.html">here's how we set ours up</a>.
   </div>
 
   <div class="footer">Claude Project Dashboard &middot; July 2026 &middot;
