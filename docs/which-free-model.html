@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Which free AI model should I use?</title>
+<style>
+  :root {
+    --bg:#f4f6f9; --card:#fff; --surface2:#f0f2f5; --ink:#1a1d23; --muted:#5a5e6a;
+    --line:#e0e3e8; --line2:#b6bcc6; --qbg:#f0f2f5; --qbg-last:#e8edff; --note:#fbfcfd;
+    --accent:#6366f1; --pink:#ec4899;
+    --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark) { :root:not(.light) {
+    --bg:#0f1117; --card:#1a1c25; --surface2:#22242f; --ink:#e8eaed; --muted:#9ca0aa;
+    --line:#2e3040; --line2:#4a4d60; --qbg:#22242f; --qbg-last:#232741; --note:#171922;
+    --accent:#818cf8;
+    --shadow:0 1px 3px rgba(0,0,0,.2),0 1px 2px rgba(0,0,0,.15);
+  } }
+  :root.dark {
+    --bg:#0f1117; --card:#1a1c25; --surface2:#22242f; --ink:#e8eaed; --muted:#9ca0aa;
+    --line:#2e3040; --line2:#4a4d60; --qbg:#22242f; --qbg-last:#232741; --note:#171922;
+    --accent:#818cf8;
+    --shadow:0 1px 3px rgba(0,0,0,.2),0 1px 2px rgba(0,0,0,.15);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); padding:2rem 1.5rem; line-height:1.5;
+    transition:background .3s,color .3s; }
+  .container { max-width:1180px; margin:0 auto; }
+  a.back { color:var(--accent); text-decoration:none; font-size:.9rem; }
+  a.back:hover { text-decoration:underline; }
+  header { display:flex; justify-content:space-between; align-items:center;
+    margin:1rem 0 1.5rem; flex-wrap:wrap; gap:1rem; }
+  header h1 { font-size:1.6rem; font-weight:700;
+    background:linear-gradient(135deg,var(--accent),var(--pink));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  header p { color:var(--muted); font-size:.9rem; margin-top:.2rem; }
+  .toggle-wrap { display:flex; align-items:center; gap:.6rem; font-size:.85rem; color:var(--muted); }
+  .toggle { position:relative; width:44px; height:24px; background:var(--line);
+    border-radius:12px; cursor:pointer; transition:background .25s; flex-shrink:0; border:none; }
+  .toggle::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px;
+    background:var(--card); border-radius:50%; transition:transform .25s; }
+  .toggle.on { background:var(--accent); }
+  .toggle.on::after { transform:translateX(20px); }
+
+  .tldr { background:var(--card); border:1px solid var(--line); border-left:5px solid var(--accent);
+    border-radius:12px; padding:1rem 1.25rem; margin-bottom:1.5rem; box-shadow:var(--shadow); }
+  .tldr strong { font-weight:700; }
+  .tldr p { font-size:.95rem; }
+  .tldr p + p { margin-top:.5rem; color:var(--muted); font-size:.88rem; }
+
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:1.25rem; box-shadow:var(--shadow); margin-bottom:2rem; overflow-x:auto; }
+  svg.flow { width:100%; height:auto; min-width:820px; display:block; }
+
+  h2.sect { font-size:1.1rem; font-weight:700; margin:0 0 .25rem; }
+  p.sub { color:var(--muted); font-size:.9rem; margin-bottom:1rem; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:1rem; margin-bottom:2rem; }
+  .sw { background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:1rem 1.1rem; box-shadow:var(--shadow); }
+  .sw .when { font-size:.9rem; font-weight:600; margin-bottom:.5rem; }
+  .sw .then { font-size:.85rem; color:var(--muted); }
+  .sw .then b { color:var(--ink); }
+  .pill { display:inline-block; font-size:.72rem; font-weight:700; padding:.15rem .5rem;
+    border-radius:6px; color:#fff; margin-bottom:.5rem; }
+
+  .warn { background:var(--surface2); border:1px solid var(--line); border-radius:12px;
+    padding:1rem 1.25rem; font-size:.85rem; color:var(--muted); margin-bottom:2rem; }
+  .warn b { color:var(--ink); }
+  .footer { text-align:center; font-size:.8rem; color:var(--muted); padding-top:.5rem; }
+  @media (max-width:640px){ body{padding:1rem;} }
+</style>
+</head>
+<body>
+<div class="container">
+  <p><a class="back" href="free-ai-models.html">&larr; Free AI Model Comparison</a></p>
+  <header>
+    <div>
+      <h1>Which free model should I use?</h1>
+      <p>A one-glance decision chart for the free models on OpenCode Zen</p>
+    </div>
+    <div class="toggle-wrap"><span>Light</span><button class="toggle" id="themeToggle"></button><span>Dark</span></div>
+  </header>
+
+  <div class="tldr">
+    <p><strong>The 10-second answer:</strong> use <strong>DeepSeek V4 Flash</strong> for almost everything.
+       Switch away only when you hit one of the five situations below.</p>
+    <p>Think of it like gears on a bike &mdash; you stay in one gear most of the time and change
+       only when the road does.</p>
+  </div>
+
+  <div class="panel">
+<svg viewBox="0 0 1180 1010" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif" class="flow">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--line2)"/></marker>
+</defs>
+<rect x="140" y="18" width="320" height="52" rx="26" fill="var(--accent)" />
+<text x="300.0" y="50" text-anchor="middle" fill="#fff" font-size="20" font-weight="700">Which free model?</text>
+<line x1="300.0" y1="70" x2="300.0" y2="108" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<rect x="60" y="110" width="480" height="92" rx="14" fill="var(--qbg)" stroke="var(--line)" stroke-width="1.5"/>
+<circle cx="94" cy="156.0" r="16" fill="var(--accent)"/>
+<text x="94" y="162.0" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">1</text>
+<text x="122" y="150.0" fill="var(--ink)" font-size="17" font-weight="600">Is it private or confidential?</text>
+<text x="122" y="174.0" fill="var(--muted)" font-size="14">Client data, passwords, anything you'd not post online.</text>
+<line x1="544" y1="156.0" x2="652" y2="156.0" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="600.0" y="146.0" text-anchor="middle" fill="var(--muted)" font-size="13" font-weight="600">Yes</text>
+<line x1="300.0" y1="202" x2="300.0" y2="248" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="288.0" y="232" text-anchor="end" fill="var(--muted)" font-size="13" font-weight="600">No</text>
+<rect x="660" y="110" width="480" height="92" rx="14" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
+<rect x="661" y="120" width="6" height="72" rx="3" fill="#ef4444"/>
+<text x="684" y="148.0" fill="#ef4444" font-size="19" font-weight="700">STOP — don't use any of these</text>
+<text x="684" y="170.0" fill="var(--muted)" font-size="13.5">Free = your data may train the model. Use local Ollama, or</text>
+<text x="684" y="187.0" fill="var(--muted)" font-size="13.5">Claude.</text>
+<rect x="60" y="250" width="480" height="92" rx="14" fill="var(--qbg)" stroke="var(--line)" stroke-width="1.5"/>
+<circle cx="94" cy="296.0" r="16" fill="var(--accent)"/>
+<text x="94" y="302.0" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">2</text>
+<text x="122" y="290.0" fill="var(--ink)" font-size="17" font-weight="600">Does the job involve a picture, screenshot,</text>
+<text x="122" y="314.0" fill="var(--muted)" font-size="14">a video or audio?</text>
+<line x1="544" y1="296.0" x2="652" y2="296.0" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="600.0" y="286.0" text-anchor="middle" fill="var(--muted)" font-size="13" font-weight="600">Yes</text>
+<line x1="300.0" y1="342" x2="300.0" y2="388" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="288.0" y="372" text-anchor="end" fill="var(--muted)" font-size="13" font-weight="600">No</text>
+<rect x="660" y="250" width="480" height="92" rx="14" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
+<rect x="661" y="260" width="6" height="72" rx="3" fill="#8b5cf6"/>
+<text x="684" y="288.0" fill="#8b5cf6" font-size="19" font-weight="700">MiMo V2.5</text>
+<text x="684" y="310.0" fill="var(--muted)" font-size="13.5">The only one that sees and hears. Text, images, video,</text>
+<text x="684" y="327.0" fill="var(--muted)" font-size="13.5">audio. 1M context.</text>
+<rect x="60" y="390" width="480" height="92" rx="14" fill="var(--qbg)" stroke="var(--line)" stroke-width="1.5"/>
+<circle cx="94" cy="436.0" r="16" fill="var(--accent)"/>
+<text x="94" y="442.0" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">3</text>
+<text x="122" y="430.0" fill="var(--ink)" font-size="17" font-weight="600">Is it genuinely hard? Tricky maths, science,</text>
+<text x="122" y="454.0" fill="var(--muted)" font-size="14">or a long job it has to plan out on its own.</text>
+<line x1="544" y1="436.0" x2="652" y2="436.0" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="600.0" y="426.0" text-anchor="middle" fill="var(--muted)" font-size="13" font-weight="600">Yes</text>
+<line x1="300.0" y1="482" x2="300.0" y2="528" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="288.0" y="512" text-anchor="end" fill="var(--muted)" font-size="13" font-weight="600">No</text>
+<rect x="660" y="390" width="480" height="92" rx="14" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
+<rect x="661" y="400" width="6" height="72" rx="3" fill="#22c55e"/>
+<text x="684" y="428.0" fill="#22c55e" font-size="19" font-weight="700">Nemotron 3 Ultra</text>
+<text x="684" y="450.0" fill="var(--muted)" font-size="13.5">The heavyweight. 550B params, 1M context. Slowest, but it</text>
+<text x="684" y="467.0" fill="var(--muted)" font-size="13.5">gets there.</text>
+<rect x="60" y="530" width="480" height="92" rx="14" fill="var(--qbg)" stroke="var(--line)" stroke-width="1.5"/>
+<circle cx="94" cy="576.0" r="16" fill="var(--accent)"/>
+<text x="94" y="582.0" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">4</text>
+<text x="122" y="570.0" fill="var(--ink)" font-size="17" font-weight="600">Still thinking work — but you want it snappier?</text>
+<text x="122" y="594.0" fill="var(--muted)" font-size="14">Good reasoning, less waiting around.</text>
+<line x1="544" y1="576.0" x2="652" y2="576.0" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="600.0" y="566.0" text-anchor="middle" fill="var(--muted)" font-size="13" font-weight="600">Yes</text>
+<line x1="300.0" y1="622" x2="300.0" y2="668" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="288.0" y="652" text-anchor="end" fill="var(--muted)" font-size="13" font-weight="600">No</text>
+<rect x="660" y="530" width="480" height="92" rx="14" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
+<rect x="661" y="540" width="6" height="72" rx="3" fill="#14b8a6"/>
+<text x="684" y="568.0" fill="#14b8a6" font-size="19" font-weight="700">Hy3</text>
+<text x="684" y="590.0" fill="var(--muted)" font-size="13.5">Punches above its weight on reasoning. 256K context — the</text>
+<text x="684" y="607.0" fill="var(--muted)" font-size="13.5">small one here.</text>
+<rect x="60" y="670" width="480" height="92" rx="14" fill="var(--qbg)" stroke="var(--line)" stroke-width="1.5"/>
+<circle cx="94" cy="716.0" r="16" fill="var(--accent)"/>
+<text x="94" y="722.0" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">5</text>
+<text x="122" y="710.0" fill="var(--ink)" font-size="17" font-weight="600">Do you want it running on your own PC?</text>
+<text x="122" y="734.0" fill="var(--muted)" font-size="14">Offline, nothing leaves the machine.</text>
+<line x1="544" y1="716.0" x2="652" y2="716.0" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="600.0" y="706.0" text-anchor="middle" fill="var(--muted)" font-size="13" font-weight="600">Yes</text>
+<line x1="300.0" y1="762" x2="300.0" y2="808" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<text x="288.0" y="792" text-anchor="end" fill="var(--muted)" font-size="13" font-weight="600">No</text>
+<rect x="660" y="670" width="480" height="92" rx="14" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
+<rect x="661" y="680" width="6" height="72" rx="3" fill="#f97316"/>
+<text x="684" y="708.0" fill="#f97316" font-size="19" font-weight="700">North Mini Code</text>
+<text x="684" y="730.0" fill="var(--muted)" font-size="13.5">Tiny (30B). Runs on one graphics card. Built for coding in</text>
+<text x="684" y="747.0" fill="var(--muted)" font-size="13.5">the terminal.</text>
+<rect x="60" y="810" width="480" height="92" rx="14" fill="var(--qbg-last)" stroke="var(--line)" stroke-width="1.5"/>
+<circle cx="94" cy="856.0" r="16" fill="#3b82f6"/>
+<text x="94" y="862.0" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">✓</text>
+<text x="122" y="850.0" fill="var(--ink)" font-size="17" font-weight="600">Anything else — everyday coding and chat.</text>
+<text x="122" y="874.0" fill="var(--muted)" font-size="14">This is where you'll be 80% of the time.</text>
+<line x1="544" y1="856.0" x2="652" y2="856.0" stroke="var(--line2)" stroke-width="2" marker-end="url(#ar)"/>
+<rect x="660" y="810" width="480" height="92" rx="14" fill="var(--card)" stroke="var(--line)" stroke-width="1.5"/>
+<rect x="661" y="820" width="6" height="72" rx="3" fill="#3b82f6"/>
+<text x="684" y="848.0" fill="#3b82f6" font-size="19" font-weight="700">DeepSeek V4 Flash</text>
+<text x="684" y="870.0" fill="var(--muted)" font-size="13.5">Your default driver. Fast, brilliant at code, reads 1M</text>
+<text x="684" y="887.0" fill="var(--muted)" font-size="13.5">tokens at once.</text>
+<rect x="60" y="936" width="1080" height="60" rx="12" fill="var(--note)" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="82" y="962" fill="var(--ink)" font-size="15" font-weight="600">And "Big Pickle"?</text>
+<text x="82" y="983" fill="var(--muted)" font-size="13.5">A mystery box — today it quietly hands your question to DeepSeek V4 Flash. Nothing to gain. Skip it.</text>
+</svg>
+  </div>
+
+  <h2 class="sect">When to change gear mid-job</h2>
+  <p class="sub">You've started. Something's not right. Here's the switch to make.</p>
+  <div class="grid">
+    <div class="sw">
+      <span class="pill" style="background:#22c55e">Shift up</span>
+      <div class="when">It's going round in circles, or keeps getting it wrong.</div>
+      <div class="then">Move to <b>Nemotron 3 Ultra</b>. It's slower but it actually thinks the
+        problem through. If that also stalls, the job probably needs Claude.</div>
+    </div>
+    <div class="sw">
+      <span class="pill" style="background:#f97316">Shift down</span>
+      <div class="when">It's slow and the job is simple.</div>
+      <div class="then">Move to <b>North Mini Code</b>. Small, quick, made for straightforward
+        code and terminal work.</div>
+    </div>
+    <div class="sw">
+      <span class="pill" style="background:#3b82f6">Bigger tank</span>
+      <div class="when">It's forgetting things, or your project is too big for it.</div>
+      <div class="then">You've run out of context. Only <b>DeepSeek V4 Flash</b>,
+        <b>Nemotron 3 Ultra</b> and <b>MiMo V2.5</b> hold a million tokens. Hy3 holds a quarter of that.</div>
+    </div>
+    <div class="sw">
+      <span class="pill" style="background:#8b5cf6">Add eyes</span>
+      <div class="when">You need to show it a screenshot, photo, video or a recording.</div>
+      <div class="then">Only <b>MiMo V2.5</b> can look and listen. The others read text only.</div>
+    </div>
+    <div class="sw">
+      <span class="pill" style="background:#14b8a6">Middle gear</span>
+      <div class="when">Needs proper reasoning, but Nemotron is overkill.</div>
+      <div class="then"><b>Hy3</b> is the sweet spot for maths and science without the wait.</div>
+    </div>
+    <div class="sw">
+      <span class="pill" style="background:#ef4444">Pull over</span>
+      <div class="when">The work involves real client or personal data.</div>
+      <div class="then">Stop using the free models. Run <b>Ollama</b> on your own machine, or use
+        <b>Claude</b>. Free access is paid for with your data.</div>
+    </div>
+  </div>
+
+  <div class="warn">
+    <b>Why "free" comes with a catch:</b> during the promo period, what you send to these models
+    may be used to train them. Fine for your own side projects and experiments. Not fine for
+    anything you wouldn't be happy posting in public.
+  </div>
+
+  <div class="footer">Claude Project Dashboard &middot; July 2026 &middot;
+    <a class="back" href="free-ai-models.html">full model comparison</a> &middot;
+    <a class="back" href="build-your-own-local-ai.html">run one on your own PC</a>
+  </div>
+</div>
+<script>
+  const toggle = document.getElementById('themeToggle');
+  const root = document.documentElement;
+  const stored = localStorage.getItem('model-comp-theme');
+  if (stored === 'dark') { root.classList.add('dark'); toggle.classList.add('on'); }
+  else if (stored === 'light') { root.classList.add('light'); }
+  else if (window.matchMedia('(prefers-color-scheme: dark)').matches) { root.classList.add('dark'); toggle.classList.add('on'); }
+  toggle.addEventListener('click', () => {
+    const isDark = toggle.classList.toggle('on');
+    root.classList.toggle('dark', isDark);
+    root.classList.toggle('light', !isDark);
+    localStorage.setItem('model-comp-theme', isDark ? 'dark' : 'light');
+  });
+</script>
+</body>
+</html>
