@@ -1016,7 +1016,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.12.0</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.12.1</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1078,18 +1078,22 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.12.0:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.12.1:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>Choose which AIs appear in the Launch menu</strong> — Settings now has an on/off switch for each non-Claude AI (Codex CLI, OpenCode, Local AI), with a badge showing whether it's actually installed on this computer. Fresh installs show just Claude until you switch more on.</li>
-          <li><strong>🖥️ New: Local AI (Ollama)</strong> — a Launch option that runs AI models <em>on your own computer</em> (free, private, works offline) via OpenCode + Ollama. Its tile colour is amber. The app finds the models you've downloaded in Ollama by itself — just pick one from a dropdown in Settings — and it teaches OpenCode about them too, so they also appear inside OpenCode's <code>/models</code> picker.</li>
-          <li><strong>Pick the AI when you create a project</strong> — the New Project window now asks "Which AI will you use here?" (only once you've enabled a second AI).</li>
-          <li><strong>Memory files are set up for every AI</strong> — with project memory switched on, new projects get both CLAUDE.md and AGENTS.md, so you can switch a project between Claude, Codex, OpenCode, or Local AI later and they all understand your brain/ notes.</li>
-          <li><strong>Better "not installed" help</strong> — the helper screen now gives the exact install steps for whichever AI is missing (Codex, OpenCode, or Ollama), not just Claude.</li>
+          <li><strong>🎨 Colour terminal tabs by AI</strong> — when you launch a non-Claude AI, its terminal tab now opens tinted to match the Launch button (Codex blue, OpenCode green, Local AI amber, custom purple). Claude tabs stay plain black, so a coloured tab always means it's not Claude. On by default; turn it off under <em>Settings → Which AI runs when you click Launch</em>. Windows Terminal only.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.12.0:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>Choose which AIs appear in the Launch menu</strong> — Settings now has an on/off switch for each non-Claude AI (Codex CLI, OpenCode, Local AI), with a badge showing whether it's actually installed on this computer. Fresh installs show just Claude until you switch more on.</li>
+              <li><strong>🖥️ New: Local AI (Ollama)</strong> — a Launch option that runs AI models <em>on your own computer</em> (free, private, works offline) via OpenCode + Ollama. Its tile colour is amber. The app finds the models you've downloaded in Ollama by itself — just pick one from a dropdown in Settings — and it teaches OpenCode about them too, so they also appear inside OpenCode's <code>/models</code> picker.</li>
+              <li><strong>Pick the AI when you create a project</strong> — the New Project window now asks "Which AI will you use here?" (only once you've enabled a second AI).</li>
+              <li><strong>Memory files are set up for every AI</strong> — with project memory switched on, new projects get both CLAUDE.md and AGENTS.md, so you can switch a project between Claude, Codex, OpenCode, or Local AI later and they all understand your brain/ notes.</li>
+              <li><strong>Better "not installed" help</strong> — the helper screen now gives the exact install steps for whichever AI is missing (Codex, OpenCode, or Ollama), not just Claude.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.11.1:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>Friendly first-run help</strong> — if Claude Code isn't installed on this computer yet, clicking Launch now shows a clear step-by-step screen (get an account, copy-paste one install line) instead of opening a broken terminal window. Works for the other AIs too.</li>
@@ -1300,6 +1304,18 @@
               <input id="localAiCmdInput" type="text" onchange="changeLocalAiCommand(this.value)" placeholder="e.g. opencode -m ollama/qwen3.5:9b" style="display:none; margin-top: 6px; width: 100%; box-sizing: border-box; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none;">
               <div id="localAiHint" style="font-size: 11px; color: #888; margin-top: 4px; line-height: 1.5;"></div>
             </div>
+          </div>
+          <!-- Colour terminal tabs by AI (v2.12.1) — Windows Terminal only -->
+          <div style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="flex: 1; padding-right: 14px;">
+              <strong style="color: #b388ff; font-size: 13px;">Colour terminal tabs by AI</strong>
+              <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">Tints each terminal tab to match its Launch button — <span style="color:#2f6fe4;">Codex blue</span>, <span style="color:#16a34a;">OpenCode green</span>, <span style="color:#d97706;">Local AI amber</span>, <span style="color:#8b6bd1;">custom purple</span>. Claude tabs stay plain black, so a <em>coloured</em> tab always means it's not Claude. <span style="color:#888;">Windows Terminal only.</span></div>
+            </div>
+            <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0;">
+              <input type="checkbox" id="tabColorToggle" onchange="toggleTabColor(this.checked)" style="opacity:0; width:0; height:0;">
+              <span id="tabColorSlider" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#333; border-radius:12px; transition:0.3s;"></span>
+              <span id="tabColorKnob" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:#888; border-radius:50%; transition:0.3s;"></span>
+            </label>
           </div>
         </div>
 
@@ -2434,6 +2450,9 @@
       const brainEnabled = await window.api.getCreateBrainEnabled();
       document.getElementById('brainToggle').checked = brainEnabled;
       updateBrainVisual(brainEnabled);
+      const tabColorOn = await window.api.getColorTerminalTabs();
+      document.getElementById('tabColorToggle').checked = tabColorOn;
+      updateTabColorVisual(tabColorOn);
       const memoryInstalled = await window.api.getMemoryProtocolInstalled();
       document.getElementById('memoryToggle').checked = memoryInstalled;
       updateMemoryVisual(memoryInstalled);
@@ -2476,6 +2495,19 @@
     function updateBrainVisual(on) {
       const slider = document.getElementById('brainSlider');
       const knob = document.getElementById('brainKnob');
+      slider.style.background = on ? '#533483' : '#333';
+      knob.style.background = on ? '#b388ff' : '#888';
+      knob.style.left = on ? '22px' : '2px';
+    }
+
+    async function toggleTabColor(enabled) {
+      await window.api.setColorTerminalTabs(enabled);
+      updateTabColorVisual(enabled);
+    }
+
+    function updateTabColorVisual(on) {
+      const slider = document.getElementById('tabColorSlider');
+      const knob = document.getElementById('tabColorKnob');
       slider.style.background = on ? '#533483' : '#333';
       knob.style.background = on ? '#b388ff' : '#888';
       knob.style.left = on ? '22px' : '2px';

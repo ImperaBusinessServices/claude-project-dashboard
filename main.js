@@ -626,6 +626,16 @@ ipcMain.handle('set-create-brain-enabled', async (event, enabled) => {
   return !!enabled;
 });
 
+// Get/set "colour terminal tabs by AI" (Windows only; defaults to ON when unset).
+// Purely cosmetic — the tab colour matches the tile's Launch button colour.
+ipcMain.handle('get-color-terminal-tabs', async () => {
+  return settings.colorTerminalTabs !== false;
+});
+ipcMain.handle('set-color-terminal-tabs', async (event, enabled) => {
+  saveSettings({ ...settings, colorTerminalTabs: !!enabled });
+  return !!enabled;
+});
+
 // Track launched terminal PIDs per project
 const launchedTerminals = {};
 
@@ -717,6 +727,23 @@ ipcMain.handle('set-local-ai-command', async (event, cmd) => {
 // non-recursive substitution: localAiCommand = 'localai' runs literally.
 function resolveLaunchCmdForExec(cmd) {
   return cmd === 'localai' ? getLocalAiCommand() : cmd;
+}
+
+// Windows-only: tint the Windows Terminal tab to match the tile's Launch button
+// so a glance at the taskbar/terminal says which AI is running there. Keyed on
+// the STORED command (preset key or custom string) by EXACT match, exactly like
+// the renderer's aiKey() → tile colour, so the tab and the button always agree.
+// Values are a fixed hex whitelist (no user input reaches the shell here).
+// Claude is intentionally absent: Keith wants the default AI's tab left plain
+// (no tint / default black), so a COLOURED tab always means "not Claude".
+const AI_TAB_COLORS = {
+  codex:    '#2f6fe4',
+  opencode: '#16a34a',
+  localai:  '#d97706'
+};
+function aiTabColor(cmd) {
+  if (cmd === 'claude') return null;      // Claude = no tint (default black tab)
+  return AI_TAB_COLORS[cmd] || '#6d4aa8'; // anything else non-preset = custom (purple)
 }
 
 // Which models has the user downloaded in Ollama? (`ollama list`, first column,
@@ -955,8 +982,12 @@ ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
     return { alreadyOpen: true };
   }
 
-  // Launch new terminal with project name as tab title
-  const child = exec(`wt --title "${projectName}" --suppressApplicationTitle -d "${folderPath}" cmd /k ${launchCmd}`, (err) => {
+  // Launch new terminal with project name as tab title. Optionally tint the tab
+  // to match the AI (Settings toggle, ON by default). storedCmd is the pre-
+  // resolution value the tile colours by, so tab and button always agree.
+  const tabColor = settings.colorTerminalTabs !== false ? aiTabColor(storedCmd) : null;
+  const tabColorArg = tabColor ? `--tabColor "${tabColor}" ` : ''; // Claude/off = no tint
+  const child = exec(`wt --title "${projectName}" ${tabColorArg}--suppressApplicationTitle -d "${folderPath}" cmd /k ${launchCmd}`, (err) => {
     if (err) {
       const fallback = exec(`start cmd /k "cd /d ${folderPath} && ${launchCmd}"`);
       if (fallback.pid) launchedTerminals[folderPath] = fallback.pid;

@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('api', {
   testBeep: () => ipcRenderer.invoke('test-beep'),
   getCreateBrainEnabled: () => ipcRenderer.invoke('get-create-brain-enabled'),
   setCreateBrainEnabled: (enabled) => ipcRenderer.invoke('set-create-brain-enabled', enabled),
+  getColorTerminalTabs: () => ipcRenderer.invoke('get-color-terminal-tabs'),
+  setColorTerminalTabs: (enabled) => ipcRenderer.invoke('set-color-terminal-tabs', enabled),
   getMemoryProtocolInstalled: () => ipcRenderer.invoke('get-memory-protocol-installed'),
   setMemoryProtocolInstalled: (enabled) => ipcRenderer.invoke('set-memory-protocol-installed', enabled),
   getMemoryPromptDismissed: () => ipcRenderer.invoke('get-memory-prompt-dismissed'),
