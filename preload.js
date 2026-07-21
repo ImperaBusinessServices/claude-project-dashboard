@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
   getFolders: () => ipcRenderer.invoke('get-folders'),
-  createFolder: (name) => ipcRenderer.invoke('create-folder', name),
+  createFolder: (name, aiKey) => ipcRenderer.invoke('create-folder', name, aiKey),
   openTerminal: (path, aiCmd) => ipcRenderer.invoke('open-terminal', path, aiCmd),
   openClaudeMd: (path) => ipcRenderer.invoke('open-claude-md', path),
   openGlobalClaudeMd: () => ipcRenderer.invoke('open-global-claude-md'),
@@ -40,9 +40,16 @@ contextBridge.exposeInMainWorld('api', {
   openSpendReport: () => ipcRenderer.invoke('open-spend-report'),
   getUsageRefreshSeconds: () => ipcRenderer.invoke('get-usage-refresh-seconds'),
   setUsageRefreshSeconds: (sec) => ipcRenderer.invoke('set-usage-refresh-seconds', sec),
-  // Multi-CLI launch (feature-branch test)
+  // Multi-CLI launch
   getLaunchSetup: () => ipcRenderer.invoke('get-launch-setup'),
   setLaunchCommand: (cmd) => ipcRenderer.invoke('set-launch-command', cmd),
+  // AI launcher toggles + Local AI (v2.12)
+  getEnabledAIs: () => ipcRenderer.invoke('get-enabled-ais'),
+  setEnabledAI: (key, enabled) => ipcRenderer.invoke('set-enabled-ai', key, enabled),
+  detectAiClis: () => ipcRenderer.invoke('detect-ai-clis'),
+  getLocalAiCommand: () => ipcRenderer.invoke('get-local-ai-command'),
+  setLocalAiCommand: (cmd) => ipcRenderer.invoke('set-local-ai-command', cmd),
+  getLocalAiModels: () => ipcRenderer.invoke('get-local-ai-models'),
   // Tray meter
   getTrayEnabled: () => ipcRenderer.invoke('get-tray-enabled'),
   setTrayEnabled: (enabled) => ipcRenderer.invoke('set-tray-enabled', enabled),

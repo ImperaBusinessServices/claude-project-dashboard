@@ -561,8 +561,9 @@ ipcMain.handle('delete-folder', async (event, folderPath) => {
   }
 });
 
-// Create new folder (with a CLAUDE.md so it's a proper project)
-ipcMain.handle('create-folder', async (event, folderName) => {
+// Create new folder (with a CLAUDE.md so it's a proper project).
+// aiKey (optional, v2.12) = the AI picked in the New Project modal.
+ipcMain.handle('create-folder', async (event, folderName, aiKey) => {
   // Guard: no projects folder chosen yet (fresh install / first run). Without
   // this, path.join('', name) tried to mkdir a relative path and failed with a
   // cryptic "ENOENT ... mkdir '<name>'". Give a clear next step instead.
@@ -579,7 +580,19 @@ ipcMain.handle('create-folder', async (event, folderName) => {
     if (settings.createBrainOnNewProject !== false) {
       scaffoldBrain(fullPath, folderName);
     }
-    return { success: true };
+    // A real pick (the renderer showed the picker) is written as this project's
+    // override — including 'claude' (if the global default is codex and you pick
+    // Claude, that pick must stick). aiKey is null when the picker was hidden:
+    // no pick was made, so no override — the project follows the global default.
+    const pickedAi = sanitizeLaunchCmd(aiKey);
+    if (pickedAi) saveLaunchOverride(fullPath, pickedAi);
+    // Memory belongs to the project, not the AI: seed AGENTS.md regardless of
+    // which AI was picked, so opening this project later with Codex/OpenCode/
+    // Local AI finds the same brain/ protocol. Idempotent, never clobbers.
+    try {
+      if (isMemoryProtocolInstalled()) seedAgentsMd(fullPath, folderName);
+    } catch (e) {}
+    return { success: true, path: fullPath };
   } catch (err) {
     return { success: false, error: err.message };
   }
@@ -625,12 +638,17 @@ function isProcessRunning(pid) {
   }
 }
 
-// Which AI CLI the Launch button runs (multi-CLI support, feature-branch test).
+// Which AI CLI the Launch button runs (multi-CLI support).
 // Two levels: a global default (Settings) and a per-project override, chosen
 // from the tile's ▾ menu and remembered. Commands are inserted into a shell
 // line, so they're restricted to a safe charset; anything else → claude.
+// The colon is allowed for Ollama model tags (`opencode -m ollama/qwen3.5:9b`).
+// Safety: colon is plain text in cmd word position, in AppleScript strings, and
+// in shell word position; `"` and `\` stay stripped. Accepted widening: colon +
+// `/` makes absolute paths expressible (C:/path/tool.exe) — self-set value,
+// same-user privileges, so nothing is gained by "attacking" your own settings.
 function sanitizeLaunchCmd(raw) {
-  return String(raw || '').replace(/[^A-Za-z0-9 ._\/-]/g, '').trim();
+  return String(raw || '').replace(/[^A-Za-z0-9 ._\/:-]/g, '').trim();
 }
 function getLaunchCommand() {
   return sanitizeLaunchCmd(settings.launchCommand) || 'claude';
@@ -639,9 +657,152 @@ function getLaunchCommandFor(folderPath) {
   const overrides = settings.launchOverrides || {};
   return sanitizeLaunchCmd(overrides[folderPath]) || getLaunchCommand();
 }
+
+// ---- AI launcher toggles (v2.12) ----
+// Which non-Claude AIs appear in the menus. An explicit true/false in settings
+// is the user's choice and always wins. A key that's simply absent (fresh
+// install, or an upgrade from pre-2.12) is enabled only if that AI is already
+// in use: it's the global default, or some project's remembered override.
+// "In use" means the first whitespace-separated word equals the preset key
+// exactly ("codex --profile x" counts for codex; "codexy-tool" does not).
+const TOGGLEABLE_AIS = ['codex', 'opencode', 'localai'];
+function cmdFirstWord(cmd) { return String(cmd || '').trim().split(/\s+/)[0]; }
+function aiInUse(key) {
+  if (cmdFirstWord(getLaunchCommand()) === key) return true;
+  const overrides = settings.launchOverrides || {};
+  return Object.values(overrides).some(v => cmdFirstWord(sanitizeLaunchCmd(v)) === key);
+}
+function getEffectiveEnabledAIs() {
+  const stored = settings.enabledAIs || {};
+  const out = {};
+  for (const key of TOGGLEABLE_AIS) {
+    out[key] = typeof stored[key] === 'boolean' ? stored[key] : aiInUse(key);
+  }
+  return out;
+}
+ipcMain.handle('get-enabled-ais', async () => getEffectiveEnabledAIs());
+ipcMain.handle('set-enabled-ai', async (event, key, enabled) => {
+  if (!TOGGLEABLE_AIS.includes(key)) return { enabled: getEffectiveEnabledAIs(), resetDefault: false };
+  const enabledAIs = { ...(settings.enabledAIs || {}), [key]: !!enabled };
+  const s = { ...settings, enabledAIs };
+  // Turning OFF the AI that is the current global default: allowed, but Launch
+  // must still do something sensible — fall back to Claude and tell the user.
+  let resetDefault = false;
+  if (!enabled && cmdFirstWord(sanitizeLaunchCmd(s.launchCommand)) === key) {
+    s.launchCommand = 'claude';
+    resetDefault = true;
+  }
+  saveSettings(s);
+  return { enabled: getEffectiveEnabledAIs(), resetDefault };
+});
+
+// ---- Local AI (Ollama) preset (v2.12) ----
+// 'localai' is the one preset whose key is NOT the command it runs. The actual
+// command lives in settings.localAiCommand (default: opencode, which picks up
+// local Ollama models once configured). Sanitized at set-time, like the global
+// default, so the stored value always equals what will run.
+function getLocalAiCommand() {
+  return sanitizeLaunchCmd(settings.localAiCommand) || 'opencode';
+}
+ipcMain.handle('get-local-ai-command', async () => getLocalAiCommand());
+ipcMain.handle('set-local-ai-command', async (event, cmd) => {
+  const clean = sanitizeLaunchCmd(cmd) || 'opencode';
+  saveSettings({ ...settings, localAiCommand: clean });
+  return clean;
+});
+// Late resolution, at the execution site ONLY. The getters above stay pure so
+// menus, tiles, and the Settings select keep seeing the stored 'localai' key
+// (resolution in the getters would let the custom-command input round-trip the
+// resolved string back into storage, destroying the setting). Single,
+// non-recursive substitution: localAiCommand = 'localai' runs literally.
+function resolveLaunchCmdForExec(cmd) {
+  return cmd === 'localai' ? getLocalAiCommand() : cmd;
+}
+
+// Which models has the user downloaded in Ollama? (`ollama list`, first column,
+// minus embedding models — those can't chat.) Empty array on any failure:
+// ollama missing, service down, or installed after launch (PATH is frozen).
+function listOllamaModels() {
+  return new Promise(resolve => {
+    execFile('ollama', ['list'], { timeout: 10000 }, (err, stdout) => {
+      if (err) return resolve([]);
+      const tags = String(stdout).split('\n').slice(1)
+        .map(l => l.trim().split(/\s+/)[0])
+        .filter(t => t && !/embed/i.test(t));
+      resolve(tags);
+    });
+  });
+}
+
+// Bridge those models into OpenCode's own config so they appear inside
+// OpenCode's /models picker — the one step a non-technical user could never be
+// expected to do by hand (hand-editing ~/.config/opencode/opencode.json).
+// Merge-only and idempotent: never removes or rewrites anything the user has;
+// an unparseable config is left strictly alone.
+const OPENCODE_CONFIG = path.join(HOME, '.config', 'opencode', 'opencode.json');
+
+// Turn a raw Ollama tag into something readable in OpenCode's model picker:
+// qwen3.6:35b -> "Qwen 3.6 35B (local)", gemma4:e4b-it-qat -> "Gemma 4 E4B IT
+// QAT (local)", llama3:latest -> "Llama 3 (local)". Cosmetic only.
+function prettyModelName(tag) {
+  const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  const [family, variant] = String(tag).split(':');
+  const famParts = family.split('-');
+  // Split letters from digits only on a single-token family, so "qwen3.6"
+  // becomes "Qwen 3.6" without mangling "deepseek-r1" into "Deepseek-R 1".
+  const fam = famParts.length === 1
+    ? cap(family).replace(/([A-Za-z])(\d)/, '$1 $2')
+    : famParts.map(cap).join('-');
+  // Short chunks are acronyms/sizes (9b, e4b, it, qat); longer ones are words.
+  const size = (!variant || variant === 'latest') ? ''
+    : variant.split('-').map(p => (p.length <= 4 ? p.toUpperCase() : cap(p))).join(' ');
+  return [fam, size].filter(Boolean).join(' ') + ' (local)';
+}
+function syncOllamaIntoOpenCode(tags) {
+  try {
+    let cfg = { $schema: 'https://opencode.ai/config.json' };
+    if (fs.existsSync(OPENCODE_CONFIG)) {
+      cfg = JSON.parse(fs.readFileSync(OPENCODE_CONFIG, 'utf-8'));
+    }
+    if (typeof cfg !== 'object' || cfg === null || Array.isArray(cfg)) return;
+    cfg.provider = cfg.provider || {};
+    const p = cfg.provider.ollama = cfg.provider.ollama || {
+      npm: '@ai-sdk/openai-compatible',
+      name: 'Ollama (local)',
+      options: { baseURL: 'http://127.0.0.1:11434/v1' }
+    };
+    p.models = p.models || {};
+    let added = false;
+    for (const tag of tags) {
+      if (!p.models[tag]) {
+        p.models[tag] = { name: prettyModelName(tag), tools: true };
+        added = true;
+      } else if (p.models[tag].name === `${tag} (local)`) {
+        // Exactly the name an older build of ours generated -> ours to tidy.
+        // Any other name is the user's and is never touched.
+        p.models[tag].name = prettyModelName(tag);
+        added = true;
+      }
+    }
+    if (!added) return;
+    fs.mkdirSync(path.dirname(OPENCODE_CONFIG), { recursive: true });
+    fs.writeFileSync(OPENCODE_CONFIG, JSON.stringify(cfg, null, 2) + '\n');
+  } catch (e) {}
+}
+
+// The Settings dropdown: local models to offer + the current Local AI command.
+// Fetching also runs the OpenCode bridge, so simply opening Settings with the
+// toggle on keeps OpenCode's picker in step with what's downloaded in Ollama.
+ipcMain.handle('get-local-ai-models', async () => {
+  const models = await listOllamaModels();
+  if (models.length) syncOllamaIntoOpenCode(models);
+  return { models, current: getLocalAiCommand() };
+});
+
 ipcMain.handle('get-launch-setup', async () => ({
   global: getLaunchCommand(),
-  overrides: settings.launchOverrides || {}
+  overrides: settings.launchOverrides || {},
+  enabled: getEffectiveEnabledAIs()
 }));
 ipcMain.handle('set-launch-command', async (event, cmd) => {
   const clean = sanitizeLaunchCmd(cmd) || 'claude';
@@ -671,16 +832,63 @@ function commandExists(bin) {
   } catch (e) { return false; }
 }
 
+// Async twin of commandExists, for the Settings detection badges. The sync
+// version blocks (on mac it spawns a login shell PER binary) — fine for the
+// single check in open-terminal, but checking 4 binaries serially inside a
+// handle() would freeze the main process. These run in parallel instead.
+function commandExistsAsync(bin) {
+  return new Promise(resolve => {
+    if (!/^[A-Za-z0-9._-]+$/.test(bin)) return resolve(true);
+    if (IS_MAC) execFile(process.env.SHELL || '/bin/zsh', ['-ilc', `command -v ${bin}`], err => resolve(!err));
+    else execFile('where', [bin], err => resolve(!err));
+  });
+}
+// Which AI CLIs are actually on this machine (for the Settings badges).
+// localaiBin = the first word of the resolved Local AI command (its "✓ installed"
+// additionally needs ollama; bin-without-ollama shows "needs Ollama" instead).
+// Re-run on each Settings open — but PATH is frozen until app restart.
+ipcMain.handle('detect-ai-clis', async () => {
+  const localBin = cmdFirstWord(getLocalAiCommand()) || 'opencode';
+  const [codex, opencode, ollama, localaiBin] = await Promise.all([
+    commandExistsAsync('codex'),
+    commandExistsAsync('opencode'),
+    commandExistsAsync('ollama'),
+    commandExistsAsync(localBin)
+  ]);
+  return { codex, opencode, ollama, localaiBin };
+});
+
+// One implementation for "remember this AI for this project" — used by the
+// tile's ▾ pick (open-terminal) and by New Project's AI picker (create-folder).
+function saveLaunchOverride(folderPath, cmd) {
+  const overrides = { ...(settings.launchOverrides || {}), [folderPath]: cmd };
+  saveSettings({ ...settings, launchOverrides: overrides });
+}
+
 ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
   const projectName = path.basename(folderPath);
 
   let launchCmd = sanitizeLaunchCmd(aiCmd);
   if (launchCmd) {
-    const overrides = { ...(settings.launchOverrides || {}), [folderPath]: launchCmd };
-    saveSettings({ ...settings, launchOverrides: overrides });
+    saveLaunchOverride(folderPath, launchCmd);
   } else {
     launchCmd = getLaunchCommandFor(folderPath);
   }
+
+  // Local AI needs its engine running the models: launching OpenCode against a
+  // missing Ollama would just error in the terminal — catch it here so the
+  // helper modal shows the Ollama guidance instead. Keyed off the STORED value;
+  // storedCmd also drives the AGENTS.md branch below ('localai' → not Claude).
+  const storedCmd = launchCmd;
+  if (storedCmd === 'localai' && !commandExists('ollama')) {
+    return { missingCmd: 'ollama', isMac: IS_MAC };
+  }
+  // Safety net for models pulled since Settings last ran the bridge — fire and
+  // forget; OpenCode re-reads its config per session, so next launch has them.
+  if (storedCmd === 'localai') {
+    listOllamaModels().then(t => { if (t.length) syncOllamaIntoOpenCode(t); });
+  }
+  launchCmd = resolveLaunchCmdForExec(launchCmd);
 
   // First-run friends often don't have the AI installed yet. Catch that HERE
   // and tell the renderer, instead of opening a terminal that just prints
@@ -705,7 +913,7 @@ ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
   // same protocol, so the brain/ folder we just made is actually understood.
   // Gated on the user having opted into the memory protocol at all.
   try {
-    if (!launchCmd.startsWith('claude') && isMemoryProtocolInstalled()) {
+    if (!storedCmd.startsWith('claude') && isMemoryProtocolInstalled()) {
       seedAgentsMd(folderPath, projectName);
     }
   } catch (e) {}
