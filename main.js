@@ -817,12 +817,49 @@ function syncOllamaIntoOpenCode(tags) {
   } catch (e) {}
 }
 
+// "Launch Local AI" and "Launch OpenCode" run the SAME program, so without this
+// a user could hit /model inside Local AI, pick a cloud model, and silently be
+// back to paying per token — the one thing that button promises you're not.
+// Fix: Local AI runs against its OWN config file (OPENCODE_CONFIG env var),
+// which lists ONLY the Ollama provider (`enabled_providers`), so /model offers
+// nothing but what's on this computer. Plain OpenCode keeps the full list.
+//
+// This file is entirely ours (unlike OPENCODE_CONFIG above, which is the user's
+// and is only ever merged into) — rewritten from scratch each time, never read.
+const OPENCODE_LOCAL_CONFIG = path.join(HOME, '.config', 'opencode', 'opencode-local.json');
+function writeLocalOnlyOpenCodeConfig(tags) {
+  try {
+    if (!tags.length) return null;
+    const models = {};
+    for (const tag of tags) models[tag] = { name: prettyModelName(tag), tools: true };
+    const cfg = {
+      $schema: 'https://opencode.ai/config.json',
+      // Written by Claude Project Dashboard — safe to delete; it is regenerated.
+      enabled_providers: ['ollama'],
+      provider: {
+        ollama: {
+          npm: '@ai-sdk/openai-compatible',
+          name: 'Ollama (local)',
+          options: { baseURL: 'http://127.0.0.1:11434/v1' },
+          models
+        }
+      }
+    };
+    fs.mkdirSync(path.dirname(OPENCODE_LOCAL_CONFIG), { recursive: true });
+    fs.writeFileSync(OPENCODE_LOCAL_CONFIG, JSON.stringify(cfg, null, 2) + '\n');
+    return OPENCODE_LOCAL_CONFIG;
+  } catch (e) { return null; }
+}
+
 // The Settings dropdown: local models to offer + the current Local AI command.
 // Fetching also runs the OpenCode bridge, so simply opening Settings with the
 // toggle on keeps OpenCode's picker in step with what's downloaded in Ollama.
 ipcMain.handle('get-local-ai-models', async () => {
   const models = await listOllamaModels();
-  if (models.length) syncOllamaIntoOpenCode(models);
+  if (models.length) {
+    syncOllamaIntoOpenCode(models);
+    writeLocalOnlyOpenCodeConfig(models);
+  }
   return { models, current: getLocalAiCommand() };
 });
 
@@ -910,10 +947,18 @@ ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
   if (storedCmd === 'localai' && !commandExists('ollama')) {
     return { missingCmd: 'ollama', isMac: IS_MAC };
   }
-  // Safety net for models pulled since Settings last ran the bridge — fire and
-  // forget; OpenCode re-reads its config per session, so next launch has them.
+  // Refresh both configs for models pulled since Settings last ran the bridge.
+  // AWAITED (unlike the old fire-and-forget) because the local-only config must
+  // exist on disk BEFORE we point this launch at it — otherwise the very first
+  // Local AI launch would fall back to the full cloud model list. Ollama is
+  // already confirmed installed above, so `ollama list` returns promptly.
+  let localOnlyCfg = null;
   if (storedCmd === 'localai') {
-    listOllamaModels().then(t => { if (t.length) syncOllamaIntoOpenCode(t); });
+    const tags = await listOllamaModels();
+    if (tags.length) {
+      syncOllamaIntoOpenCode(tags);
+      localOnlyCfg = writeLocalOnlyOpenCodeConfig(tags);
+    }
   }
   launchCmd = resolveLaunchCmdForExec(launchCmd);
 
@@ -952,9 +997,13 @@ ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
     // BEFORE `activate` avoids Terminal opening a stray empty window when it
     // wasn't already running. `quoted form of` shell-escapes the path safely.
     const asPath = String(folderPath).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    // Local AI only: run against the local-only config so /model can't reach the
+    // cloud. Single-quoted for the shell (the path is ours, HOME-derived, and
+    // contains no quotes); sits inside the AppleScript double-quoted literal.
+    const envPrefix = localOnlyCfg ? `OPENCODE_CONFIG='${localOnlyCfg}' ` : '';
     const scriptLines = [
       'tell application "Terminal"',
-      `  do script ("cd " & quoted form of "${asPath}" & " && ${launchCmd}")`,
+      `  do script ("cd " & quoted form of "${asPath}" & " && ${envPrefix}${launchCmd}")`,
       '  activate',
       'end tell'
     ];
@@ -987,9 +1036,21 @@ ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
   // resolution value the tile colours by, so tab and button always agree.
   const tabColor = settings.colorTerminalTabs !== false ? aiTabColor(storedCmd) : null;
   const tabColorArg = tabColor ? `--tabColor "${tabColor}" ` : ''; // Claude/off = no tint
-  const child = exec(`wt --title "${projectName}" ${tabColorArg}--suppressApplicationTitle -d "${folderPath}" cmd /k ${launchCmd}`, (err) => {
+  // Local AI only: point this one terminal at the local-only config (see
+  // writeLocalOnlyOpenCodeConfig). It can't go through exec's `env` option —
+  // when Windows Terminal is already running, `wt` hands the request to that
+  // EXISTING process, which spawns the tab with its own (stale) environment.
+  // So the `set` runs inside the new shell instead. The whole thing is double-
+  // quoted, which stops the OUTER cmd.exe from splitting on `&&` (same trick
+  // the `start cmd /k "cd /d … && …"` fallback below already relies on).
+  // NOTE the missing space before `&&`: `set A=b && c` would store "b " with a
+  // trailing space (fatal for a path); `set A=b&& c` stores exactly "b". And
+  // only ONE pair of quotes — nesting quotes inside would confuse cmd's parser.
+  const setCfg = localOnlyCfg ? `set OPENCODE_CONFIG=${localOnlyCfg}&& ` : '';
+  const cmdTail = localOnlyCfg ? `"${setCfg}${launchCmd}"` : launchCmd;
+  const child = exec(`wt --title "${projectName}" ${tabColorArg}--suppressApplicationTitle -d "${folderPath}" cmd /k ${cmdTail}`, (err) => {
     if (err) {
-      const fallback = exec(`start cmd /k "cd /d ${folderPath} && ${launchCmd}"`);
+      const fallback = exec(`start cmd /k "cd /d ${folderPath} && ${setCfg}${launchCmd}"`);
       if (fallback.pid) launchedTerminals[folderPath] = fallback.pid;
     }
   });
