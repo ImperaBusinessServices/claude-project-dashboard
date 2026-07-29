@@ -43,19 +43,25 @@
       var q = new URLSearchParams(location.search);
       var val = function (k) { return (q.get(k) || "").trim(); };
       if (val("gclid") || val("gbraid") || val("wbraid") || val("gad_source")) return "google-cpc";
-      if (val("fbclid")) return "meta-cpc";
       var src = val("utm_source").toLowerCase();
       var med = val("utm_medium").toLowerCase();
       if (med) {
         if (/cp[cv]|ppc|paid/.test(med)) {
           if (/goog|adwords/.test(src)) return "google-cpc";
-          if (/face|fb|meta|insta|\big\b/.test(src)) return "meta-cpc";
+          if (/face|fb|meta|insta|\ban\b|\big\b/.test(src)) return "meta-cpc";
           return "paid";
         }
         if (med === "email") return "email";
         if (med.indexOf("social") > -1) return "social";
         return "referral";
       }
+      // A bare fbclid is NOT an ad click — Facebook/Instagram append it to every
+      // outbound click, organic included. This very site proved it 2026-07-28:
+      // 16 "Meta Ad" visitors with zero ad spend, all organic shares. Real Meta
+      // ads carry utm tags (utm_medium=paid) and are caught above. Kept above
+      // the referrer tests: in-app browsers often send no referrer, and an
+      // organic Meta click must not read as Direct.
+      if (val("fbclid")) return "social";
       var ref = document.referrer || "";
       if (!ref) return "direct";
       var host = "";
