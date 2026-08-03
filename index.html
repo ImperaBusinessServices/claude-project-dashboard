@@ -1016,7 +1016,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.12.2</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.13.0</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1040,7 +1040,7 @@
           </div>
           <!-- Everything below the tiles folds behind the ▸ Details toggle -->
           <div id="spendDetail" style="display:none;">
-          <div class="spend-note">What your Claude usage would cost at pay-as-you-go API prices, read from your local session logs — nothing leaves your computer. On a subscription plan this is the value you're getting, not an extra bill.</div>
+          <div class="spend-note">What your Claude usage would cost at pay-as-you-go API prices, read from your local session logs — nothing leaves your computer. On a subscription plan this is the value you're getting, not an extra bill. <strong>Paid models you've run through OpenCode</strong> (Kimi, and anything else billed to your own API key) are counted too, using the figures OpenCode records itself — those <em>are</em> a real bill. Free and local models aren't listed, since they cost nothing.</div>
           <div class="spend-filters" id="spendFilters">
             <button type="button" data-r="7">7 days</button>
             <button type="button" data-r="30" class="on">30 days</button>
@@ -1078,14 +1078,18 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.12.2:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.13.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>🔒 Launch Local AI now really stays local.</strong> Local AI and OpenCode are the same program underneath, so until now you could start Local AI, type <code>/model</code>, and pick a <em>paid cloud</em> model without realising — quietly spending money on a button that promises free and private. Local AI now runs against its own model list containing <em>only</em> what's downloaded on this computer, so <code>/model</code> has nothing else to offer. <strong>Launch OpenCode is unchanged</strong> and still shows every model you've set up.</li>
+          <li><strong>💸 Spend now counts paid AIs other than Claude.</strong> If you run a paid model through OpenCode on your own API key — Kimi, or anything else — that money used to be invisible here, because Spend only ever read Claude's logs. It now also reads the record OpenCode keeps of its own sessions, so those models appear alongside Claude in the chart and in both breakdown tables, listed like <code>kimi-k3 (Moonshot)</code>. The cost comes from OpenCode's own figures rather than a guess, and it's read without changing anything. Free and local models aren't listed — they cost nothing. Your provider's billing page is still the last word on what you actually owe.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.12.2:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>🔒 Launch Local AI now really stays local.</strong> Local AI and OpenCode are the same program underneath, so until now you could start Local AI, type <code>/model</code>, and pick a <em>paid cloud</em> model without realising — quietly spending money on a button that promises free and private. Local AI now runs against its own model list containing <em>only</em> what's downloaded on this computer, so <code>/model</code> has nothing else to offer. <strong>Launch OpenCode is unchanged</strong> and still shows every model you've set up.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.12.1:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>🎨 Colour terminal tabs by AI</strong> — when you launch a non-Claude AI, its terminal tab now opens tinted to match the Launch button (Codex blue, OpenCode green, Local AI amber, custom purple). Claude tabs stay plain black, so a coloured tab always means it's not Claude. On by default; turn it off under <em>Settings → Which AI runs when you click Launch</em>. Windows Terminal only.</li>

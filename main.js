@@ -2730,6 +2730,132 @@ function mergeSpendHistory(days) {
   return { updated, days: merged };
 }
 
+// ---- Other AIs: spend recorded by OpenCode itself ----
+// OpenCode keeps a per-session record (model, folder, cost, tokens) in its own
+// SQLite database, so paid non-Claude models (Kimi via Moonshot, etc.) can be
+// folded into the same Spend view. We read it strictly READ-ONLY and never
+// write to it. Its `cost` column is OpenCode's own figure, computed from the
+// provider's real prices — verified against Moonshot's billing page 2026-08-02.
+//
+// Deliberately NOT persisted into spend-history.json: that file is shared with
+// the standalone spend-tracker, which only knows about Claude and would then
+// report day totals its own tables can't account for. OpenCode's database keeps
+// every session indefinitely, so it needs no history file of its own — it is
+// re-read on each scan and folded in for display only.
+function openCodeDbPath() {
+  const candidates = [
+    process.env.XDG_DATA_HOME ? path.join(process.env.XDG_DATA_HOME, 'opencode', 'opencode.db') : null,
+    path.join(HOME, '.local', 'share', 'opencode', 'opencode.db'),
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'opencode', 'opencode.db') : null,
+  ];
+  for (const p of candidates) {
+    if (p && fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+// "moonshotai" reads like a package name in a table of model names.
+const OPENCODE_PROVIDER_NAMES = {
+  moonshotai: 'Moonshot', openrouter: 'OpenRouter', opencode: 'OpenCode',
+  nvidia: 'NVIDIA', ollama: 'Ollama', anthropic: 'Anthropic',
+  openai: 'OpenAI', google: 'Google', deepseek: 'DeepSeek', groq: 'Groq',
+};
+// session.model is JSON: {"id":"kimi-k3","providerID":"moonshotai","variant":"default"}
+function openCodeModelLabel(raw) {
+  let id = String(raw || ''), provider = '';
+  try {
+    const m = JSON.parse(raw);
+    if (m && m.id) { id = String(m.id); provider = String(m.providerID || ''); }
+  } catch { /* older rows may store a bare string */ }
+  id = id.replace(/^[^/]+\//, ''); // "moonshotai/kimi-k2.6" -> "kimi-k2.6"
+  if (!provider) return id;
+  return id + ' (' + (OPENCODE_PROVIDER_NAMES[provider] || provider) + ')';
+}
+
+function scanOpenCodeSpend() {
+  const days = {};
+  const dbPath = openCodeDbPath();
+  if (!dbPath) return days;
+  let DatabaseSync;
+  try { ({ DatabaseSync } = require('node:sqlite')); } catch { return days; } // older Node/Electron
+  let db = null;
+  try {
+    db = new DatabaseSync(dbPath, { readOnly: true });
+    // Only sessions that actually cost money. Free/local runs (Ollama, free
+    // tiers) would otherwise add $0 rows to a section that is about spend.
+    const rows = db.prepare(
+      'select id, model, directory, cost, tokens_input, tokens_output,' +
+      ' tokens_cache_read, tokens_cache_write, time_created' +
+      ' from session where cost > 0'
+    ).all();
+    if (!rows.length) return days;
+    const msgCounts = {};
+    try {
+      for (const r of db.prepare('select session_id, count(*) n from message group by session_id').all()) {
+        msgCounts[r.session_id] = Number(r.n) || 0;
+      }
+    } catch { /* message table shape changed — fall back to 1 per session */ }
+
+    for (const r of rows) {
+      // time_created is epoch milliseconds; a session that ran past midnight is
+      // attributed to the day it started.
+      const date = spendLocalDate(Number(r.time_created));
+      if (!date) continue;
+      const cost = Number(r.cost) || 0;
+      const inTok = Number(r.tokens_input) || 0;
+      const outTok = Number(r.tokens_output) || 0;
+      const cr = Number(r.tokens_cache_read) || 0;
+      const cw = Number(r.tokens_cache_write) || 0;
+      // Run the folder through the SAME encode+prettify pipeline as Claude's log
+      // folders so both sources land on one row per project rather than two.
+      const project = r.directory
+        ? spendPrettyProject(encodeProjectPath(String(r.directory)))
+        : 'unknown';
+      const d = days[date] || (days[date] = spendNewDay());
+      const msgs = msgCounts[r.id] || 1;
+      d.total = Math.round((d.total + cost) * 1e6) / 1e6;
+      d.in += inTok; d.out += outTok; d.cr += cr; d.cw += cw; d.msgs += msgs;
+      const label = openCodeModelLabel(r.model);
+      spendAddCell(d, project, label, cost, inTok, outTok, cr, cw);
+      // spendAddCell counts one message per call; this row stands for `msgs` of them
+      d.cells[project + '|' + label][5] += msgs - 1;
+    }
+  } catch {
+    return {}; // locked, corrupt, or schema moved on — Claude spend still shows
+  } finally {
+    if (db) { try { db.close(); } catch { /* already closed */ } }
+  }
+  return days;
+}
+
+// Add OpenCode's days on top of the (already saved) Claude history, cloning as
+// we go so the persisted objects are never mutated — folding twice would
+// otherwise double-count.
+function foldOtherAiSpend(data) {
+  let other = {};
+  try { other = scanOpenCodeSpend(); } catch { other = {}; }
+  const dates = Object.keys(other);
+  if (!dates.length) return data;
+  const days = Object.assign({}, data.days);
+  for (const date of dates) {
+    const od = other[date];
+    const base = days[date];
+    const d = base
+      ? Object.assign({}, base, { cells: Object.assign({}, base.cells || {}) })
+      : spendNewDay();
+    d.total = Math.round((d.total + od.total) * 1e6) / 1e6;
+    d.in += od.in; d.out += od.out; d.cr += od.cr; d.cw += od.cw; d.msgs += od.msgs;
+    for (const [key, v] of Object.entries(od.cells)) {
+      const c = d.cells[key] ? d.cells[key].slice() : [0, 0, 0, 0, 0, 0];
+      for (let i = 0; i < 6; i++) c[i] += v[i];
+      c[0] = Math.round(c[0] * 1e6) / 1e6;
+      d.cells[key] = c;
+    }
+    days[date] = d;
+  }
+  return { updated: data.updated, days };
+}
+
 let spendCache = null;       // last { updated, days }
 let spendScanPromise = null; // in-flight scan, so launch + a click don't double-scan
 
@@ -2737,7 +2863,8 @@ function refreshSpendData() {
   if (spendScanPromise) return spendScanPromise;
   spendScanPromise = (async () => {
     const days = await scanSpendDays();
-    spendCache = mergeSpendHistory(days);
+    // history is written Claude-only, THEN other AIs are folded in for display
+    spendCache = foldOtherAiSpend(mergeSpendHistory(days));
     return spendCache;
   })().finally(() => { spendScanPromise = null; });
   return spendScanPromise;
