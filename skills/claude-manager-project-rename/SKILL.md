@@ -158,6 +158,38 @@ That is the pattern: one file, one click, self-explanatory output, deletable aft
 
 Use the template at the end of this skill.
 
+#### Which windows actually need closing — be precise, Keith has ~6 sessions open
+
+Don't tell him "close everything" reflexively. The two halves of the job have different scopes:
+
+| Job | Whose windows matter |
+|---|---|
+| Renaming the folder + the history/memory dir | **Only sessions running inside the project being renamed.** Claude windows for other projects are irrelevant. |
+| Carrying over `~\.claude.json` | **All of them.** That file is shared across every project, so any live session can overwrite the edit when it exits. |
+
+The first row is verified, not assumed — a directory is only locked by processes whose current
+directory is inside *that* directory. To re-confirm on a future machine:
+
+```powershell
+$a = 'C:\...\scratch\A'; $b = 'C:\...\scratch\B'
+New-Item -ItemType Directory -Path $a,$b -Force | Out-Null
+$p = Start-Process powershell -ArgumentList '-NoProfile','-Command','Start-Sleep 25' `
+       -WorkingDirectory $a -PassThru -WindowStyle Hidden
+Start-Sleep -Milliseconds 1500
+Rename-Item $a 'A_renamed'   # BLOCKED
+Rename-Item $b 'B_renamed'   # SUCCEEDS
+```
+
+So the honest instruction is: **close the windows for this project** to get the rename, and
+**close the rest too if it's convenient** to guarantee the settings carry over. If the settings
+edit does get clobbered the only symptom is one "do you trust this folder?" dialog — say that,
+so he can judge whether it's worth closing six terminals.
+
+Have the script detect it rather than relying on him: `@(Get-Process claude -ErrorAction
+SilentlyContinue).Count` counts live Claude Code sessions (the process is `claude.exe`; the
+`cmd /k claude` wrappers are separate). If it's above zero after the settings edit, print a
+note telling him what might be undone and that re-running the file fixes it.
+
 ---
 
 ## The `.claude.json` edit (both cases)
@@ -225,7 +257,7 @@ if exist "<OLD_KEY>" (
 )
 popd
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$f=Join-Path $env:USERPROFILE '.claude.json'; if(Test-Path $f){ $bak=$f+'.bak-rename'; Copy-Item $f $bak -Force; $t=[IO.File]::ReadAllText($f); $t2=$t.Replace('<OLD_FWD_PATH>','<NEW_FWD_PATH>'); if($t2 -eq $t){ Write-Host '  [i]   Claude settings already up to date.' } else { try{ $null=ConvertFrom-Json -InputObject $t2; [IO.File]::WriteAllText($f,$t2); Write-Host '  [OK]  Permissions and trusted-folder setting carried over.' } catch { Copy-Item $bak $f -Force; Write-Host '  [!]   Could not update settings - original file restored.' } } }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$others=@(Get-Process claude -ErrorAction SilentlyContinue).Count; $f=Join-Path $env:USERPROFILE '.claude.json'; if(Test-Path $f){ $bak=$f+'.bak-rename'; Copy-Item $f $bak -Force; $t=[IO.File]::ReadAllText($f); $t2=$t.Replace('<OLD_FWD_PATH>','<NEW_FWD_PATH>'); if($t2 -eq $t){ Write-Host '  [i]   Permissions and trusted-folder setting already up to date.' } else { try{ $null=ConvertFrom-Json -InputObject $t2; [IO.File]::WriteAllText($f,$t2); Write-Host '  [OK]  Permissions and trusted-folder setting carried over.' } catch { Copy-Item $bak $f -Force; Write-Host '  [!]   Could not update settings - original file restored.' } } }; if($others -gt 0){ Write-Host ''; Write-Host ('  [!]   ' + $others + ' other Claude window(s) are still open. Claude shares one'); Write-Host '        settings file across all projects, so one of them may undo the'; Write-Host '        line above when it closes.'; Write-Host '        Not serious - it would just ask you to trust this folder once.'; Write-Host '        To avoid it: close them and double-click this file again.' }"
 goto done
 
 :missing
@@ -234,11 +266,13 @@ echo         It may have already been renamed or moved.
 goto end
 
 :locked
-echo   [X]   Could not rename - the folder is still open somewhere.
+echo   [X]   Could not rename - something still has that folder open.
 echo.
-echo         Close EVERY Claude Code window, plus any File Explorer
-echo         window or file that is open inside that folder,
-echo         then double-click this file again.
+echo         Close any Claude Code window that is running IN THIS PROJECT,
+echo         plus any File Explorer window or open file inside the folder.
+echo         Claude windows for OTHER projects do not matter here.
+echo.
+echo         Then double-click this file again.
 goto end
 
 :done
