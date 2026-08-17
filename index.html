@@ -67,6 +67,18 @@
       cursor: help;
     }
     .usage-widget.visible { display: flex; }
+    /* Coloured edge = whose meter this is, matching the Launch button colours:
+       Claude pink, Codex blue, Kimi (Moonshot, used through OpenCode) green. */
+    .usage-widget.ai-claude { border-left: 3px solid #e94560; padding-left: 8px; }
+    .usage-widget.ai-codex  { border-left: 3px solid #2f6fe4; padding-left: 8px; margin: 0 10px; min-width: 200px; flex: 1 1 200px; }
+    .usage-widget.ai-kimi   { border-left: 3px solid #16a34a; padding-left: 8px; margin: 0 10px; min-width: 170px; flex: 1 1 170px; max-width: 250px; }
+    /* "$21.25" needs more room than a 2-digit percentage */
+    .usage-row .usage-money {
+      color: rgba(255,255,255,0.7);
+      width: 44px;
+      flex-shrink: 0;
+      font-variant-numeric: tabular-nums;
+    }
     .usage-row {
       display: flex;
       align-items: center;
@@ -972,7 +984,9 @@
       <span class="logo">C</span>
       Claude Project Dashboard
     </h1>
-    <div class="usage-widget" id="usageWidget" title="Your Claude plan usage — same numbers as Claude's own /usage screen. Updates every minute."></div>
+    <div class="usage-widget ai-claude" id="usageWidget" title="Your Claude plan usage — same numbers as Claude's own /usage screen. Updates every minute."></div>
+    <div class="usage-widget ai-codex" id="codexUsageWidget" title="Your Codex plan usage."></div>
+    <div class="usage-widget ai-kimi" id="kimiUsageWidget" title="Your prepaid Kimi (Moonshot) balance."></div>
     <div class="header-actions">
       <button class="btn btn-ghost" onclick="showAbout()">Settings</button>
       <button class="btn btn-ghost" onclick="openGlobalClaudeMd()" title="Opens your global CLAUDE.md — personal preferences and rules that apply to ALL projects.">Global CLAUDE.md</button>
@@ -1016,7 +1030,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.13.0</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.14.0</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1078,14 +1092,18 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.13.0:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.14.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>💸 Spend now counts paid AIs other than Claude.</strong> If you run a paid model through OpenCode on your own API key — Kimi, or anything else — that money used to be invisible here, because Spend only ever read Claude's logs. It now also reads the record OpenCode keeps of its own sessions, so those models appear alongside Claude in the chart and in both breakdown tables, listed like <code>kimi-k3 (Moonshot)</code>. The cost comes from OpenCode's own figures rather than a guess, and it's read without changing anything. Free and local models aren't listed — they cost nothing. Your provider's billing page is still the last word on what you actually owe.</li>
+          <li><strong>📊 Usage meters for Codex and Kimi.</strong> The Claude usage bars in the header now have company. If you use Codex CLI, a blue-edged meter shows your Codex plan usage — the same numbers as Codex's own <code>/status</code> screen, with the countdown to when the limit resets. And if you've bought prepaid Kimi (Moonshot) credit, a green-edged meter shows how many dollars you have left, with a bar filling up as your top-up gets used. Each meter appears by itself only when that tool is signed in on this computer — if you only use Claude, nothing changes. Hover any meter for the details.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.13.0:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>💸 Spend now counts paid AIs other than Claude.</strong> If you run a paid model through OpenCode on your own API key — Kimi, or anything else — that money used to be invisible here, because Spend only ever read Claude's logs. It now also reads the record OpenCode keeps of its own sessions, so those models appear alongside Claude in the chart and in both breakdown tables, listed like <code>kimi-k3 (Moonshot)</code>. The cost comes from OpenCode's own figures rather than a guess, and it's read without changing anything. Free and local models aren't listed — they cost nothing. Your provider's billing page is still the last word on what you actually owe.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.12.2:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>🔒 Launch Local AI now really stays local.</strong> Local AI and OpenCode are the same program underneath, so until now you could start Local AI, type <code>/model</code>, and pick a <em>paid cloud</em> model without realising — quietly spending money on a button that promises free and private. Local AI now runs against its own model list containing <em>only</em> what's downloaded on this computer, so <code>/model</code> has nothing else to offer. <strong>Launch OpenCode is unchanged</strong> and still shows every model you've set up.</li>
@@ -3021,9 +3039,82 @@
       w.classList.add('visible');
     }
 
+    // ---- Codex + Kimi meters (same idea as the Claude bars) ----
+    // Each meter appears only once its data has loaded at least once, and a
+    // failed poll keeps showing the last good numbers — so friends without
+    // Codex or a Moonshot key see exactly the header they see today.
+    let lastOther = { codex: null, kimi: null };
+
+    // Kimi's balance is prepaid money with no official "total", so we remember
+    // the highest balance we've ever seen (the top-up high-water mark) and the
+    // bar shows how much of that has been eaten — consistent with the other
+    // bars, where a fuller bar always means less left.
+    function kimiUsedPct(available) {
+      let peak = parseFloat(localStorage.getItem('cpdKimiPeak') || '0');
+      if (available > peak) { peak = available; localStorage.setItem('cpdKimiPeak', String(available)); }
+      if (!(peak > 0)) return null;
+      return Math.max(0, Math.min(100, ((peak - available) / peak) * 100));
+    }
+
+    function kimiMoney(v) { return '$' + (v >= 100 ? Math.round(v) : v.toFixed(2)); }
+
+    function renderOtherUsage() {
+      const cw = document.getElementById('codexUsageWidget');
+      const c = lastOther.codex;
+      if (c && (c.session || c.week)) {
+        let html = '';
+        const tips = [];
+        if (c.session) {
+          html += usageRowHtml('Codex', c.session, c.session.windowMs || USAGE_WINDOW_5H);
+          tips.push('Codex session: ' + c.session.pct + '% used' + (usageTimeLeft(c.session.resetsAt) ? ' · ' + usageTimeLeft(c.session.resetsAt) : ''));
+        }
+        if (c.week) {
+          // If there's no session window (some plans only have a weekly cap),
+          // the weekly bar is the first row and carries the "Codex" label.
+          html += usageRowHtml(c.session ? 'Week' : 'Codex', c.week, c.week.windowMs || USAGE_WINDOW_7D);
+          tips.push('Codex week: ' + c.week.pct + '% used' + (usageTimeLeft(c.week.resetsAt) ? ' · ' + usageTimeLeft(c.week.resetsAt) : ''));
+        }
+        cw.innerHTML = html;
+        cw.title = 'Your Codex plan usage' + (c.plan ? ' (' + c.plan + ' plan)' : '')
+          + ' — same numbers as Codex\'s own /status screen.\n' + tips.join('\n');
+        cw.classList.add('visible');
+      } else {
+        cw.classList.remove('visible');
+      }
+
+      const kw = document.getElementById('kimiUsageWidget');
+      const k = lastOther.kimi;
+      if (k && typeof k.available === 'number') {
+        const used = kimiUsedPct(k.available);
+        const cls = used == null ? '' : used >= 90 ? ' hot' : used >= 70 ? ' warn' : '';
+        kw.innerHTML = `
+          <div class="usage-row">
+            <span class="usage-label">Kimi</span>
+            <div class="usage-bar"><div class="usage-fill${cls}" style="width:${used == null ? 0 : used}%"></div></div>
+            <span class="usage-money">${kimiMoney(k.available)}</span>
+          </div>`;
+        kw.title = 'Your prepaid Kimi (Moonshot) balance: ' + kimiMoney(k.available) + ' left'
+          + (used != null ? ' — the bar shows how much of your top-up you\'ve used (' + Math.round(used) + '%).' : '.')
+          + (k.voucher ? '\nIncludes ' + kimiMoney(k.voucher) + ' of free voucher credit.' : '');
+        kw.classList.add('visible');
+      } else {
+        kw.classList.remove('visible');
+      }
+    }
+
+    async function refreshOtherUsage() {
+      try {
+        const res = await window.api.getOtherUsage();
+        if (res && res.codex) lastOther.codex = res.codex;
+        if (res && res.kimi) lastOther.kimi = res.kimi;
+      } catch (e) { /* keep whatever we had */ }
+      renderOtherUsage();
+    }
+
     let usageRetry = null;
 
     async function refreshUsage() {
+      refreshOtherUsage();   // rides the same poll timer; fire-and-forget
       let res = null;
       try {
         res = await window.api.getUsage();
@@ -3123,7 +3214,10 @@
     }
 
     // Keep the countdown ticking even when polling is set to a slow interval
-    setInterval(function() { if (lastUsage) renderUsage(); }, 60000);
+    setInterval(function() {
+      if (lastUsage) renderUsage();
+      if (lastOther.codex || lastOther.kimi) renderOtherUsage();
+    }, 60000);
     let usageTimer = null;
 
     function applyUsageInterval(sec) {
@@ -3132,6 +3226,8 @@
       if (usageRetry) { clearTimeout(usageRetry); usageRetry = null; }
       if (sec <= 0) {
         document.getElementById('usageWidget').classList.remove('visible');
+        document.getElementById('codexUsageWidget').classList.remove('visible');
+        document.getElementById('kimiUsageWidget').classList.remove('visible');
         return;
       }
       usageTimer = setInterval(refreshUsage, sec * 1000);

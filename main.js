@@ -2553,6 +2553,98 @@ ipcMain.handle('set-usage-refresh-seconds', async (event, sec) => {
   return s.usageRefreshSeconds;
 });
 
+// ---- Codex + Kimi meters (the same idea as the Claude usage bars) ----
+// Codex: reads the Codex CLI's own OAuth token (~/.codex/auth.json, or
+// $CODEX_HOME) and asks the endpoint Codex's own /status screen uses. Which
+// rate-limit windows exist varies by plan (Keith's Plus returns only a weekly
+// window, delivered in primary_window), so windows are classified by their
+// LENGTH, never by the primary/secondary slot names. Strictly read-only: we
+// never refresh or rewrite Codex's token (a mid-refresh write could corrupt
+// its login) — a stale token just means the bars hide until Codex is next run.
+// Kimi: reads the Moonshot API key that OpenCode stores in its auth.json and
+// asks Moonshot's documented balance endpoint. That's prepaid money rather
+// than a time window, so the renderer shows "$ left" instead of a countdown.
+
+const CODEX_HOME_DIR = process.env.CODEX_HOME || path.join(HOME, '.codex');
+const CODEX_USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage';
+const MOONSHOT_BALANCE_URL = 'https://api.moonshot.ai/v1/users/me/balance';
+
+function getCodexAuth() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(CODEX_HOME_DIR, 'auth.json'), 'utf-8').replace(/^\uFEFF/, ''));
+    const t = raw.tokens || {};
+    if (!t.access_token) return null;
+    return { token: t.access_token, accountId: t.account_id || null };
+  } catch (e) { return null; }
+}
+
+async function fetchCodexUsage() {
+  const auth = getCodexAuth();
+  if (!auth) return null;
+  const headers = { 'Authorization': 'Bearer ' + auth.token };
+  if (auth.accountId) headers['ChatGPT-Account-Id'] = auth.accountId;
+  const data = JSON.parse(await httpsGet(CODEX_USAGE_URL, headers));
+  const rl = data.rate_limit || {};
+  function win(w) {
+    if (!w || typeof w.used_percent !== 'number') return null;
+    return {
+      pct: Math.max(0, Math.min(100, Math.round(w.used_percent))),
+      // reset_at is unix SECONDS (verified live 2026-08-17)
+      resetsAt: w.reset_at ? new Date(w.reset_at * 1000).toISOString() : null,
+      windowMs: (Number(w.limit_window_seconds) || 0) * 1000 || null
+    };
+  }
+  let session = null, week = null;
+  for (const w of [win(rl.primary_window), win(rl.secondary_window)]) {
+    if (!w) continue;
+    if (w.windowMs && w.windowMs < 86400000) { if (!session) session = w; }
+    else if (!week) week = w;
+  }
+  if (!session && !week) return null;
+  return { plan: data.plan_type || null, session, week };
+}
+
+function getMoonshotKey() {
+  // Same candidate locations as openCodeDbPath() — OpenCode's data dir.
+  const candidates = [
+    process.env.XDG_DATA_HOME ? path.join(process.env.XDG_DATA_HOME, 'opencode', 'auth.json') : null,
+    path.join(HOME, '.local', 'share', 'opencode', 'auth.json'),
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'opencode', 'auth.json') : null,
+  ];
+  for (const p of candidates) {
+    if (!p || !fs.existsSync(p)) continue;
+    try {
+      // Strip a BOM first — a hand-edited auth.json (Notepad) starts with one,
+      // and JSON.parse chokes on it. Keith's real file has one.
+      const j = JSON.parse(fs.readFileSync(p, 'utf-8').replace(/^\uFEFF/, ''));
+      const entry = j.moonshotai || j.moonshot;
+      if (entry && entry.key) return String(entry.key);
+    } catch (e) { /* unreadable — try the next location */ }
+  }
+  return null;
+}
+
+async function fetchKimiBalance() {
+  const key = getMoonshotKey();
+  if (!key) return null;
+  const data = JSON.parse(await httpsGet(MOONSHOT_BALANCE_URL, { 'Authorization': 'Bearer ' + key }));
+  const b = data && data.data;
+  if (!b || typeof b.available_balance !== 'number') return null;
+  return {
+    available: b.available_balance,
+    voucher: Number(b.voucher_balance) || 0,
+    cash: Number(b.cash_balance) || 0
+  };
+}
+
+ipcMain.handle('get-other-usage', async () => {
+  const [codex, kimi] = await Promise.all([
+    fetchCodexUsage().catch(() => null),
+    fetchKimiBalance().catch(() => null)
+  ]);
+  return { codex, kimi };
+});
+
 // ---- 💸 Spend tracker ----
 // Scans every Claude Code session log in ~/.claude/projects, prices the token
 // usage at standard API rates, and merges per-day totals into a history file

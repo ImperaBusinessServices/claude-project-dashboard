@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('api', {
   openStatusTemplate: () => ipcRenderer.invoke('open-status-template'),
   resetStatusTemplate: () => ipcRenderer.invoke('reset-status-template'),
   getUsage: () => ipcRenderer.invoke('get-usage'),
+  getOtherUsage: () => ipcRenderer.invoke('get-other-usage'),
   // 💸 Spend tracker
   getSpendData: (force) => ipcRenderer.invoke('get-spend-data', force),
   openSpendReport: () => ipcRenderer.invoke('open-spend-report'),
