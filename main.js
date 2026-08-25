@@ -715,19 +715,31 @@ ipcMain.handle('set-enabled-ai', async (event, key, enabled) => {
 
 // ---- Claude on AWS Bedrock preset (v2.15) ----
 // Claude Code, billed to a company's AWS account instead of a personal plan.
-// Like 'localai', the key is NOT the command: the wrapper script's name varies
-// per company, so it lives in settings.bedrockCommand. Default 'claude-techm'
-// matches the wrapper the setup guide writes (a .cmd on Windows / a shell
-// function on mac). Sanitized at set-time, so stored == what runs.
-const BEDROCK_DEFAULT_CMD = 'claude-techm';
+// Like 'localai', the key is NOT the command it runs. But unlike localai there
+// is NO sensible default: the wrapper script is created by whatever setup guide
+// the company wrote, and its name is theirs to choose. So settings.bedrockCommand
+// starts EMPTY and empty means "not set up on this machine yet" — never a guess
+// at some other company's naming. Sanitized at set-time, so stored == what runs.
 function getBedrockCommand() {
-  return sanitizeLaunchCmd(settings.bedrockCommand) || BEDROCK_DEFAULT_CMD;
+  return sanitizeLaunchCmd(settings.bedrockCommand) || '';
 }
 ipcMain.handle('get-bedrock-command', async () => getBedrockCommand());
 ipcMain.handle('set-bedrock-command', async (event, cmd) => {
-  const clean = sanitizeLaunchCmd(cmd) || BEDROCK_DEFAULT_CMD;
+  const clean = sanitizeLaunchCmd(cmd);
   saveSettings({ ...settings, bedrockCommand: clean });
   return clean;
+});
+// Rather than make someone type a name they may not remember, look for the
+// usual shapes on PATH the first time they switch Bedrock on. These are only
+// SEARCH candidates — nothing is ever run or stored unless it actually exists
+// on this machine, so a wrong guess costs nothing and is invisible.
+const BEDROCK_CANDIDATES = [
+  'claude-bedrock', 'claude-aws', 'claude-work', 'claude-corp', 'claude-techm'
+];
+ipcMain.handle('find-bedrock-command', async () => {
+  const hits = await Promise.all(BEDROCK_CANDIDATES.map(c => commandExistsAsync(c)));
+  const i = hits.indexOf(true);
+  return i === -1 ? '' : BEDROCK_CANDIDATES[i];
 });
 
 // ---- Local AI (Ollama) preset (v2.12) ----
@@ -738,6 +750,30 @@ ipcMain.handle('set-bedrock-command', async (event, cmd) => {
 function getLocalAiCommand() {
   return sanitizeLaunchCmd(settings.localAiCommand) || 'opencode';
 }
+// Modern local models (Qwen3.5/3.6, GLM, gpt-oss) write out a long private
+// train of thought before answering, and it is billed to the same token budget.
+// Measured on Keith's 4 GB laptop (qwen3.5:4b, CPU-only) on a one-sentence
+// summarisation: 6m44s with it on, ~2s with it off. So we default it OFF --
+// the failure mode of ON is a silent app with no output for minutes, which
+// reads as broken rather than as thinking. But it is a REAL capability on a
+// decent card, so it is a toggle, never a hardcoded off (Keith's call).
+// The ONLY thing that works on the OpenAI-compatible /v1 endpoint OpenCode
+// uses is `reasoning_effort: "none"` -- `think:false`, a /no_think system
+// prompt, `PARAMETER think false` and `chat_template_kwargs.enable_thinking`
+// were all tested on 2026-08-06 and all still thought. Don't re-try them.
+function getLocalAiThinking() {
+  return settings.localAiThinking === true;   // absent = off
+}
+const NO_THINK = { reasoning_effort: 'none' };
+ipcMain.handle('get-local-ai-thinking', async () => getLocalAiThinking());
+ipcMain.handle('set-local-ai-thinking', async (event, on) => {
+  saveSettings({ ...settings, localAiThinking: !!on });
+  // Our own local-only config is rewritten from scratch, so it picks the new
+  // answer up on the next launch; refresh it now so Settings reflects reality.
+  listOllamaModels().then(tags => { if (tags.length) writeLocalOnlyOpenCodeConfig(tags); });
+  return getLocalAiThinking();
+});
+
 ipcMain.handle('get-local-ai-command', async () => getLocalAiCommand());
 ipcMain.handle('set-local-ai-command', async (event, cmd) => {
   const clean = sanitizeLaunchCmd(cmd) || 'opencode';
@@ -751,7 +787,7 @@ ipcMain.handle('set-local-ai-command', async (event, cmd) => {
 // non-recursive substitution: localAiCommand = 'localai' runs literally.
 function resolveLaunchCmdForExec(cmd) {
   if (cmd === 'localai') return getLocalAiCommand();
-  if (cmd === 'bedrock') return getBedrockCommand();
+  if (cmd === 'bedrock') return getBedrockCommand() || cmd;
   return cmd;
 }
 
@@ -820,16 +856,25 @@ function syncOllamaIntoOpenCode(tags) {
     }
     if (typeof cfg !== 'object' || cfg === null || Array.isArray(cfg)) return;
     cfg.provider = cfg.provider || {};
+    // NOTE: unlike our own local-only file, this one is the USER'S. The
+    // no-think option is written only when we CREATE an entry -- never onto an
+    // entry that already exists, because that would silently overwrite their
+    // own choice. Toggling thinking in Settings therefore does not rewrite
+    // this file; it governs Launch Local AI, which reads the file above.
+    const think = getLocalAiThinking();
     const p = cfg.provider.ollama = cfg.provider.ollama || {
       npm: '@ai-sdk/openai-compatible',
       name: 'Ollama (local)',
-      options: { baseURL: 'http://127.0.0.1:11434/v1' }
+      options: think
+        ? { baseURL: 'http://127.0.0.1:11434/v1' }
+        : { baseURL: 'http://127.0.0.1:11434/v1', ...NO_THINK }
     };
     p.models = p.models || {};
     let added = false;
     for (const tag of tags) {
       if (!p.models[tag]) {
         p.models[tag] = { name: prettyModelName(tag), tools: true };
+        if (!think) p.models[tag].options = { ...NO_THINK };
         added = true;
       } else if (p.models[tag].name === `${tag} (local)`) {
         // Exactly the name an older build of ours generated -> ours to tidy.
@@ -857,8 +902,16 @@ const OPENCODE_LOCAL_CONFIG = path.join(HOME, '.config', 'opencode', 'opencode-l
 function writeLocalOnlyOpenCodeConfig(tags) {
   try {
     if (!tags.length) return null;
+    // Thinking off => stamp reasoning_effort at BOTH levels. Provider-level
+    // alone is not reliably applied per request, and model-level alone misses
+    // any model added to the picker later, so both go in. Thinking on => the
+    // key is simply absent, which is the models' own default.
+    const think = getLocalAiThinking();
     const models = {};
-    for (const tag of tags) models[tag] = { name: prettyModelName(tag), tools: true };
+    for (const tag of tags) {
+      models[tag] = { name: prettyModelName(tag), tools: true };
+      if (!think) models[tag].options = { ...NO_THINK };
+    }
     const cfg = {
       $schema: 'https://opencode.ai/config.json',
       // Written by Claude Project Dashboard — safe to delete; it is regenerated.
@@ -867,7 +920,9 @@ function writeLocalOnlyOpenCodeConfig(tags) {
         ollama: {
           npm: '@ai-sdk/openai-compatible',
           name: 'Ollama (local)',
-          options: { baseURL: 'http://127.0.0.1:11434/v1' },
+          options: think
+            ? { baseURL: 'http://127.0.0.1:11434/v1' }
+            : { baseURL: 'http://127.0.0.1:11434/v1', ...NO_THINK },
           models
         }
       }
@@ -940,13 +995,13 @@ function commandExistsAsync(bin) {
 // Re-run on each Settings open — but PATH is frozen until app restart.
 ipcMain.handle('detect-ai-clis', async () => {
   const localBin = cmdFirstWord(getLocalAiCommand()) || 'opencode';
-  const bedBin = cmdFirstWord(getBedrockCommand()) || BEDROCK_DEFAULT_CMD;
+  const bedBin = cmdFirstWord(getBedrockCommand());
   const [codex, opencode, ollama, localaiBin, bedrockBin] = await Promise.all([
     commandExistsAsync('codex'),
     commandExistsAsync('opencode'),
     commandExistsAsync('ollama'),
     commandExistsAsync(localBin),
-    commandExistsAsync(bedBin)
+    bedBin ? commandExistsAsync(bedBin) : Promise.resolve(false)
   ]);
   return { codex, opencode, ollama, localaiBin, bedrockBin };
 });
@@ -973,6 +1028,11 @@ ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
   // helper modal shows the Ollama guidance instead. Keyed off the STORED value;
   // storedCmd also drives the AGENTS.md branch below ('localai' → not Claude).
   const storedCmd = launchCmd;
+  // Bedrock with no command named yet: there is nothing to run, and resolving
+  // it would exec the bare key. Send the renderer to the setup modal instead.
+  if (storedCmd === 'bedrock' && !getBedrockCommand()) {
+    return { missingCmd: 'bedrock', bedrockUnset: true, isMac: IS_MAC };
+  }
   if (storedCmd === 'localai' && !commandExists('ollama')) {
     return { missingCmd: 'ollama', isMac: IS_MAC };
   }

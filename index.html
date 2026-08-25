@@ -1045,7 +1045,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.15.0</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.16.0</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1107,8 +1107,9 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.15.0:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.16.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
+          <li><strong>⚡ Local AI answers in seconds again, not minutes.</strong> Most models you download think to themselves before answering — they write out a long private train of thought first, and you see nothing on screen while they do it. On a modest computer that turns a two-second reply into a several-minute one, and sometimes the thinking uses up the whole reply so <em>nothing at all</em> comes back. <strong>Launch Local AI</strong> now switches that off, so answers come straight back. If you have a powerful graphics card and want the thinking (it does make hard questions better), there's a new switch for it in <em>Settings → Local AI</em>. On this computer the same question went from <strong>21 seconds and a blank answer</strong> to <strong>under a second and a proper one</strong>.</li>
           <li><strong>🏢 Launch Claude on your company's AWS Bedrock.</strong> If your employer runs Claude through their own AWS account, that's now one of the AIs you can launch. It is the same Claude Code — only the connection changes, so the messages are billed to the company instead of your personal plan, and your personal <strong>Launch Claude</strong> is left exactly as it was. Switch it on under <em>Settings → Which AI runs when you click Launch</em>, then pick it from any project's <strong>▾</strong> menu; that project remembers it. Bedrock projects get an orange Launch button and an orange terminal tab, so work and personal are never confused at a glance. It needs a one-off setup on this computer first (Claude Code, the AWS CLI, and credentials from your AWS admin) — if it isn't ready, the app says so and lists what's missing.</li>
         </ul>
 
@@ -1324,9 +1325,9 @@
             </div>
             <div class="ai-row-note" id="aiRowNote-bedrock"></div>
             <div id="bedrockCmdWrap" style="display:none; margin: 4px 0 4px 16px;">
-              <input id="bedrockCmdInput" type="text" onchange="changeBedrockCommand(this.value)" placeholder="claude-techm" style="width: 100%; box-sizing: border-box; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none;">
+              <input id="bedrockCmdInput" type="text" onchange="changeBedrockCommand(this.value)" placeholder="e.g. claude-bedrock" style="width: 100%; box-sizing: border-box; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none;">
               <div id="bedrockHint" style="font-size: 11px; color: #888; margin-top: 4px; line-height: 1.5;"></div>
-              <div style="font-size: 11px; color: #888; margin-top: 6px; line-height: 1.5;">🏢 <strong style="color:#ff9900;">Company account.</strong> This runs the same Claude Code, connected to your employer's AWS Bedrock, so messages are billed to them and not to your personal plan. It needs a one-off setup on this computer first — a wrapper command (usually <code>claude-techm</code>) plus AWS credentials from your admin. Your personal <strong>Launch&nbsp;Claude</strong> is untouched.</div>
+              <div style="font-size: 11px; color: #888; margin-top: 6px; line-height: 1.5;">🏢 <strong style="color:#ff9900;">Company account.</strong> This runs the same Claude Code, connected to your employer's AWS Bedrock, so messages are billed to them and not to your personal plan. It needs a one-off setup on this computer first, which creates a command to start it — type that command’s name above. Your IT or AWS admin has the setup steps. Your personal <strong>Launch&nbsp;Claude</strong> is untouched.</div>
             </div>
             <div class="ai-toggle-row">
               <span class="ai-dot ai-dot-codex"></span>
@@ -1366,6 +1367,17 @@
               <input id="localAiCmdInput" type="text" onchange="changeLocalAiCommand(this.value)" placeholder="e.g. opencode -m ollama/qwen3.5:9b" style="display:none; margin-top: 6px; width: 100%; box-sizing: border-box; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none;">
               <div id="localAiHint" style="font-size: 11px; color: #888; margin-top: 4px; line-height: 1.5;"></div>
               <div style="font-size: 11px; color: #888; margin-top: 6px; line-height: 1.5;">🔒 <strong style="color:#d97706;">Stays local.</strong> Launch&nbsp;Local&nbsp;AI runs with only the models on this computer, so <code>/model</code> can't switch to a paid cloud one by accident. Launch&nbsp;OpenCode still offers everything.</div>
+              <div style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <div style="flex: 1;">
+                  <strong style="color: #d97706; font-size: 12px;">Let local models think before answering</strong>
+                  <div style="font-size: 11px; color: #888; margin-top: 2px; line-height: 1.5;">Most local models write out a long private train of thought first. On a powerful graphics card that&rsquo;s worth having — answers to hard questions get better. On a modest computer it can turn a 2-second reply into a <strong>7-minute</strong> one, with nothing on screen while you wait. Off unless you know your machine can afford it.</div>
+                </div>
+                <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0;">
+                  <input type="checkbox" id="thinkToggle" onchange="toggleLocalAiThinking(this.checked)" style="opacity:0; width:0; height:0;">
+                  <span id="thinkSlider" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#333; border-radius:12px; transition:0.3s;"></span>
+                  <span id="thinkKnob" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:#888; border-radius:50%; transition:0.3s;"></span>
+                </label>
+              </div>
             </div>
           </div>
           <!-- Colour terminal tabs by AI (v2.12.1) — Windows Terminal only -->
@@ -2053,6 +2065,12 @@
         body = `
         This project runs <strong>Local AI</strong> through a free program called <strong>${escapeHtml(res.missingCmd)}</strong>, which isn't installed on this computer yet. ${nodeNote} Then open ${shellName}, paste this line, and press Enter:${codeRow('npm install -g opencode-ai')}
         <div style="margin-top:10px;">It also needs <strong>Ollama</strong> (free, from <strong>ollama.com</strong>) to run the models. ${restartNote}</div>`;
+      } else if (kw === 'bedrock' && res.bedrockUnset) {
+        title = 'One more step — name your company’s command';
+        body = `
+        The Launch button for this project is set to run <strong>Claude Code on your company's AWS Bedrock</strong>, but the dashboard doesn't know what your company's command is called yet.
+        <div style="margin: 10px 0;">Open <strong>Settings</strong>, find <strong>Claude on AWS Bedrock</strong>, and type the command you'd normally type to start it — something like <code>claude-bedrock</code>. Your IT or AWS admin has the setup steps if it isn't installed yet.</div>
+        <div style="margin-top:10px;">Or click the <strong>▾</strong> next to Launch to run this project on your personal Claude instead.</div>`;
       } else if (kw === 'bedrock') {
         title = 'One more step — set up Claude Code on AWS Bedrock';
         body = `
@@ -2062,7 +2080,7 @@
           <li style="margin-bottom:6px;">The <strong>AWS CLI</strong> installed (type <code>aws --version</code> to check).</li>
           <li><strong>AWS credentials</strong> for your company account with permission to use Bedrock — ask your AWS admin for those.</li>
         </ol>
-        Your IT or AWS admin has the setup script that creates the <code>${escapeHtml(res.missingCmd)}</code> command. Run it, ${restartNote}
+        Your IT or AWS admin has the setup steps that create the <code>${escapeHtml(res.missingCmd)}</code> command. Run them, ${restartNote}
         <div style="margin-top:10px; color:#888;">If your setup named the command something else, open <strong>Settings</strong> and type that name under <strong>Claude on AWS Bedrock</strong>.</div>`;
       } else if (kw === 'codex') {
         title = 'One more step — install Codex CLI';
@@ -2451,6 +2469,11 @@
       const wrap = document.getElementById('localAiCmdWrap');
       wrap.style.display = enabledAIs.localai ? 'block' : 'none';
       if (!enabledAIs.localai) return;
+      try {
+        const think = await window.api.getLocalAiThinking();
+        document.getElementById('thinkToggle').checked = !!think;
+        updateThinkVisual(!!think);
+      } catch (e) {}
       const sel = document.getElementById('localAiModelSel');
       const input = document.getElementById('localAiCmdInput');
       const hint = document.getElementById('localAiHint');
@@ -2494,21 +2517,45 @@
       if (!enabledAIs.bedrock) return;
       const input = document.getElementById('bedrockCmdInput');
       const hint = document.getElementById('bedrockHint');
-      let cur = 'claude-techm';
+      let cur = '';
       try { cur = await window.api.getBedrockCommand(); } catch (e) {}
+      // Nothing named yet: rather than ask someone to remember a command they
+      // were given once, look for the usual shapes on this computer first.
+      if (!cur) {
+        try {
+          const found = await window.api.findBedrockCommand();
+          if (found) cur = await window.api.setBedrockCommand(found);
+        } catch (e) {}
+      }
       input.value = cur;
-      hint.textContent = 'The command your setup created. Leave it as claude-techm unless yours was given a different name.';
-      try {
-        const d = await window.api.detectAiClis();
-        if (!d.bedrockBin) hint.textContent = '“' + cur + '” isn’t on this computer yet — run your company’s Claude Code on Bedrock setup first, then restart this dashboard.';
-      } catch (e) {}
+      if (!cur) {
+        hint.textContent = 'Type the command your company’s setup created — the one you’d normally type to start Claude on their AWS.';
+      } else {
+        hint.textContent = 'The command that starts Claude on your company’s AWS. Change it if yours is called something else.';
+        try {
+          const d = await window.api.detectAiClis();
+          if (!d.bedrockBin) hint.textContent = '“' + cur + '” isn’t on this computer yet — run your company’s setup first, then restart this dashboard.';
+        } catch (e) {}
+      }
+      detectAndBadge();
     }
     async function changeBedrockCommand(v) {
-      if (!String(v).trim()) return;
       const clean = await window.api.setBedrockCommand(String(v).trim());
       document.getElementById('bedrockCmdInput').value = clean;
       detectAndBadge();
       syncBedrockUI();
+    }
+
+    async function toggleLocalAiThinking(on) {
+      const val = await window.api.setLocalAiThinking(on);
+      updateThinkVisual(!!val);
+    }
+    function updateThinkVisual(on) {
+      const slider = document.getElementById('thinkSlider');
+      const knob = document.getElementById('thinkKnob');
+      slider.style.background = on ? '#d97706' : '#333';
+      knob.style.background = on ? '#ffcc80' : '#888';
+      knob.style.left = on ? '22px' : '2px';
     }
 
     async function changeLocalAiModel(v) {
