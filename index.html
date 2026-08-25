@@ -70,8 +70,19 @@
     /* Coloured edge = whose meter this is, matching the Launch button colours:
        Claude pink, Codex blue, Kimi (Moonshot, used through OpenCode) green. */
     .usage-widget.ai-claude { border-left: 3px solid #e94560; padding-left: 8px; }
-    .usage-widget.ai-codex  { border-left: 3px solid #2f6fe4; padding-left: 8px; margin: 0 10px; min-width: 200px; flex: 1 1 200px; }
-    .usage-widget.ai-kimi   { border-left: 3px solid #16a34a; padding-left: 8px; margin: 0 10px; min-width: 170px; flex: 1 1 170px; max-width: 250px; }
+    .usage-widget.ai-codex  { border-left: 3px solid #2f6fe4; padding-left: 8px; }
+    .usage-widget.ai-kimi   { border-left: 3px solid #16a34a; padding-left: 8px; }
+    /* Codex + Kimi stack into one block, mirroring how Claude stacks Session/Week */
+    .usage-widget-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 0 10px;
+      min-width: 200px;
+      max-width: 260px;
+      flex: 1 1 200px;
+    }
+    .usage-widget-group .usage-widget { margin: 0; min-width: 0; max-width: none; flex: 0 0 auto; }
     /* "$21.25" needs more room than a 2-digit percentage */
     .usage-row .usage-money {
       color: rgba(255,255,255,0.7);
@@ -812,6 +823,7 @@
     /* One colour per AI, so the Launch button says at a glance what it starts.
        Declared after .btn-primary so these win on the split button. */
     .btn-ai-claude   { background: #e94560; }
+    .btn-ai-bedrock  { background: #ff9900; color: #1a1a2e; }
     .btn-ai-codex    { background: #2f6fe4; }
     .btn-ai-opencode { background: #16a34a; }
     .btn-ai-localai  { background: #d97706; }
@@ -821,6 +833,7 @@
       border-radius: 50%; margin-right: 8px; vertical-align: middle;
     }
     .ai-dot-claude   { background: #e94560; }
+    .ai-dot-bedrock  { background: #ff9900; }
     .ai-dot-codex    { background: #2f6fe4; }
     .ai-dot-opencode { background: #16a34a; }
     .ai-dot-localai  { background: #d97706; }
@@ -985,8 +998,10 @@
       Claude Project Dashboard
     </h1>
     <div class="usage-widget ai-claude" id="usageWidget" title="Your Claude plan usage — same numbers as Claude's own /usage screen. Updates every minute."></div>
-    <div class="usage-widget ai-codex" id="codexUsageWidget" title="Your Codex plan usage."></div>
-    <div class="usage-widget ai-kimi" id="kimiUsageWidget" title="Your prepaid Kimi (Moonshot) balance."></div>
+    <div class="usage-widget-group" id="otherUsageGroup">
+      <div class="usage-widget ai-codex" id="codexUsageWidget" title="Your Codex plan usage."></div>
+      <div class="usage-widget ai-kimi" id="kimiUsageWidget" title="Your prepaid Kimi (Moonshot) balance."></div>
+    </div>
     <div class="header-actions">
       <button class="btn btn-ghost" onclick="showAbout()">Settings</button>
       <button class="btn btn-ghost" onclick="openGlobalClaudeMd()" title="Opens your global CLAUDE.md — personal preferences and rules that apply to ALL projects.">Global CLAUDE.md</button>
@@ -1030,7 +1045,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.14.0</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.15.0</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1092,14 +1107,18 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.14.0:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.15.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>📊 Usage meters for Codex and Kimi.</strong> The Claude usage bars in the header now have company. If you use Codex CLI, a blue-edged meter shows your Codex plan usage — the same numbers as Codex's own <code>/status</code> screen, with the countdown to when the limit resets. And if you've bought prepaid Kimi (Moonshot) credit, a green-edged meter shows how many dollars you have left, with a bar filling up as your top-up gets used. Each meter appears by itself only when that tool is signed in on this computer — if you only use Claude, nothing changes. Hover any meter for the details.</li>
+          <li><strong>🏢 Launch Claude on your company's AWS Bedrock.</strong> If your employer runs Claude through their own AWS account, that's now one of the AIs you can launch. It is the same Claude Code — only the connection changes, so the messages are billed to the company instead of your personal plan, and your personal <strong>Launch Claude</strong> is left exactly as it was. Switch it on under <em>Settings → Which AI runs when you click Launch</em>, then pick it from any project's <strong>▾</strong> menu; that project remembers it. Bedrock projects get an orange Launch button and an orange terminal tab, so work and personal are never confused at a glance. It needs a one-off setup on this computer first (Claude Code, the AWS CLI, and credentials from your AWS admin) — if it isn't ready, the app says so and lists what's missing.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.14.0:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>📊 Usage meters for Codex and Kimi.</strong> The Claude usage bars in the header now have company. If you use Codex CLI, a blue-edged meter shows your Codex plan usage — the same numbers as Codex's own <code>/status</code> screen, with the countdown to when the limit resets. And if you've bought prepaid Kimi (Moonshot) credit, a green-edged meter shows how many dollars you have left, with a bar filling up as your top-up gets used. Each meter appears by itself only when that tool is signed in on this computer — if you only use Claude, nothing changes. Hover any meter for the details.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.13.0:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>💸 Spend now counts paid AIs other than Claude.</strong> If you run a paid model through OpenCode on your own API key — Kimi, or anything else — that money used to be invisible here, because Spend only ever read Claude's logs. It now also reads the record OpenCode keeps of its own sessions, so those models appear alongside Claude in the chart and in both breakdown tables, listed like <code>kimi-k3 (Moonshot)</code>. The cost comes from OpenCode's own figures rather than a guess, and it's read without changing anything. Free and local models aren't listed — they cost nothing. Your provider's billing page is still the last word on what you actually owe.</li>
@@ -1281,6 +1300,7 @@
             <div style="display: flex; flex-direction: column; gap: 6px; flex-shrink: 0;">
               <select id="launchCmdSelect" onchange="changeLaunchCmd(this.value)" style="background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none; cursor: pointer;">
                 <option value="claude">Claude Code (default)</option>
+                <option value="bedrock">Claude on AWS Bedrock (work)</option>
                 <option value="codex">Codex CLI (OpenAI)</option>
                 <option value="opencode">OpenCode</option>
                 <option value="localai">Local AI (Ollama)</option>
@@ -1292,6 +1312,22 @@
           <!-- Per-AI enable toggles (v2.12): the menus only offer what you switch on -->
           <div id="aiTogglesWrap" style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px;">
             <div style="font-size: 11px; color: #999; margin-bottom: 4px; line-height: 1.5;">Which other AIs show up in the Launch menus. Claude Code is always available. Switching one on just adds it to the menus — the badge shows whether it's actually installed on this computer.</div>
+            <div class="ai-toggle-row">
+              <span class="ai-dot ai-dot-bedrock"></span>
+              <span class="ai-row-name">Claude on AWS Bedrock <span class="ai-row-sub">same Claude Code, billed to a company AWS account</span></span>
+              <span class="ai-badge" id="aiBadge-bedrock">…</span>
+              <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0;">
+                <input type="checkbox" id="aiToggle-bedrock" onchange="toggleAiEnabled('bedrock', this.checked)" style="opacity:0; width:0; height:0;">
+                <span id="aiSlider-bedrock" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#333; border-radius:12px; transition:0.3s;"></span>
+                <span id="aiKnob-bedrock" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:#888; border-radius:50%; transition:0.3s;"></span>
+              </label>
+            </div>
+            <div class="ai-row-note" id="aiRowNote-bedrock"></div>
+            <div id="bedrockCmdWrap" style="display:none; margin: 4px 0 4px 16px;">
+              <input id="bedrockCmdInput" type="text" onchange="changeBedrockCommand(this.value)" placeholder="claude-techm" style="width: 100%; box-sizing: border-box; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none;">
+              <div id="bedrockHint" style="font-size: 11px; color: #888; margin-top: 4px; line-height: 1.5;"></div>
+              <div style="font-size: 11px; color: #888; margin-top: 6px; line-height: 1.5;">🏢 <strong style="color:#ff9900;">Company account.</strong> This runs the same Claude Code, connected to your employer's AWS Bedrock, so messages are billed to them and not to your personal plan. It needs a one-off setup on this computer first — a wrapper command (usually <code>claude-techm</code>) plus AWS credentials from your admin. Your personal <strong>Launch&nbsp;Claude</strong> is untouched.</div>
+            </div>
             <div class="ai-toggle-row">
               <span class="ai-dot ai-dot-codex"></span>
               <span class="ai-row-name">Codex CLI <span class="ai-row-sub">OpenAI's "ChatGPT" coding terminal</span></span>
@@ -1336,7 +1372,7 @@
           <div style="margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; display: flex; align-items: center; justify-content: space-between;">
             <div style="flex: 1; padding-right: 14px;">
               <strong style="color: #b388ff; font-size: 13px;">Colour terminal tabs by AI</strong>
-              <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">Tints each terminal tab to match its Launch button — <span style="color:#2f6fe4;">Codex blue</span>, <span style="color:#16a34a;">OpenCode green</span>, <span style="color:#d97706;">Local AI amber</span>, <span style="color:#8b6bd1;">custom purple</span>. Claude tabs stay plain black, so a <em>coloured</em> tab always means it's not Claude. <span style="color:#888;">Windows Terminal only.</span></div>
+              <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">Tints each terminal tab to match its Launch button — <span style="color:#ff9900;">Bedrock orange</span>, <span style="color:#2f6fe4;">Codex blue</span>, <span style="color:#16a34a;">OpenCode green</span>, <span style="color:#d97706;">Local AI amber</span>, <span style="color:#8b6bd1;">custom purple</span>. Your personal Claude tabs stay plain black, so a <em>coloured</em> tab always means it isn't running on your own plan. <span style="color:#888;">Windows Terminal only.</span></div>
             </div>
             <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0;">
               <input type="checkbox" id="tabColorToggle" onchange="toggleTabColor(this.checked)" style="opacity:0; width:0; height:0;">
@@ -1687,7 +1723,7 @@
 
     // Grouping order for the AI sort — matches the ▾ menu, so the tiles come out
     // in the same order (and the same colour run) as the menu that sets them.
-    const AI_SORT_ORDER = ['claude', 'codex', 'opencode', 'localai', 'custom'];
+    const AI_SORT_ORDER = ['claude', 'bedrock', 'codex', 'opencode', 'localai', 'custom'];
 
     function sortFolders(list) {
       const dir = sortAscending ? 1 : -1;
@@ -2017,6 +2053,17 @@
         body = `
         This project runs <strong>Local AI</strong> through a free program called <strong>${escapeHtml(res.missingCmd)}</strong>, which isn't installed on this computer yet. ${nodeNote} Then open ${shellName}, paste this line, and press Enter:${codeRow('npm install -g opencode-ai')}
         <div style="margin-top:10px;">It also needs <strong>Ollama</strong> (free, from <strong>ollama.com</strong>) to run the models. ${restartNote}</div>`;
+      } else if (kw === 'bedrock') {
+        title = 'One more step — set up Claude Code on AWS Bedrock';
+        body = `
+        The Launch button for this project is set to run <strong>Claude Code on your company's AWS Bedrock</strong>, but the command that does it (<strong>${escapeHtml(res.missingCmd)}</strong>) isn't set up on this computer yet. It's a one-off setup, and it needs three things:
+        <ol style="margin: 10px 0 10px 20px;">
+          <li style="margin-bottom:6px;"><strong>Claude Code</strong> installed (type <code>claude --version</code> to check).</li>
+          <li style="margin-bottom:6px;">The <strong>AWS CLI</strong> installed (type <code>aws --version</code> to check).</li>
+          <li><strong>AWS credentials</strong> for your company account with permission to use Bedrock — ask your AWS admin for those.</li>
+        </ol>
+        Your IT or AWS admin has the setup script that creates the <code>${escapeHtml(res.missingCmd)}</code> command. Run it, ${restartNote}
+        <div style="margin-top:10px; color:#888;">If your setup named the command something else, open <strong>Settings</strong> and type that name under <strong>Claude on AWS Bedrock</strong>.</div>`;
       } else if (kw === 'codex') {
         title = 'One more step — install Codex CLI';
         body = `
@@ -2274,10 +2321,10 @@
     // only; a stored default/override to a switched-off AI still launches.
     let launchGlobal = 'claude';
     let launchOverrides = {};
-    let enabledAIs = { codex: false, opencode: false, localai: false };
-    const AI_TOGGLE_KEYS = ['codex', 'opencode', 'localai'];
-    const LAUNCH_PRESETS = { claude: 'Launch Claude', codex: 'Launch Codex', opencode: 'Launch OpenCode', localai: 'Launch Local AI' };
-    const LAUNCH_MENU = [['claude', 'Claude Code'], ['codex', 'Codex CLI'], ['opencode', 'OpenCode'], ['localai', 'Local AI (Ollama)']];
+    let enabledAIs = { bedrock: false, codex: false, opencode: false, localai: false };
+    const AI_TOGGLE_KEYS = ['bedrock', 'codex', 'opencode', 'localai'];
+    const LAUNCH_PRESETS = { claude: 'Launch Claude', bedrock: 'Launch Claude (AWS)', codex: 'Launch Codex', opencode: 'Launch OpenCode', localai: 'Launch Local AI' };
+    const LAUNCH_MENU = [['claude', 'Claude Code'], ['bedrock', 'Claude on AWS Bedrock'], ['codex', 'Codex CLI'], ['opencode', 'OpenCode'], ['localai', 'Local AI (Ollama)']];
     function tileLaunchCmd(path) { return launchOverrides[path] || launchGlobal; }
     function tileLaunchLabel(path) {
       const c = tileLaunchCmd(path);
@@ -2360,6 +2407,7 @@
         if (cb) { cb.checked = !!enabledAIs[key]; updateAiToggleVisual(key, !!enabledAIs[key]); }
       }
       syncLocalAiUI();
+      syncBedrockUI();
       try { syncLaunchCmdUI(); } catch (e) {}   // hidden options follow the fresh map
       detectAndBadge();   // async — badges fill in as the checks land
     }
@@ -2396,6 +2444,7 @@
       }
       try { syncLaunchCmdUI(); } catch (e) {}
       syncLocalAiUI();
+      syncBedrockUI();
       try { renderFolders(); } catch (e) {}
     }
     async function syncLocalAiUI() {
@@ -2435,6 +2484,33 @@
         } catch (e) {}
       }
     }
+    // Bedrock's wrapper command is named by whoever set it up, so unlike the
+    // other presets we can't assume the binary — show what's stored and say
+    // plainly whether it's actually on this computer.
+    async function syncBedrockUI() {
+      const wrap = document.getElementById('bedrockCmdWrap');
+      if (!wrap) return;
+      wrap.style.display = enabledAIs.bedrock ? 'block' : 'none';
+      if (!enabledAIs.bedrock) return;
+      const input = document.getElementById('bedrockCmdInput');
+      const hint = document.getElementById('bedrockHint');
+      let cur = 'claude-techm';
+      try { cur = await window.api.getBedrockCommand(); } catch (e) {}
+      input.value = cur;
+      hint.textContent = 'The command your setup created. Leave it as claude-techm unless yours was given a different name.';
+      try {
+        const d = await window.api.detectAiClis();
+        if (!d.bedrockBin) hint.textContent = '“' + cur + '” isn’t on this computer yet — run your company’s Claude Code on Bedrock setup first, then restart this dashboard.';
+      } catch (e) {}
+    }
+    async function changeBedrockCommand(v) {
+      if (!String(v).trim()) return;
+      const clean = await window.api.setBedrockCommand(String(v).trim());
+      document.getElementById('bedrockCmdInput').value = clean;
+      detectAndBadge();
+      syncBedrockUI();
+    }
+
     async function changeLocalAiModel(v) {
       const input = document.getElementById('localAiCmdInput');
       if (v === '__custom__') { input.style.display = 'block'; input.focus(); return; }
@@ -2451,6 +2527,7 @@
     async function detectAndBadge() {
       try {
         const d = await window.api.detectAiClis();
+        setAiBadge('bedrock', d.bedrockBin ? 'ok' : 'no');
         setAiBadge('codex', d.codex ? 'ok' : 'no');
         setAiBadge('opencode', d.opencode ? 'ok' : 'no');
         // Local AI needs its command's binary AND ollama (the model engine).

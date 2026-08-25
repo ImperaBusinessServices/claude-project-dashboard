@@ -675,8 +675,15 @@ function getLaunchCommandFor(folderPath) {
 // in use: it's the global default, or some project's remembered override.
 // "In use" means the first whitespace-separated word equals the preset key
 // exactly ("codex --profile x" counts for codex; "codexy-tool" does not).
-const TOGGLEABLE_AIS = ['codex', 'opencode', 'localai'];
+const TOGGLEABLE_AIS = ['bedrock', 'codex', 'opencode', 'localai'];
 function cmdFirstWord(cmd) { return String(cmd || '').trim().split(/\s+/)[0]; }
+// Is this launch still Claude Code, just wired to a different account? Both
+// 'claude' and the 'bedrock' preset (Claude Code pointed at a company's AWS
+// Bedrock) read CLAUDE.md and must NOT get an AGENTS.md seeded at them.
+function isClaudeLaunch(cmd) {
+  const w = cmdFirstWord(cmd);
+  return w === 'bedrock' || w.startsWith('claude');
+}
 function aiInUse(key) {
   if (cmdFirstWord(getLaunchCommand()) === key) return true;
   const overrides = settings.launchOverrides || {};
@@ -706,6 +713,23 @@ ipcMain.handle('set-enabled-ai', async (event, key, enabled) => {
   return { enabled: getEffectiveEnabledAIs(), resetDefault };
 });
 
+// ---- Claude on AWS Bedrock preset (v2.15) ----
+// Claude Code, billed to a company's AWS account instead of a personal plan.
+// Like 'localai', the key is NOT the command: the wrapper script's name varies
+// per company, so it lives in settings.bedrockCommand. Default 'claude-techm'
+// matches the wrapper the setup guide writes (a .cmd on Windows / a shell
+// function on mac). Sanitized at set-time, so stored == what runs.
+const BEDROCK_DEFAULT_CMD = 'claude-techm';
+function getBedrockCommand() {
+  return sanitizeLaunchCmd(settings.bedrockCommand) || BEDROCK_DEFAULT_CMD;
+}
+ipcMain.handle('get-bedrock-command', async () => getBedrockCommand());
+ipcMain.handle('set-bedrock-command', async (event, cmd) => {
+  const clean = sanitizeLaunchCmd(cmd) || BEDROCK_DEFAULT_CMD;
+  saveSettings({ ...settings, bedrockCommand: clean });
+  return clean;
+});
+
 // ---- Local AI (Ollama) preset (v2.12) ----
 // 'localai' is the one preset whose key is NOT the command it runs. The actual
 // command lives in settings.localAiCommand (default: opencode, which picks up
@@ -726,7 +750,9 @@ ipcMain.handle('set-local-ai-command', async (event, cmd) => {
 // resolved string back into storage, destroying the setting). Single,
 // non-recursive substitution: localAiCommand = 'localai' runs literally.
 function resolveLaunchCmdForExec(cmd) {
-  return cmd === 'localai' ? getLocalAiCommand() : cmd;
+  if (cmd === 'localai') return getLocalAiCommand();
+  if (cmd === 'bedrock') return getBedrockCommand();
+  return cmd;
 }
 
 // Windows-only: tint the Windows Terminal tab to match the tile's Launch button
@@ -737,6 +763,7 @@ function resolveLaunchCmdForExec(cmd) {
 // Claude is intentionally absent: Keith wants the default AI's tab left plain
 // (no tint / default black), so a COLOURED tab always means "not Claude".
 const AI_TAB_COLORS = {
+  bedrock:  '#ff9900',
   codex:    '#2f6fe4',
   opencode: '#16a34a',
   localai:  '#d97706'
@@ -913,13 +940,15 @@ function commandExistsAsync(bin) {
 // Re-run on each Settings open — but PATH is frozen until app restart.
 ipcMain.handle('detect-ai-clis', async () => {
   const localBin = cmdFirstWord(getLocalAiCommand()) || 'opencode';
-  const [codex, opencode, ollama, localaiBin] = await Promise.all([
+  const bedBin = cmdFirstWord(getBedrockCommand()) || BEDROCK_DEFAULT_CMD;
+  const [codex, opencode, ollama, localaiBin, bedrockBin] = await Promise.all([
     commandExistsAsync('codex'),
     commandExistsAsync('opencode'),
     commandExistsAsync('ollama'),
-    commandExistsAsync(localBin)
+    commandExistsAsync(localBin),
+    commandExistsAsync(bedBin)
   ]);
-  return { codex, opencode, ollama, localaiBin };
+  return { codex, opencode, ollama, localaiBin, bedrockBin };
 });
 
 // One implementation for "remember this AI for this project" — used by the
@@ -985,7 +1014,7 @@ ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
   // same protocol, so the brain/ folder we just made is actually understood.
   // Gated on the user having opted into the memory protocol at all.
   try {
-    if (!storedCmd.startsWith('claude') && isMemoryProtocolInstalled()) {
+    if (!isClaudeLaunch(storedCmd) && isMemoryProtocolInstalled()) {
       seedAgentsMd(folderPath, projectName);
     }
   } catch (e) {}
@@ -1067,7 +1096,7 @@ ipcMain.handle('open-claude-md', async (event, folderPath) => {
   if (fs.existsSync(claudeMdPath)) return void shell.openPath(claudeMdPath);
   if (fs.existsSync(agentsMdPath)) return void shell.openPath(agentsMdPath);
   const projectName = path.basename(folderPath);
-  if (getLaunchCommandFor(folderPath).startsWith('claude')) {
+  if (isClaudeLaunch(getLaunchCommandFor(folderPath))) {
     fs.writeFileSync(claudeMdPath, agentsMdStub(projectName));
     return void shell.openPath(claudeMdPath);
   }

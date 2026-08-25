@@ -52,6 +52,8 @@ contextBridge.exposeInMainWorld('api', {
   detectAiClis: () => ipcRenderer.invoke('detect-ai-clis'),
   getLocalAiCommand: () => ipcRenderer.invoke('get-local-ai-command'),
   setLocalAiCommand: (cmd) => ipcRenderer.invoke('set-local-ai-command', cmd),
+  getBedrockCommand: () => ipcRenderer.invoke('get-bedrock-command'),
+  setBedrockCommand: (cmd) => ipcRenderer.invoke('set-bedrock-command', cmd),
   getLocalAiModels: () => ipcRenderer.invoke('get-local-ai-models'),
   // Tray meter
   getTrayEnabled: () => ipcRenderer.invoke('get-tray-enabled'),
