@@ -184,6 +184,122 @@
     }, false);
   }
 
+  // ---- the free / local AI pages (added 2026-09-30) ----
+  // build-your-own-local-ai, local-ai-picker, free-ai-models, which-free-model.
+  // One "tool" event per distinct thing done, per page load (so fiddling with a
+  // dropdown ten times still reads as one "Entered their hardware").
+  var page = (location.pathname.split("/").pop() || "").toLowerCase();
+  var isHome = !page || page === "index.html";
+  var toolSent = {};
+  function tool(label) {
+    label = String(label).replace(/\s+/g, " ").trim().slice(0, 190);
+    if (!label || toolSent[label]) return;
+    toolSent[label] = 1;
+    beacon({ typ: "tool", label: label, title: document.title });
+  }
+  function txt(el) { return el ? (el.textContent || "").replace(/\s+/g, " ").trim() : ""; }
+  function modelName(i) {
+    try { return MODELS[+i].name; } catch (e) { return ""; }   // the picker's own global
+  }
+  function topPick() {
+    try { return recoStack[0].name; } catch (e) { return ""; }  // ditto
+  }
+
+  if (!isHome) {
+    // how far down they read
+    var depthDone = {};
+    var onScroll = function () {
+      try {
+        var h = document.documentElement.scrollHeight - window.innerHeight;
+        if (h <= 0) return;
+        var pct = window.scrollY / h;
+        if (pct >= 0.5 && !depthDone.half) { depthDone.half = 1; tool("Read halfway down the page"); }
+        if (pct >= 0.9 && !depthDone.end) { depthDone.end = 1; tool("Read to the bottom of the page"); }
+        if (depthDone.end) window.removeEventListener("scroll", onScroll);
+      } catch (e) { /* ignore */ }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    // links: on to another page of the site, or out to another site
+    document.addEventListener("click", function (e) {
+      try {
+        var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+        if (!a) return;
+        var href = a.getAttribute("href") || "";
+        if (!href || href.charAt(0) === "#") return;
+        var u = new URL(href, location.href);
+        if (u.hostname === location.hostname) {
+          var to = (u.pathname.split("/").pop() || "index.html").replace(/\.html$/, "");
+          tool(to === "index" ? "Went on to the home page" : "Went on to " + to.replace(/-/g, " "));
+        } else if (!/github\.com|imperabusinessservices\.com/.test(u.hostname)) {
+          tool("Followed a link out to " + u.hostname.replace(/^www\./, ""));
+        }
+      } catch (e2) { /* ignore */ }
+    }, true);
+  }
+
+  if (page === "local-ai-picker.html") {
+    try { if (/[#&]s=/.test(location.hash)) tool("Opened a shared setup link"); } catch (e) { /* ignore */ }
+
+    // CAPTURE phase: runs before the picker's own handlers re-render the buttons,
+    // so we still see each button's original text and on/off state.
+    document.addEventListener("click", function (e) {
+      try {
+        var t = e.target;
+        if (!t || !t.closest) return;
+        var b, top;
+        if ((b = t.closest("#machineTabs button"))) { tool("Said their machine is: " + txt(b)); return; }
+        if ((b = t.closest(".ucChip"))) {
+          if (!b.classList.contains("on")) tool("Ticked a job: " + txt(b));
+          return;
+        }
+        if ((b = t.closest(".preset"))) { tool("Used a preset: " + txt(b)); return; }
+        if ((b = t.closest("#shareBtn"))) { tool("Copied a link to share their setup"); return; }
+        if ((b = t.closest("[data-prompt]"))) {
+          if (b.getAttribute("data-prompt") === "reco") {
+            top = topPick();
+            tool("Copied the install-it-all prompt for Claude Code" + (top ? " (top pick " + top + ")" : ""));
+          } else {
+            tool("Copied the install prompt for " + (modelName(b.getAttribute("data-prompt")) || "a model"));
+          }
+          return;
+        }
+        if ((b = t.closest(".mark"))) {
+          tool("Clicked a model on the chart: " + (modelName((b.id || "").replace("mark-", "")) || "a model"));
+          return;
+        }
+        if ((b = t.closest(".copyBtn, .bigBtn"))) {
+          var row = b.closest(".cmdRow");
+          var code = row ? row.querySelector("code") : null;
+          if (code && code.id === "winCmd") tool("Copied the Windows check-my-PC command");
+          else if (code && code.id === "macCmd") tool("Copied the Mac check-my-Mac command");
+          else if (code && /^ollama /.test(txt(code))) tool("Copied the command: " + txt(code));
+          else if (/askPrompt/.test(b.getAttribute("onclick") || "")) tool("Copied the ask-your-own-AI prompt");
+        }
+      } catch (e2) { /* ignore */ }
+    }, true);
+
+    document.addEventListener("change", function (e) {
+      var el = e.target || {};
+      if (/^sel-/.test(el.id || "")) tool("Entered their hardware");
+      else if (el.type === "range") tool("Moved the priority sliders");
+    }, true);
+
+    // did they get as far as the answer?
+    try {
+      var reco = document.getElementById("reco");
+      if (reco && "IntersectionObserver" in window) {
+        var io = new IntersectionObserver(function (es) {
+          if (!es.some(function (x) { return x.isIntersecting; })) return;
+          var top2 = topPick();
+          tool("Saw the recommendation" + (top2 ? " (top pick " + top2 + ")" : ""));
+          io.disconnect();
+        }, { threshold: 0.4 });
+        io.observe(reco);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
   // ---- wrap gtag & fbq (log tag fires; always call the original through) ----
   function hook() {
     var w = window;
