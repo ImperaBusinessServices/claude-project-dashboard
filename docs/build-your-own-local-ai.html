@@ -5,22 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How We Built Our Own Local AI — the journey, step by step</title>
 <style>
-  :root {
+  /* Four brightness stops (same palette as the AI picker). Always opens Light. */
+  :root, :root[data-theme="light"] {
     color-scheme: light;
-    --plane:#f9f9f7; --surface:#fcfcfb; --ink1:#0b0b0b; --ink2:#52514e; --ink3:#898781;
-    --line:rgba(11,11,11,0.10); --grid:#e1e0d9; --accent:#2a78d6; --good:#006300; --todo:#eda100;
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink1:#0b0b0b; --ink2:#52514e; --ink3:#7a7872;
+    --line:rgba(11,11,11,0.10); --grid:#e1e0d9; --accent:#2a78d6; --on-accent:#ffffff; --good:#006300; --todo:#b97a10;
+  }
+  :root[data-theme="slate"] {
+    color-scheme: light;
+    --plane:#c4c9d0; --surface:#e4e7eb; --ink1:#12151a; --ink2:#343a43; --ink3:#4e5560;
+    --line:rgba(18,21,26,0.16); --grid:#b3b9c1; --accent:#174f96; --on-accent:#ffffff; --good:#0b5a0b; --todo:#865500;
+  }
+  :root[data-theme="steel"] {
+    color-scheme: dark;
+    --plane:#2a313b; --surface:#38414d; --ink1:#f3f6fa; --ink2:#ccd4de; --ink3:#a0abb9;
+    --line:rgba(255,255,255,0.14); --grid:#46505d; --accent:#74b0f5; --on-accent:#0d1622; --good:#5fd35f; --todo:#e8ae45;
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
-    --plane:#0d0d0d; --surface:#1a1a19; --ink1:#ffffff; --ink2:#c3c2b7; --ink3:#898781;
-    --line:rgba(255,255,255,0.10); --grid:#2c2c2a; --accent:#3987e5; --good:#0ca30c; --todo:#c98500;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme: dark;
-      --plane:#0d0d0d; --surface:#1a1a19; --ink1:#ffffff; --ink2:#c3c2b7; --ink3:#898781;
-      --line:rgba(255,255,255,0.10); --grid:#2c2c2a; --accent:#3987e5; --good:#0ca30c; --todo:#c98500;
-    }
+    --plane:#0d0d0d; --surface:#1a1a19; --ink1:#ffffff; --ink2:#c3c2b7; --ink3:#969489;
+    --line:rgba(255,255,255,0.10); --grid:#2c2c2a; --accent:#3987e5; --on-accent:#ffffff; --good:#0ca30c; --todo:#c98500;
   }
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--plane); color:var(--ink1); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.6; padding:32px 18px 70px; }
@@ -34,7 +38,7 @@
   .flow-sub { font-size:9.5px; fill:var(--ink3); }
   .flow-emoji { font-size:17px; }
   .step { display:flex; gap:16px; margin-bottom:26px; }
-  .stepNum { flex-shrink:0; width:34px; height:34px; border-radius:50%; background:var(--accent); color:#fff; font-weight:700; display:flex; align-items:center; justify-content:center; font-size:15px; margin-top:2px; }
+  .stepNum { flex-shrink:0; width:34px; height:34px; border-radius:50%; background:var(--accent); color:var(--on-accent); font-weight:700; display:flex; align-items:center; justify-content:center; font-size:15px; margin-top:2px; }
   .step.todo .stepNum { background:var(--surface); color:var(--todo); border:2px dashed var(--todo); }
   .stepBody { flex:1; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
   .stepBody h2 { font-size:16.5px; margin-bottom:6px; }
@@ -50,14 +54,34 @@
   .badge.done { background:color-mix(in srgb, var(--good) 14%, transparent); color:var(--good); }
   .badge.now { background:color-mix(in srgb, var(--todo) 16%, transparent); color:var(--todo); }
   .foot { color:var(--ink3); font-size:12px; margin-top:34px; }
+  .navRow { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  @media (max-width: 1120px) { .navRow:not(.bottom) { padding-right:110px; } }
+  .navRow.bottom { margin:30px 0 0; padding-right:0; border-top:1px solid var(--grid); padding-top:18px; }
+  .homeLink { color:var(--accent); text-decoration:none; font-size:13.5px; font-weight:600; }
+  .pickerBtn { background:var(--accent); color:var(--on-accent); text-decoration:none; font-weight:600; font-size:13.5px; padding:8px 16px; border-radius:8px; white-space:nowrap; }
+  .pickerBtn:hover, .homeLink:hover { opacity:0.88; }
   code { background:var(--surface); border:1px solid var(--line); border-radius:5px; padding:1px 6px; font-family:Consolas,monospace; font-size:12px; }
 </style>
 </head>
 <body>
-<button class="themeToggle" onclick="const r=document.documentElement; const d=(getComputedStyle(document.body).backgroundColor!=='rgb(249, 249, 247)'); r.setAttribute('data-theme', d?'light':'dark'); localStorage.setItem('laj-theme', d?'light':'dark');">☀️ / 🌙</button>
-<script>(function(){const t=localStorage.getItem('laj-theme'); if(t) document.documentElement.setAttribute('data-theme',t);})();</script>
+<button class="themeToggle" id="themeBtn" type="button">☀️ Light</button>
+<script>
+// Four brightness stops; shares the AI picker's saved choice. Opens Light unless the visitor clicked before.
+(function(){
+  var MODES = ["light","slate","steel","dark"], LABEL = { light:"☀️ Light", slate:"◑ Slate", steel:"◐ Steel", dark:"🌙 Dark" };
+  var saved = null; try { saved = localStorage.getItem("lamp-theme"); } catch (e) {}
+  var mode = MODES.indexOf(saved) > -1 ? saved : "light";
+  var btn = document.getElementById("themeBtn");
+  function paint(){ document.documentElement.setAttribute("data-theme", mode); btn.textContent = LABEL[mode]; btn.title = "Change brightness: Light → Slate → Steel → Dark"; }
+  btn.addEventListener("click", function(){ mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length]; try { localStorage.setItem("lamp-theme", mode); } catch (e) {} paint(); });
+  paint();
+})();
+</script>
 <div class="wrap">
-  <p style="margin-bottom:10px;"><a href="index.html" style="color:var(--accent);text-decoration:none;font-size:13px;">← Claude Project Dashboard</a></p>
+  <div class="navRow">
+    <a href="index.html" class="homeLink">← Claude Manager home</a>
+    <a href="local-ai-picker.html" class="pickerBtn">🧭 Back to the AI picker</a>
+  </div>
   <h1>🗺️ How We Built Our Own Local AI</h1>
   <div class="sub">The whole journey in plain English — every move, in order, so anyone can follow it and do the same. This page grows as we go: finished steps are solid, upcoming steps are dashed.</div>
 
@@ -174,6 +198,10 @@
     </div>
   </div>
 
+  <div class="navRow bottom">
+    <a href="index.html" class="homeLink">← Claude Manager home</a>
+    <a href="local-ai-picker.html" class="pickerBtn">🧭 Back to the AI picker</a>
+  </div>
   <div class="foot">A living document — updated at every step. Full technical memory lives in this project's <code>brain/</code> folder; the friendly version is this page.</div>
 </div>
 <script src="visitor-stats.js" defer></script>

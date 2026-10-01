@@ -5,31 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Which Local AI Should I Run? — interactive picker</title>
 <style>
-  :root {
+  /* Four brightness stops: light → slate (mid-light, dark ink) → steel (mid-dark, light ink) → dark.
+     Same variable names in every block; only the values change. Always opens Light. */
+  :root, :root[data-theme="light"] {
     color-scheme: light;
     --plane: #f9f9f7; --surface-1: #fcfcfb;
-    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #898781;
+    --ink-1: #0b0b0b; --ink-2: #52514e; --ink-3: #7a7872;
     --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
     --fit-fast: #2a78d6; --fit-ram: #e87ba4; --fit-slow: #008300;
-    --accent: #2a78d6; --good: #006300; --warn: #b97a10;
+    --accent: #2a78d6; --on-accent: #ffffff; --good: #006300; --warn: #b97a10;
+  }
+  :root[data-theme="slate"] {
+    color-scheme: light;
+    --plane: #c4c9d0; --surface-1: #e4e7eb;
+    --ink-1: #12151a; --ink-2: #343a43; --ink-3: #4e5560;
+    --grid: #b3b9c1; --axis: #8d949e; --ring: rgba(18,21,26,0.16);
+    --fit-fast: #1c5aa8; --fit-ram: #b23f6c; --fit-slow: #0b6b0b;
+    --accent: #174f96; --on-accent: #ffffff; --good: #0b5a0b; --warn: #865500;
+  }
+  :root[data-theme="steel"] {
+    color-scheme: dark;
+    --plane: #2a313b; --surface-1: #38414d;
+    --ink-1: #f3f6fa; --ink-2: #ccd4de; --ink-3: #a0abb9;
+    --grid: #46505d; --axis: #5c6776; --ring: rgba(255,255,255,0.14);
+    --fit-fast: #64a6f2; --fit-ram: #f08db5; --fit-slow: #45be45;
+    --accent: #74b0f5; --on-accent: #0d1622; --good: #5fd35f; --warn: #e8ae45;
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
     --plane: #0d0d0d; --surface-1: #1a1a19;
-    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
+    --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #969489;
     --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
-    --fit-fast: #3987e5; --fit-ram: #d55181; --fit-slow: #008300;
-    --accent: #3987e5; --good: #0ca30c; --warn: #c98500;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme: dark;
-      --plane: #0d0d0d; --surface-1: #1a1a19;
-      --ink-1: #ffffff; --ink-2: #c3c2b7; --ink-3: #898781;
-      --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
-      --fit-fast: #3987e5; --fit-ram: #d55181; --fit-slow: #008300;
-      --accent: #3987e5; --good: #0ca30c; --warn: #c98500;
-    }
+    --fit-fast: #3987e5; --fit-ram: #d55181; --fit-slow: #1a961a;
+    --accent: #3987e5; --on-accent: #ffffff; --good: #0ca30c; --warn: #c98500;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: var(--plane); color: var(--ink-1); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.55; padding: 28px 18px 60px; }
@@ -49,7 +57,7 @@
   .machineTabs { display: flex; gap: 0; border: 1px solid var(--ring); border-radius: 9px; overflow: hidden; }
   .machineTabs button { border: none; background: transparent; color: var(--ink-2); padding: 8px 14px; font-size: 13px; cursor: pointer; border-right: 1px solid var(--ring); }
   .machineTabs button:last-child { border-right: none; }
-  .machineTabs button.on { background: var(--accent); color: #fff; }
+  .machineTabs button.on { background: var(--accent); color: var(--on-accent); }
   .hwSummary { font-size: 12.5px; color: var(--ink-2); margin-top: 10px; }
   .hwSummary b { color: var(--ink-1); }
   .specsHelp { margin-top: 12px; border-top: 1px solid var(--grid); padding-top: 10px; }
@@ -91,7 +99,9 @@
 
   .chartBox { position: relative; overflow-x: auto; }
   svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .dot g.mark { transition: transform 0.55s cubic-bezier(.4,.1,.2,1), opacity 0.4s; cursor: pointer; }
+  .dot g.mark, g.lblWrap { transition: transform 0.55s cubic-bezier(.4,.1,.2,1), opacity 0.4s; }
+  .dot g.mark { cursor: pointer; }
+  g.lblWrap { pointer-events: none; }
   .dotLabel { font-size: 11.5px; fill: var(--ink-1); paint-order: stroke; stroke: var(--surface-1); stroke-width: 3px; stroke-linejoin: round; }
   .quadTag { font-size: 11px; fill: var(--ink-3); }
   .axisLabel { font-size: 12px; fill: var(--ink-2); }
@@ -120,10 +130,17 @@
   .modelName { font-weight: 600; color: var(--ink-1); white-space: nowrap; }
   .modelFam { color: var(--ink-3); font-size: 11.5px; display: block; }
   .h1{background:#cde2fb;color:#0b0b0b}.h2{background:#b7d3f6;color:#0b0b0b}.h3{background:#9ec5f4;color:#0b0b0b}.h4{background:#86b6ef;color:#0b0b0b}.h5{background:#6da7ec;color:#0b0b0b}.h6{background:#5598e7;color:#0b0b0b}.h7{background:#3987e5;color:#fff}.h8{background:#256abf;color:#fff}.h9{background:#1c5cab;color:#fff}.h10{background:#104281;color:#fff}
-  :root[data-theme="dark"] .h1{background:#0d366b;color:#fff}:root[data-theme="dark"] .h2{background:#104281;color:#fff}:root[data-theme="dark"] .h3{background:#184f95;color:#fff}:root[data-theme="dark"] .h4{background:#1c5cab;color:#fff}:root[data-theme="dark"] .h5{background:#256abf;color:#fff}:root[data-theme="dark"] .h6{background:#2a78d6;color:#fff}:root[data-theme="dark"] .h7{background:#3987e5;color:#fff}:root[data-theme="dark"] .h8{background:#5598e7;color:#0b0b0b}:root[data-theme="dark"] .h9{background:#86b6ef;color:#0b0b0b}:root[data-theme="dark"] .h10{background:#b7d3f6;color:#0b0b0b}
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .h1{background:#0d366b;color:#fff} :root:not([data-theme="light"]) .h2{background:#104281;color:#fff} :root:not([data-theme="light"]) .h3{background:#184f95;color:#fff} :root:not([data-theme="light"]) .h4{background:#1c5cab;color:#fff} :root:not([data-theme="light"]) .h5{background:#256abf;color:#fff} :root:not([data-theme="light"]) .h6{background:#2a78d6;color:#fff} :root:not([data-theme="light"]) .h7{background:#3987e5;color:#fff} :root:not([data-theme="light"]) .h8{background:#5598e7;color:#0b0b0b} :root:not([data-theme="light"]) .h9{background:#86b6ef;color:#0b0b0b} :root:not([data-theme="light"]) .h10{background:#b7d3f6;color:#0b0b0b}
-  }
+  /* Light-ink themes (steel, dark): darker chip = lower score, brighter = better */
+  :root[data-theme="steel"] .h1, :root[data-theme="dark"] .h1{background:#0d366b;color:#fff}
+  :root[data-theme="steel"] .h2, :root[data-theme="dark"] .h2{background:#104281;color:#fff}
+  :root[data-theme="steel"] .h3, :root[data-theme="dark"] .h3{background:#184f95;color:#fff}
+  :root[data-theme="steel"] .h4, :root[data-theme="dark"] .h4{background:#1c5cab;color:#fff}
+  :root[data-theme="steel"] .h5, :root[data-theme="dark"] .h5{background:#256abf;color:#fff}
+  :root[data-theme="steel"] .h6, :root[data-theme="dark"] .h6{background:#2a78d6;color:#fff}
+  :root[data-theme="steel"] .h7, :root[data-theme="dark"] .h7{background:#3987e5;color:#fff}
+  :root[data-theme="steel"] .h8, :root[data-theme="dark"] .h8{background:#5598e7;color:#0b0b0b}
+  :root[data-theme="steel"] .h9, :root[data-theme="dark"] .h9{background:#86b6ef;color:#0b0b0b}
+  :root[data-theme="steel"] .h10, :root[data-theme="dark"] .h10{background:#b7d3f6;color:#0b0b0b}
 
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
   .card { background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
@@ -159,7 +176,7 @@
 
   .askBox { border: 1px solid var(--accent); }
   .askBox textarea { width: 100%; min-height: 150px; background: var(--plane); color: var(--ink-2); border: 1px solid var(--ring); border-radius: 8px; padding: 10px; font-size: 12px; font-family: Consolas, monospace; margin: 10px 0; resize: vertical; }
-  .bigBtn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+  .bigBtn { background: var(--accent); color: var(--on-accent); border: none; border-radius: 8px; padding: 9px 18px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
 
   .notes { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 12px; }
   .note { background: var(--surface-1); border: 1px solid var(--ring); border-radius: 12px; padding: 14px 16px; font-size: 13px; color: var(--ink-2); }
@@ -171,11 +188,27 @@
 </style>
 </head>
 <body>
-<button class="themeToggle" id="themeBtn">☀️ / 🌙</button>
+<button class="themeToggle" id="themeBtn">☀️ Light</button>
 <div class="wrap">
-  <p style="margin-bottom:10px;"><a href="index.html" style="color:var(--accent);text-decoration:none;font-size:13px;">← Claude Project Dashboard</a></p>
+  <p style="margin-bottom:10px;"><a href="index.html" style="color:var(--accent);text-decoration:none;font-size:13px;">← Claude Manager home</a></p>
   <h1>🧭 Which Local AI Should I Run?</h1>
-  <div class="sub">A free, self-contained picker for AI models that run on <em>your own computer</em> (via <b>Ollama</b> — the free engine that runs them). Tell it what machine you have and what you want to do; the chart, scores, and recommendations adapt. No account, no tracking, nothing leaves this page. Researched &amp; fact-checked 2026-07-18.</div>
+  <div class="sub">A free, self-contained picker for AI models that run on <em>your own computer</em> (via <b>Ollama</b> — the free engine that runs them). Tell it what machine you have and what you want to do; the chart, scores, and recommendations adapt. No account, no tracking, nothing leaves this page. Refreshed 2026-09-30 (first researched 2026-07-18).</div>
+  <details class="specsHelp" style="margin:0 0 14px; border-top:none; padding-top:0;">
+    <summary>🆕 What changed in the 2026-09-30 refresh</summary>
+    <ul style="font-size:12.8px; color:var(--ink-2); margin:8px 0 0 20px;">
+      <li><b>New:</b> Qwen3.8 27B (the new top pick for 24 GB cards), Meta's Muse Glimmer 30B, NVIDIA Nemotron 3.5 Lightning, IBM Granite 4.2, and Poolside Laguna XS 2.1 for coding.</li>
+      <li><b>Retired:</b> Llama 3.1 8B and DeepSeek-R1 8B (Ollama itself now warns they "don't work well"), and Phi-4 reasoning-plus (over a year old, beaten across the board).</li>
+      <li><b>Updated:</b> download sizes re-checked against Ollama — Gemma 4 models now include a built-in speed-up. You now need <b>Ollama 0.32.12 or newer</b>.</li>
+      <li><b>Giants:</b> new leaders (MiMo-V2.6-Pro, GLM-5.3, Kimi K3 weights released) plus a new section 9b for 128 GB machines.</li>
+      <li><b>Page:</b> four brightness settings on the button at top right.</li>
+    </ul>
+  </details>
+
+  <div class="panel" style="margin:0 0 18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; border-color:var(--accent);">
+    <span style="font-size:22px;">🗺️</span>
+    <div style="flex:1; min-width:240px; font-size:13.5px; color:var(--ink-2);"><b style="color:var(--ink-1);">New to running AI on your own computer?</b> Start with the step-by-step guide, then come back here to pick your model.</div>
+    <a href="build-your-own-local-ai.html" style="background:var(--accent); color:var(--on-accent); text-decoration:none; font-weight:600; font-size:13.5px; padding:8px 16px; border-radius:8px; white-space:nowrap;">Read the guide →</a>
+  </div>
 
   <h2>1 · Your machine</h2>
   <div class="h2sub">Two numbers decide everything: your <b>graphics-card memory</b> (VRAM — the AI's fast desk) and your <b>regular RAM</b> (the slower overflow table). Plus one housekeeping check: <b>free disk space</b> — these models are big one-time downloads. Windows: Task Manager → Performance → GPU → "Dedicated GPU memory".</div>
@@ -324,7 +357,7 @@
 
   <h2>7 · Want a fresh, personalized write-up?</h2>
   <div class="panel askBox">
-    <div style="font-size:13.5px; color:var(--ink-2);">This page is a snapshot (researched 2026-07-18) — the model world moves monthly. If you use Claude, ChatGPT, or any capable AI, click the button: it builds a ready-to-paste prompt containing your hardware and chosen jobs, asking <em>your</em> AI for an up-to-the-minute version of these model cards and recommendations. Costs the page's author nothing; uses your own AI account. You can also save this whole page with <b>Ctrl+S</b> — it works offline.</div>
+    <div style="font-size:13.5px; color:var(--ink-2);">This page is a snapshot (refreshed 2026-09-30) — the model world moves monthly. If you use Claude, ChatGPT, or any capable AI, click the button: it builds a ready-to-paste prompt containing your hardware and chosen jobs, asking <em>your</em> AI for an up-to-the-minute version of these model cards and recommendations. Costs the page's author nothing; uses your own AI account. You can also save this whole page with <b>Ctrl+S</b> — it works offline.</div>
     <textarea id="askPrompt" readonly></textarea>
     <button class="bigBtn" onclick="navigator.clipboard.writeText(document.getElementById('askPrompt').value); this.textContent='Copied — paste it into your AI'; setTimeout(()=>this.textContent='📋 Copy the prompt for my AI',2200)">📋 Copy the prompt for my AI</button>
   </div>
@@ -347,9 +380,12 @@
   <h2>9 · ☁️ Beyond home hardware — the giants</h2>
   <div class="h2sub">These are the biggest downloadable models on Earth. They're free and legal to download — and none of them will run on any machine in the selector above, or any machine you can buy for a normal budget. Here's what they'd actually take, and the sane way to use them instead.</div>
   <div class="tableWrap"><table id="frontier"></table></div>
+  <h2 style="font-size:16px; margin-top:24px;">9b · The in-between: giants a 128 GB machine can just about hold</h2>
+  <div class="h2sub">New since July, and the most interesting band for enthusiasts: 270–320 billion-parameter models squeezed small enough to fit a 128 GB Mac or a PC with 96–128 GB of RAM. Expect a few words per second, not a conversation — and heavy squeezing (1–3 bit) costs some quality.</div>
+  <div class="tableWrap"><table id="midgiants"></table></div>
   <div class="notes" style="margin-top:14px;" id="frontierNotes"></div>
 
-  <div class="foot">Built from a fact-checked multi-agent research run (web sweeps → scoring → independent skeptics), 2026-07-18. Capability scores are informed judgments grounded in public benchmarks; entries marked "specs partly estimated" carry unverified sizes. Speed figures are computed ballparks from the fine-print rules. Colors validated for colorblind safety in light and dark mode. Verify any install command against ollama.com/library before running it.</div>
+  <div class="foot">Built from a fact-checked multi-agent research run (web sweeps → scoring → independent skeptics), 2026-07-18; lineup, sizes and giants refreshed from Ollama's registry, Artificial Analysis and vendor announcements, 2026-09-30. Capability scores are informed judgments grounded in public benchmarks; entries marked "specs partly estimated" carry unverified sizes. Speed figures are computed ballparks from the fine-print rules. Colors validated for colorblind safety in light and dark mode. Verify any install command against ollama.com/library before running it.</div>
 </div>
 <div id="tip"></div>
 
@@ -433,7 +469,7 @@ const DATA = {
    "activeB": 9,
    "ctx": "256K",
    "est": false,
-   "oneLiner": "The best small all-rounder of 2026: reasoning that rivals models ten times its size, in a download that fits almost any modern computer.",
+   "oneLiner": "Still the best small all-rounder: reasoning that rivals models ten times its size, in a download that fits almost any modern computer. (No smaller Qwen3.8 exists — this is still the newest at this size.)",
    "strengths": [
     "Elite thinking for its size — scores 81.7% on a PhD-level science exam (GPQA Diamond), beating models 13x bigger",
     "Reads very long documents (256K window) cheaply and summarizes them faithfully",
@@ -466,7 +502,7 @@ const DATA = {
    "name": "Qwen3.6 35B-A3B",
    "tag": "qwen3.6:35b",
    "family": "Qwen (Alibaba)",
-   "diskGb": 24,
+   "diskGb": 22.6,
    "params": "35B MoE",
    "moe": true,
    "activeB": 3,
@@ -479,9 +515,9 @@ const DATA = {
     "Runs surprisingly well on a normal PC with lots of regular memory — no monster graphics card required"
    ],
    "weaknesses": [
-    "The 24 GB download needs a machine with plenty of memory (32 GB of RAM or more)",
+    "The 22.6 GB download needs a machine with plenty of memory (32 GB of RAM or more)",
     "Trained with an agent-and-tools focus — its prose is serviceable rather than beautiful",
-    "Its own dense 27B sibling beats it on quality when you have the hardware to run that at full speed"
+    "The dense Qwen3.8 27B beats it on quality when you have a 24 GB card to run that at full speed"
    ],
    "bestFor": "Machines with 32 GB+ of RAM that want near-frontier quality with quick responses — the daily workhorse for heavy document and coding work.",
    "s": {
@@ -504,13 +540,13 @@ const DATA = {
    "name": "gpt-oss 20B",
    "tag": "gpt-oss:20b",
    "family": "OpenAI",
-   "diskGb": 14,
+   "diskGb": 13.8,
    "params": "21B MoE",
    "moe": true,
    "activeB": 3.6,
    "ctx": "128K",
    "est": false,
-   "oneLiner": "OpenAI's open model from 2025: a careful, methodical reasoner with that familiar ChatGPT explaining style — now feeling its age against the 2026 generation.",
+   "oneLiner": "OpenAI's open model from 2025: a careful, methodical reasoner with that familiar ChatGPT explaining style — 13 months old now, with no successor announced.",
    "strengths": [
     "Still excellent at math when set to think hard (~80% on the AIME competition exam) with concise, readable working",
     "Clear, well-organized explanations in the recognizable OpenAI voice",
@@ -543,7 +579,7 @@ const DATA = {
    "tag": "gemma4:e4b-it-qat",
    "readB": 4,
    "family": "Gemma (Google)",
-   "diskGb": 6.1,
+   "diskGb": 6.2,
    "params": "8B raw / 4B effective",
    "moe": false,
    "activeB": 4,
@@ -575,43 +611,6 @@ const DATA = {
     "translation": 7,
     "companion": 7,
     "mathlogic": 5
-   }
-  },
-  {
-   "name": "DeepSeek-R1 8B distill",
-   "tag": "deepseek-r1:8b",
-   "family": "DeepSeek",
-   "diskGb": 5.2,
-   "params": "8B dense",
-   "moe": false,
-   "activeB": 8,
-   "ctx": "128K",
-   "est": false,
-   "oneLiner": "The 2025 model that made 'thinking out loud' famous — historically important, but every current small model now out-reasons it without the rambling.",
-   "strengths": [
-    "Shows its reasoning step by step, which some people find useful for learning how problems are solved",
-    "Still respectable at math puzzles — it set the 8B standard back in 2025"
-   ],
-   "weaknesses": [
-    "Thinks aloud for paragraphs before answering, and that thinking often leaks into what should be clean output",
-    "Poor at following format instructions — the wrong tool when you need tidy tables or JSON",
-    "Outclassed at its own size: Qwen3.5 9B does everything it does, better and faster"
-   ],
-   "bestFor": "Mostly curiosity value in 2026 — pick Qwen3.5 9B instead unless you specifically enjoy watching a model think.",
-   "s": {
-    "docqa": 4,
-    "hypothesis": 5,
-    "strategy": 5,
-    "transcripts": 4,
-    "everydayWriting": 3,
-    "longformWriting": 3,
-    "coding": 4,
-    "extraction": 3,
-    "brainstorm": 5,
-    "tutoring": 4,
-    "translation": 3,
-    "companion": 2,
-    "mathlogic": 6
    }
   },
   {
@@ -653,78 +652,42 @@ const DATA = {
    }
   },
   {
-   "name": "IBM Granite 4.1 8B",
-   "tag": "granite4.1:8b",
+   "name": "IBM Granite 4.2 8B",
+   "tag": "granite4.2:8b",
    "family": "Granite (IBM)",
    "diskGb": 5.35,
-   "params": "8B dense",
+   "params": "8.8B dense",
    "moe": false,
-   "activeB": 8,
-   "ctx": "131K",
+   "activeB": 8.8,
+   "ctx": "128K",
    "est": false,
-   "oneLiner": "IBM's buttoned-up business model: built to answer strictly from your documents and produce spotless tables and data — not to be your friend.",
+   "oneLiner": "IBM's buttoned-up business model, refreshed in August 2026: still built to answer strictly from your documents and produce spotless tables — and now it can think step by step when asked.",
    "strengths": [
-    "The extraction bargain of 2026 — its table-extraction score (86.5) beats even top hosted models costing thousands of times more",
-    "Purpose-built to stay factual when answering from your files, with built-in checks against making things up",
-    "Small (5 GB) and efficient — runs comfortably on ordinary office laptops"
+    "The extraction specialist — purpose-built for clean tables, tags, and structured data from messy text",
+    "Built to stay factual when answering from your files, with checks against making things up",
+    "New in 4.2: an optional thinking mode — strong math for its size (86.7 on the AIME competition exam, IBM's figure)",
+    "Small (5.35 GB) and efficient — runs comfortably on ordinary office laptops"
    ],
    "weaknesses": [
-    "Dry, corporate register — lessons are accurate but lifeless, and nobody journals with Granite",
-    "Weak at open-ended reasoning, creativity, and anything that needs imagination",
-    "Never the pick for translation or writing that needs a human touch"
+    "Dry, corporate register — accurate but lifeless, and nobody journals with Granite",
+    "Weak at open-ended creativity and anything that needs imagination",
+    "Never the pick for writing that needs a human touch"
    ],
    "bestFor": "Turning messy documents into clean data, and trustworthy answer-from-my-files work on a modest machine.",
    "s": {
     "docqa": 8,
-    "hypothesis": 5,
-    "strategy": 5,
+    "hypothesis": 6,
+    "strategy": 6,
     "transcripts": 7,
     "everydayWriting": 5,
     "longformWriting": 4,
     "coding": 6,
     "extraction": 9,
     "brainstorm": 4,
-    "tutoring": 5,
+    "tutoring": 6,
     "translation": 5,
     "companion": 3,
-    "mathlogic": 5
-   }
-  },
-  {
-   "name": "Phi-4 reasoning-plus 14B",
-   "tag": "phi4-reasoning:plus",
-   "family": "Phi (Microsoft)",
-   "diskGb": 11,
-   "params": "14B dense",
-   "moe": false,
-   "activeB": 14,
-   "ctx": "32K",
-   "est": false,
-   "oneLiner": "Microsoft's math specialist: brilliant at step-by-step math and logic puzzles, exhausting at nearly everything else.",
-   "strengths": [
-    "One of the best pure-math models you can run at home under 20B — tuned for competition-level problems (81.3 on AIME)",
-    "Excellent patient, step-by-step teaching for math and science topics"
-   ],
-   "weaknesses": [
-    "Thinks aloud for 800-1000 words even on simple requests — a two-line email becomes an essay",
-    "Small 32K reading window cramps long documents and transcripts",
-    "Rambling and thin outside math and science; weak at following formatting instructions"
-   ],
-   "bestFor": "Math homework, puzzles, and STEM tutoring — and only that.",
-   "s": {
-    "docqa": 4,
-    "hypothesis": 7,
-    "strategy": 6,
-    "transcripts": 4,
-    "everydayWriting": 4,
-    "longformWriting": 3,
-    "coding": 5,
-    "extraction": 3,
-    "brainstorm": 5,
-    "tutoring": 6,
-    "translation": 4,
-    "companion": 2,
-    "mathlogic": 8
+    "mathlogic": 7
    }
   },
   {
@@ -763,44 +726,6 @@ const DATA = {
     "translation": 7,
     "companion": 5,
     "mathlogic": 7
-   }
-  },
-  {
-   "name": "Llama 3.1 8B",
-   "tag": "llama3.1:8b",
-   "family": "Llama (Meta)",
-   "moe": false,
-   "diskGb": 4.9,
-   "params": "8B dense",
-   "activeB": 8,
-   "ctx": "128K",
-   "est": false,
-   "oneLiner": "The 2024 classic that started the home-AI boom: friendly and familiar, but two full generations behind on brains.",
-   "strengths": [
-    "Warm, natural chat voice that still holds up for casual conversation",
-    "The largest community of custom personality versions of any model — the companion/roleplay ecosystem keeps it alive",
-    "Small, well-understood, and runs on nearly anything"
-   ],
-   "weaknesses": [
-    "Mid-2024 knowledge and no reasoning training — every 2026 model here beats it on real thinking, even the 4B ones",
-    "Officially supports only ~8 languages — thin next to Qwen's 201 or Gemma's 140+",
-    "Loses the thread on long documents where modern models cruise"
-   ],
-   "bestFor": "Casual companionship and private chat, where its huge community of custom versions is the real draw.",
-   "s": {
-    "docqa": 4,
-    "hypothesis": 3,
-    "strategy": 3,
-    "transcripts": 4,
-    "everydayWriting": 5,
-    "longformWriting": 4,
-    "coding": 3,
-    "extraction": 4,
-    "brainstorm": 5,
-    "tutoring": 4,
-    "translation": 4,
-    "companion": 6,
-    "mathlogic": 3
    }
   },
   {
@@ -845,7 +770,7 @@ const DATA = {
    "name": "Gemma 4 26B A4B",
    "tag": "gemma4:26b",
    "family": "Gemma (Google)",
-   "diskGb": 18,
+   "diskGb": 18.7,
    "params": "26B MoE",
    "moe": true,
    "activeB": 4,
@@ -856,11 +781,12 @@ const DATA = {
     "Best everyday and long-form writing here — the least AI-sounding prose of any local model",
     "A top-3 human-preference ranking (people literally pick its answers over bigger models')",
     "The standout teacher: warm, well-paced explanations, plus it can look at images and listen to audio",
-    "140+ languages with big-model fluency in the output language"
+    "140+ languages with big-model fluency in the output language",
+    "Now ships with a built-in \"draft helper\" that makes replies arrive noticeably faster (needs Ollama 0.30.9+)"
    ],
    "weaknesses": [
-    "A half-step behind the Qwen3.6 flagships on the hardest reasoning and coding problems",
-    "The 16 GB download wants a machine with generous memory to run comfortably"
+    "A step behind Qwen3.8 27B on the hardest reasoning and coding problems",
+    "The 18.7 GB download wants a machine with generous memory to run comfortably"
    ],
    "bestFor": "Writing, tutoring, and daily conversation — when how it says things matters as much as what it knows.",
    "s": {
@@ -916,27 +842,27 @@ const DATA = {
    }
   },
   {
-   "name": "Qwen3-Coder 30B-A3B",
-   "tag": "qwen3-coder:30b",
-   "family": "Qwen (Alibaba)",
-   "diskGb": 19,
-   "params": "30B MoE",
+   "name": "Poolside Laguna XS 2.1",
+   "tag": "laguna-xs-2.1",
+   "family": "Laguna (Poolside)",
+   "diskGb": 20.3,
+   "params": "33B MoE",
    "moe": true,
-   "activeB": 3.3,
-   "ctx": "256K (stretches toward 1M)",
+   "activeB": 3,
+   "ctx": "256K",
    "est": false,
-   "oneLiner": "The default local coding specialist: a fast, tool-using code model with a massive reading window that pairs naturally with Claude Code-style terminal workflows.",
+   "oneLiner": "The new local coding specialist (July 2026): a fast mixture-of-experts code model that replaced Qwen3-Coder as the go-to for agent-style coding tools.",
    "strengths": [
-    "Purpose-built for hands-on coding work — exploring a project, editing many files, calling tools — and the most-downloaded local coder anywhere (7.4M+ downloads)",
-    "The biggest practical coding memory in its class: 256K natively, stretchable toward 1M — it can hold your whole project in its head",
-    "Fast despite its size: only a small slice runs per word, so it stays snappy even partly in regular RAM"
+    "Strong real-world coding for a home model — 70.9 on SWE-bench Verified (Poolside's figure), versus about 51 for the Qwen3-Coder it replaces",
+    "Only 3B of its 33B wakes up per word, so it stays quick even when partly running from regular RAM",
+    "Large 256K reading window — holds a whole project in mind; commercial use allowed (OpenMDW license)"
    ],
    "weaknesses": [
-    "A coding specialist through and through — noticeably weaker general chat and no deep-thinking mode",
-    "Its newer successor is stronger but needs a 52 GB download, out of home-hardware reach — so this 9-month-old model is no longer the family's cutting edge",
-    "Writes prose like a README; the wrong tool for anything human-facing"
+    "A coding specialist through and through — weak at general chat, writing, and anything human-facing",
+    "The 20 GB download needs 32 GB+ of RAM on a typical PC; needs Ollama 0.32.3 or newer",
+    "Newer and less battle-tested than the Qwen coders — scores are the vendor's own so far"
    ],
-   "bestFor": "Dedicated coding work over big projects, especially with agent-style coding tools in the terminal.",
+   "bestFor": "Dedicated coding work over big projects, especially with agent-style coding tools in the terminal (Claude Code, OpenCode).",
    "s": {
     "docqa": 5,
     "hypothesis": 5,
@@ -944,35 +870,34 @@ const DATA = {
     "transcripts": 5,
     "everydayWriting": 4,
     "longformWriting": 3,
-    "coding": 8,
+    "coding": 9,
     "extraction": 7,
     "brainstorm": 5,
     "tutoring": 4,
     "translation": 4,
     "companion": 3,
-    "mathlogic": 5
+    "mathlogic": 6
    }
   },
   {
    "name": "Gemma 4 12B",
    "tag": "gemma4:12b",
    "family": "Gemma (Google)",
-   "diskGb": 7.6,
+   "diskGb": 8,
    "params": "12B dense",
    "moe": false,
    "activeB": 12,
    "ctx": "256K",
    "est": false,
-   "oneLiner": "The dense mid-size sweet spot (June 2026): near-Gemma-4-26B quality that fits cleanly in 8–16 GB of graphics memory. The model itself understands images, audio, and video — though the standard Ollama build currently accepts text and images only.",
+   "oneLiner": "The dense mid-size sweet spot: near-Gemma-4-26B quality that fits cleanly in 12–16 GB of graphics memory, now with a built-in speed-up for faster replies.",
    "strengths": [
     "Punches far above its size — beats the older, twice-as-big Gemma 3 27B on tough science and document tests (78.8 on GPQA Diamond), close to its own 26B sibling",
     "The first mid-size open model that natively understands text, images, audio, and video in one system — hand it the meeting recording itself",
     "The Gemma writing voice with real 12B accuracy — excellent emails, teaching, and translation (140+ languages)"
    ],
    "weaknesses": [
-    "Trails the Qwen models on serious coding — pick it for general and multimodal work, not big programming jobs",
-    "Audio and video input are NOT available through the standard Ollama version (text + images only — the fancier inputs need a different runtime)",
-    "Trails the Qwen coding models on serious programming tasks — pick it for general and image work"
+    "Trails the Qwen models on serious coding — pick it for general and image work, not big programming jobs",
+    "Audio and video input are NOT available through the standard Ollama version (text + images only)"
    ],
    "bestFor": "The 8-16 GB sweet spot: great writing, teaching, and translation, with photos and recordings understood natively.",
    "s": {
@@ -992,28 +917,28 @@ const DATA = {
    }
   },
   {
-   "name": "Qwen3.6 27B",
-   "tag": "qwen3.6:27b",
+   "name": "Qwen3.8 27B",
+   "tag": "qwen3.8:27b",
    "family": "Qwen (Alibaba)",
-   "diskGb": 17,
+   "diskGb": 17.7,
    "params": "27B dense",
    "moe": false,
    "activeB": 27,
    "ctx": "256K",
    "est": false,
-   "oneLiner": "The best model a 24 GB graphics card can run in mid-2026: sees images, thinks deeply, and beats models 15x its size at real-world coding — entirely on your machine.",
+   "oneLiner": "The new best model a 24 GB graphics card can run (August 2026): sees images, thinks deeply, and is the top-ranked open model of its size class on Artificial Analysis' independent index.",
    "strengths": [
-    "The strongest coding result of any home-runnable model: 77.2% on the hardest real-world coding test (SWE-bench Verified) — beating a hosted model with 15x the parameters",
-    "The benchmark ceiling of this list across reasoning, planning, and structured work — the best local evidence reasoner, full stop",
-    "Sees images, reads documents and video, and has a deep-thinking mode — a complete flagship in 17 GB",
-    "The family's 200-language coverage at full 27B quality — the strongest translator of the set"
+    "A big coding jump over Qwen3.6 27B — 61.7 vs 53.5 on the tough SWE-bench Pro test (Alibaba's figures)",
+    "Ranked #1 of 142 open models in the 4–40B class by Artificial Analysis — the best local evidence reasoner here",
+    "Sees images, reads long documents (256K window), and has a deep-thinking mode — a complete flagship in 17.7 GB",
+    "The family's 200-language coverage at full 27B quality"
    ],
    "weaknesses": [
-    "Every word makes it read all 27B of itself, so it responds noticeably slower than the fast mixture-of-experts alternatives on the same hardware",
-    "Effectively out of reach below ~18 GB of graphics-card (or Mac unified) memory — on an ordinary 8 GB PC it would crawl",
-    "A shade more formal and less warm than the Gemmas in casual conversation"
+    "Very wordy when thinking — independent testers called it \"notably slow and very verbose.\" Turn thinking off for everyday tasks",
+    "Reads all 27B of itself for every word, so it is slower than the mixture-of-experts options on the same hardware",
+    "Effectively out of reach below ~20 GB of graphics-card (or Mac) memory — needs Ollama 0.32.12 or newer"
    ],
-   "bestFor": "The overall top pick if you have a 24 GB graphics card or 24 GB+ Mac — the best local model here for coding, reasoning, and hard work of any kind.",
+   "bestFor": "The overall top pick if you have a 24 GB graphics card or a 32 GB+ Mac — the best local model here for coding, reasoning, and hard work of any kind.",
    "s": {
     "docqa": 9,
     "hypothesis": 10,
@@ -1027,41 +952,127 @@ const DATA = {
     "tutoring": 9,
     "translation": 9,
     "companion": 7,
+    "mathlogic": 10
+   }
+  },
+  {
+   "name": "Muse Glimmer 30B",
+   "tag": "muse-glimmer:30b",
+   "family": "Muse (Meta)",
+   "diskGb": 18.2,
+   "params": "28B dense",
+   "moe": false,
+   "activeB": 28,
+   "ctx": "128K",
+   "est": false,
+   "oneLiner": "Meta's first open model since Llama (August 2026): tuned for using tools and carrying out long, multi-step tasks — the natural successor for Llama fans.",
+   "strengths": [
+    "Excellent at competition math (94.7 on AIME 2026) and strong at reading charts (Meta's figures)",
+    "Built for agents — calling tools and working through multi-step jobs; Apache 2.0 licensed",
+    "Has a Mac-optimized version (tag 30b-mlx) for faster replies on Apple Silicon"
+   ],
+   "weaknesses": [
+    "Makes things up far more often than Qwen — independent testers measured an 82% hallucination rate vs 49% for Qwen3.6 27B. Not for answers you must trust",
+    "Below the human baseline on everyday office-style tasks in independent testing",
+    "Dense 28B: slow unless it fits fully on a 24 GB card; needs Ollama 0.32.8 or newer"
+   ],
+   "bestFor": "24 GB card or 32 GB+ Mac owners running agents and tool-using assistants — and Llama fans looking for Meta's current model.",
+   "s": {
+    "docqa": 5,
+    "hypothesis": 6,
+    "strategy": 8,
+    "transcripts": 6,
+    "everydayWriting": 7,
+    "longformWriting": 7,
+    "coding": 8,
+    "extraction": 7,
+    "brainstorm": 8,
+    "tutoring": 7,
+    "translation": 6,
+    "companion": 7,
     "mathlogic": 9
+   }
+  },
+  {
+   "name": "Nemotron 3.5 Lightning",
+   "tag": "nemotron-3.5-lightning:30b",
+   "family": "Nemotron (NVIDIA)",
+   "diskGb": 25.4,
+   "params": "30B MoE",
+   "moe": true,
+   "activeB": 3,
+   "ctx": "1M",
+   "est": false,
+   "oneLiner": "NVIDIA's speed-first model (August 2026): a hybrid design built to race through very long documents — up to a million-token reading window.",
+   "strengths": [
+    "The longest reading window on this page — up to 1M tokens (roughly 750,000 words) in one go",
+    "Very fast: independent testers found it about 7× quicker per task than comparable models",
+    "Solid general knowledge (81.9 on MMLU-Pro, NVIDIA's figure)"
+   ],
+   "weaknesses": [
+    "Not the smartest: behind Qwen3.6 35B on 11 of NVIDIA's own 12 tests",
+    "At 25.4 GB it does NOT fit a 24 GB card — on a PC it runs from regular RAM (needs 32 GB+)",
+    "Prose is plain; needs Ollama 0.32.9 or newer"
+   ],
+   "bestFor": "High-memory machines chewing through huge documents or transcript archives where speed matters more than peak smarts.",
+   "s": {
+    "docqa": 8,
+    "hypothesis": 7,
+    "strategy": 7,
+    "transcripts": 9,
+    "everydayWriting": 6,
+    "longformWriting": 5,
+    "coding": 7,
+    "extraction": 8,
+    "brainstorm": 6,
+    "tutoring": 7,
+    "translation": 6,
+    "companion": 5,
+    "mathlogic": 7
    }
   }
  ],
  "notes": [
-  "Scores are 1-10 within this 16-model local lineup, not against hosted frontier models — a 10 here means 'the best you can run at home,' not 'the best that exists.'",
+  "Scores are 1-10 within this 15-model local lineup, not against hosted frontier models.",
   "est:true marks the two entries whose numbers were estimated rather than fully verified during roster research (GLM-4.7-Flash and Gemma 4 26B A4B); their specs matched later spot-checks but keep the flag for honesty. All four late additions (Qwen3.5 2B, Qwen3-Coder 30B-A3B, Gemma 4 12B, Qwen3.6 27B) were verified against Ollama's library, Google's Gemma 4 model card, and mid-2026 coverage (VentureBeat, InsiderLLM, llm-stats).",
   "Disk sizes are for the standard compressed version each service ships by default; several models also offer smaller, lower-quality compressed versions for tight machines.",
   "All speed figures are single-user speeds with short-to-moderate prompts; very long prompts shift the wait to reading time, which the rules don't model.",
   "Context ('ctx') is the model's reading window — how much text it can hold in mind at once. 256K tokens is roughly 200,000 words or a 500-page book.",
-  "Sources consulted for verification: ollama.com/library (qwen3.5:2b, gemma4:e4b, glm-4.7-flash), ai.google.dev Gemma 4 model card, venturebeat.com Gemma 4 12B coverage, insiderllm.com Qwen 3.6 guide, llm-stats.com Qwen3.6-27B, unsloth.ai GLM-4.7-Flash guide."
+  "Sources for the 2026-09-30 refresh: Ollama's model registry (sizes, minimum versions), ollama/ollama GitHub releases, Artificial Analysis, and vendor announcements (Alibaba, Meta, IBM, NVIDIA, Poolside)."
  ]
 };
 const UC = {}; DATA.useCases.forEach(u => UC[u.key] = u);
 const MODELS = DATA.models;
 const shortNames = {
   'Qwen3.5 9B':'Qwen3.5 9B','Qwen3.6 35B-A3B':'Qwen3.6 35B','gpt-oss 20B':'gpt-oss 20B','Gemma 4 E4B':'Gemma4 E4B',
-  'DeepSeek-R1 8B distill':'R1 8B','Ministral 3 8B':'Ministral 8B','IBM Granite 4.1 8B':'Granite 8B',
-  'Phi-4 reasoning-plus 14B':'Phi-4-R+','Qwen3.5 4B':'Qwen3.5 4B','Llama 3.1 8B':'Llama3.1 8B',
-  'GLM-4.7-Flash':'GLM-4.7','Gemma 4 26B A4B':'Gemma4 26B','Qwen3.5 2B':'Qwen3.5 2B',
-  'Qwen3-Coder 30B-A3B':'Qwen3-Coder','Gemma 4 12B':'Gemma4 12B','Qwen3.6 27B':'Qwen3.6 27B',
+  'Ministral 3 8B':'Ministral 8B','IBM Granite 4.2 8B':'Granite',
+  'Qwen3.5 4B':'Qwen3.5 4B','GLM-4.7-Flash':'GLM-4.7','Gemma 4 26B A4B':'Gemma4 26B','Qwen3.5 2B':'Qwen3.5 2B',
+  'Poolside Laguna XS 2.1':'Laguna XS','Gemma 4 12B':'Gemma4 12B','Qwen3.8 27B':'Qwen3.8 27B',
+  'Muse Glimmer 30B':'Glimmer 30B','Nemotron 3.5 Lightning':'Nemotron 3.5',
 };
 MODELS.forEach(m => { m.shortName = shortNames[m.name] || m.name; });
 const $ = id => document.getElementById(id);
 
 // ---------- Theme ----------
+// Four brightness stops. Always opens Light unless the visitor clicked the
+// toggle before — never follows the system's dark-mode setting.
 (function initTheme(){
-  const saved = localStorage.getItem('lamp-theme');
-  if (saved) document.documentElement.setAttribute('data-theme', saved);
+  const MODES = ['light', 'slate', 'steel', 'dark'];
+  const LABEL = { light:'☀️ Light', slate:'◑ Slate', steel:'◐ Steel', dark:'🌙 Dark' };
+  let saved = null;
+  try { saved = localStorage.getItem('lamp-theme'); } catch (e) {}
+  let mode = MODES.includes(saved) ? saved : 'light';
+  const paint = () => {
+    document.documentElement.setAttribute('data-theme', mode);
+    $('themeBtn').textContent = LABEL[mode];
+    $('themeBtn').title = 'Change brightness: Light → Slate → Steel → Dark';
+  };
   $('themeBtn').addEventListener('click', () => {
-    const dark = getComputedStyle(document.body).backgroundColor !== 'rgb(249, 249, 247)';
-    const next = dark ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('lamp-theme', next);
+    mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length];
+    try { localStorage.setItem('lamp-theme', mode); } catch (e) {}
+    paint();
   });
+  paint();
 })();
 
 // ---------- Shared-setup link (#s=...) — a link wins over saved settings ----------
@@ -1239,7 +1250,7 @@ function buildQuad() {
   g += `<text class="quadTag" x="${M.l+8}" y="${H-M.b-8}">🚫 PROBABLY SKIP</text>`;
   g += `<text class="axisLabel" x="${(M.l+W-M.r)/2}" y="${H-8}" text-anchor="middle">Smarts for YOUR chosen jobs →</text>`;
   g += `<text class="axisLabel" x="14" y="${(M.t+H-M.b)/2}" text-anchor="middle" transform="rotate(-90 14 ${(M.t+H-M.b)/2})">Runs nicely on YOUR machine →</text>`;
-  g += `<g id="dots"></g>`;
+  g += `<g id="dots"></g><g id="lblLayer"></g>`; // labels sit above every dot
   svg.innerHTML = g;
   const dots = svg.querySelector('#dots');
   MODELS.forEach((m, i) => {
@@ -1247,10 +1258,13 @@ function buildQuad() {
     el.setAttribute('class', 'dot');
     el.innerHTML = `<g class="mark" id="mark-${i}">
       <circle id="dotc-${i}" r="${rOf(m)}" stroke="var(--surface-1)" stroke-width="2"/>
-      <text class="dotLabel" id="lbl-${i}" x="${rOf(m)+5}" y="4"></text>
       <circle r="${rOf(m)+9}" fill="transparent"/>
     </g>`;
     dots.appendChild(el);
+    const lw = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    lw.setAttribute('class', 'lblWrap'); lw.id = 'lblw-' + i;
+    lw.innerHTML = `<text class="dotLabel" id="lbl-${i}" x="${rOf(m)+5}" y="4"></text>`;
+    svg.querySelector('#lblLayer').appendChild(lw);
     const mark = el.querySelector('.mark');
     mark.addEventListener('mousemove', e => showTip(e, m));
     mark.addEventListener('mouseleave', hideTip);
@@ -1310,33 +1324,51 @@ function layoutQuad(fits) {
   const placed = [];
   MODELS.forEach((m, i) => {
     const f = fits[i], mark = $('mark-' + i);
-    if (f.status === 'wont') { mark.style.opacity = '0'; mark.style.pointerEvents = 'none'; return; }
-    mark.style.opacity = '1'; mark.style.pointerEvents = '';
+    const lwrap = $('lblw-' + i);
+    if (f.status === 'wont') { mark.style.opacity = '0'; mark.style.pointerEvents = 'none'; lwrap.style.opacity = '0'; return; }
+    mark.style.opacity = '1'; mark.style.pointerEvents = ''; lwrap.style.opacity = '1';
     const p = xy(m, f);
     placed.push({ m, i, f, px: sx(p.x), py: sy(p.y), r: rOf(m), x: p.x, y: p.y });
   });
-  const placedBoxes = [];
-  const candidates = (p, lw) => [
-    { dx: p.r + 5,    dy: 4,          anchor: 'start',  bx: p.px + p.r + 5 },
-    { dx: -(p.r + 5), dy: 4,          anchor: 'end',    bx: p.px - p.r - 5 - lw },
-    { dx: 0,          dy: p.r + 14,   anchor: 'middle', bx: p.px - lw / 2 },
-    { dx: 0,          dy: -(p.r + 8), anchor: 'middle', bx: p.px - lw / 2 },
+  // Start with the four corner captions so labels never print over them
+  const tagW = t => t.length * 6.2;
+  const placedBoxes = [
+    { x: W - M.r - 8 - tagW('🏆 LEADERS — INSTALL THESE'), y: M.t + 5, w: tagW('🏆 LEADERS — INSTALL THESE'), h: 14 },
+    { x: M.l + 8, y: M.t + 5, w: tagW('🍃 EASY BUT MODEST'), h: 14 },
   ];
+  const inBounds = (bx, by, lw, lh) => bx >= M.l + 2 && bx + lw <= W - M.r - 2 && by >= 2 && by + lh <= H - M.b - 2;
+  const candidates = (p, lw) => [
+    { dx: p.r + 5,    dy: 4,           anchor: "start",  bx: p.px + p.r + 5 },
+    { dx: -(p.r + 5), dy: 4,           anchor: "end",    bx: p.px - p.r - 5 - lw },
+    { dx: 0,          dy: p.r + 14,    anchor: "middle", bx: p.px - lw / 2 },
+    { dx: 0,          dy: -(p.r + 8),  anchor: "middle", bx: p.px - lw / 2 },
+    { dx: p.r + 3,    dy: p.r + 10,    anchor: "start",  bx: p.px + p.r + 3 },
+    { dx: -(p.r + 3), dy: p.r + 10,    anchor: "end",    bx: p.px - p.r - 3 - lw },
+    { dx: p.r + 3,    dy: -(p.r + 2),  anchor: "start",  bx: p.px + p.r + 3 },
+    { dx: -(p.r + 3), dy: -(p.r + 2),  anchor: "end",    bx: p.px - p.r - 3 - lw },
+    { dx: 0,          dy: p.r + 28,    anchor: "middle", bx: p.px - lw / 2 },
+  ];
+  // How many things a label box would collide with (0 = clean spot)
+  const overlaps = (p, c, lw, lh) => {
+    const by = p.py + c.dy - lh + 3;
+    if (!inBounds(c.bx, by, lw, lh)) return 99;
+    return placed.filter(q => q !== p &&
+        q.px + q.r > c.bx - 2 && q.px - q.r < c.bx + lw + 2 &&
+        q.py + q.r > by - 2 && q.py - q.r < by + lh + 2).length +
+      placedBoxes.filter(b => b.x < c.bx + lw && b.x + b.w > c.bx && b.y < by + lh && b.y + b.h > by).length * 2;
+  };
   [...placed].sort((a, b) => b.r - a.r).forEach(p => {
-    const lw = p.m.shortName.length * 6.4, lh = 13;
-    let pick = null;
+    const lw = p.m.shortName.length * 7, lh = 13;
+    let pick = null, best = Infinity;
     for (const c of candidates(p, lw)) {
-      const by = p.py + c.dy - lh + 3;
-      const clash = placed.some(q => q !== p &&
-          q.px + q.r > c.bx - 2 && q.px - q.r < c.bx + lw + 2 &&
-          q.py + q.r > by - 2 && q.py - q.r < by + lh + 2) ||
-        placedBoxes.some(b => b.x < c.bx + lw && b.x + b.w > c.bx && b.y < by + lh && b.y + b.h > by);
-      if (!clash) { pick = c; break; }
+      const n = overlaps(p, c, lw, lh);
+      if (n < best) { best = n; pick = c; }
+      if (n === 0) break;
     }
-    if (!pick) pick = candidates(p, lw)[2];
     placedBoxes.push({ x: pick.bx, y: p.py + pick.dy - 13 + 3, w: lw, h: 13 });
     const mark = $('mark-' + p.i);
     mark.style.transform = `translate(${p.px}px, ${p.py}px)`;
+    $('lblw-' + p.i).style.transform = mark.style.transform;
     $('dotc-' + p.i).setAttribute('fill', FIT_COLOR[p.f.status]);
     const lbl = $('lbl-' + p.i);
     lbl.textContent = p.m.shortName;
@@ -1526,12 +1558,12 @@ STEP 0 — PROJECT MEMORY + STATUS REPORT (create these FIRST, keep them updated
 
 THE INSTALL
 1. Check free disk space first. The downloads below total ~${total} GB — confirm at least ${total + 20} GB free before starting, and tell me if it's short.
-2. Install Ollama (ollama.com) if it isn't already installed. Verify the version is 0.17.4 or newer — older versions cannot load the newest model architectures. Update it if needed.
+2. Install Ollama (ollama.com) if it isn't already installed. Verify the version is 0.32.12 or newer — older versions cannot load the newest model architectures. Update it if needed. Note: since Ollama 0.32, typing a bare "ollama" opens an agent screen that defaults to a CLOUD model — always run a named local model (ollama run <tag>) and choose "continue locally" if a sign-in screen appears.
 3. Download each model ONE AT A TIME, verifying each answers a test question at a sane speed before starting the next:
 ${modelLines}
 4. Also pull the document-search model: ollama pull qwen3-embedding:0.6b (0.6 GB — the SIZE MATTERS: a bare "qwen3-embedding" pulls the 8B model at 4.7 GB, which competes with your chat model for memory. Machines with 16 GB+ of graphics memory can use :4b (2.5 GB) for better retrieval). It must exist before any documents are uploaded.
 5. Install Open WebUI (the ChatGPT-style browser front-end) and confirm it connects to Ollama. Everything runs at localhost, fully offline — confirm nothing needs an internet account.
-6. Fix the #1 silent trap: Ollama defaults every model to a ~4,096-token context window (num_ctx), which silently truncates long documents — the model then "forgets" the start without any warning. Do this properly, do not just mention it:
+6. Fix the #1 silent trap: Ollama defaults every model to a ~4,096-token context window (num_ctx) on machines with under 24 GB of graphics memory, which silently truncates long documents — the model then "forgets" the start without any warning. Do this properly, do not just mention it:
    a. Set OLLAMA_CONTEXT_LENGTH=16384 as a persistent user environment variable (16K minimum for document work; higher costs graphics memory).
    b. Fully restart the Ollama engine afterwards — an env var alone does nothing to an already-running server. Quitting the tray icon is NOT always enough; confirm the server process actually stopped and started again.
    c. VERIFY it took effect: load a model, run "ollama ps", and confirm the CONTEXT column reads 16384 (not 4096). If it still says 4096, the restart did not take — fix that before continuing.
@@ -1566,71 +1598,96 @@ Please research the CURRENT best local models for this hardware and these jobs (
 3. Which single model to install first, and why.
 4. Straight talk: what my hardware can and can't do, and any setup traps (context-size defaults, special install tags, memory needs).
 
-For reference, a fact-checked snapshot from 2026-07-18 recommended these for various hardware tiers: ${MODELS.map(m => m.tag).join(', ')} — please tell me what's changed since.`;
+For reference, a fact-checked snapshot from 2026-09-30 recommended these for various hardware tiers: ${MODELS.map(m => m.tag).join(', ')} — please tell me what's changed since.`;
 }
 
 // ---------- Notes ----------
 const NOTES = [
   ['🎯 What "10/10" means here','Scores compare these local models against EACH OTHER — a 10 means "the best you can run at home," not "the best AI that exists." Cloud models (Claude, GPT) remain clearly stronger for nuanced judgment. The smart split: local for volume, privacy, and drafts; cloud for the hardest thinking.'],
-  ['⚠️ The #1 silent gotcha','Ollama starts every model with a short memory (~4K words) no matter what the model supports — long documents get silently cut off. Raise the context setting (num_ctx) for document work, and know that longer context eats graphics memory.'],
+  ['⚠️ The #1 silent gotcha','On machines with under 24 GB of graphics memory, Ollama starts every model with a short memory (~4K tokens) no matter what the model supports — long documents get silently cut off. Raise the context setting (num_ctx) for document work, and know that longer context eats graphics memory.'],
   ['🃏 The RAM loophole','"MoE" (mixture-of-experts) models only wake a small slice per word, so a 30-billion-brain model runs at usable speed from ordinary RAM with any decent graphics card. If you have 32+ GB of RAM, you can run far bigger brains than your graphics card suggests.'],
   ['⏳ The thinking tax','Reasoning models write thousands of hidden "thinking" words before answering — at local speeds, that’s minutes per hard question. Use plain mode for summaries; save thinking mode for questions that deserve it.'],
   ['🖥️ The recommended stack','Ollama (the engine, ollama.com) + Open WebUI (a ChatGPT-style face in your browser, runs fully offline). Open WebUI’s Knowledge feature takes a folder of documents and answers questions with citations.'],
-  ['🔄 Keep Ollama fresh','Update Ollama before pulling 2026-era models — several use new architectures that older versions can’t load. Run one model at a time; a chat model plus a small document-search model coexist fine.'],
-  ['🗑️ If a tutorial recommends these, it’s out of date','Llama 2/3 anything, Mistral 7B v0.x, Gemma 2/3, Qwen 2.x, QwQ-32B, Phi-3, Vicuna, or "GPT4All" as the runner. The models on this page superseded all of them by mid-2026.'],
-  ['🍎 Mac owners','Apple Silicon is quietly excellent at this: unified memory means a 64 GB Mac can hold models no consumer PC graphics card can. Trade-off: Macs are slower to READ long documents before answering. Everything on this page runs via the same Ollama.'],
-  ['🐙 The giants you keep reading about','Inkling (975 billion parameters, Thinking Machines), GLM-5.2, DeepSeek V4, Kimi K2.6/K3 — all genuinely downloadable, all far too big for any home machine (the smallest squashed Inkling needs ~290 GB of memory; a maxed-out enthusiast PC has 128 GB). They change nothing about the rankings above. Section 9 below lays out what each would really take and the sane way to use one.'],
+  ['🔄 Keep Ollama fresh','You need <b>Ollama 0.32.12 or newer</b> for the newest models here (Qwen3.8, Muse Glimmer, Nemotron 3.5, Laguna). Run one model at a time; a chat model plus a small document-search model coexist fine. <b>Watch out:</b> since version 0.32, typing a bare <code>ollama</code> opens a screen that defaults to a <em>cloud</em> model — run a named model (<code>ollama run qwen3.5:9b</code>) and pick “continue locally” to stay private.'],
+  ['🗑️ If a tutorial recommends these, it’s out of date','Llama 2/3 anything (including 3.1), DeepSeek-R1 8B or smaller, Mistral 7B, Gemma 2/3, Qwen 2.x, QwQ-32B, Phi-3/Phi-4, CodeLlama, StarCoder, Vicuna, or "GPT4All" as the runner. Ollama itself now prints a “does not work well” warning for several of these.'],
+  ['🍎 Mac owners','Apple Silicon is quietly excellent at this: unified memory means a 64 GB Mac can hold models no consumer PC graphics card can. Trade-off: Macs are slower to READ long documents before answering. Everything on this page runs via the same Ollama — several models now offer a Mac-tuned <code>-mlx</code> version (e.g. <code>qwen3.8:27b-mlx</code>) for faster replies, and a test build of Ollama 0.40 switches Macs to it automatically. The new M5 Max / M5 Ultra Mac Studios (Sept 2026) go up to 128 GB and 256–512 GB.'],
+  ['🐙 The giants you keep reading about','MiMo-V2.6-Pro, GLM-5.3, Kimi K3 (2.8 trillion parameters), Qwen3.8-Max, DeepSeek V4 — all genuinely downloadable, all far too big for any normal home machine. They change nothing about the rankings above. Section 9 lays out what each would really take — and section 9b covers the new 270–320B models a 128 GB machine can just about hold.'],
 ];
 function buildNotes(){ $('notes').innerHTML = NOTES.map(n => `<div class="note"><b>${n[0]}</b>${n[1]}</div>`).join(''); }
 
-// ---------- Section 8: the giants (researched + fact-checked 2026-07-18) ----------
+// ---------- Section 9: the giants (re-researched 2026-09-30) ----------
+// "AA" = Artificial Analysis Intelligence Index v4.3.2 (Sept 2026). AA re-scaled
+// its index three times in September — never compare these with July's numbers.
 const FRONTIER = [
-  { name:'Kimi K3', lab:'Moonshot AI · China', size:'2.8 trillion parameters',
-    need:'Not yet known — weights were promised for 27 July 2026, days after this page was researched.',
-    use:'API only for now (~$3 in / $15 out per million words-ish). Treat as imminent, not downloadable.', flag:'just announced 2026-07-16' },
+  { name:'MiMo-V2.6-Pro', lab:'Xiaomi · China', size:'1.02 trillion (42B active)',
+    need:'The 4-bit Mac build is 516 GB — two of Apple\'s largest Mac Studios linked together. No smaller squashed build exists yet.',
+    use:'API at about $0.44 in / $0.87 out per million. MIT licensed — genuinely unrestricted. The #1 open model on Artificial Analysis (score 46).', flag:'new 2026-09-21 · top open model' },
+  { name:'GLM-5.3', lab:'Z.ai / Zhipu · China', size:'744 billion (40B active)',
+    need:'Squashed to 1-bit it is a 217 GB download needing ~223 GB of memory; the better 2-bit build is 254 GB. Only a 256 GB Mac Studio M5 Ultra can attempt it, and only at 1-bit.',
+    use:'Z.ai\'s API at $1.40 in / $4.40 out per million. A coding standout (score 45). Its own license asks very large hosting companies for a review — irrelevant for personal use.', flag:'new 2026-08 · replaces GLM-5.2' },
+  { name:'Kimi K3', lab:'Moonshot AI · China', size:'2.8 trillion (104B active)',
+    need:'The weights did ship (late July) — at ~1.56 TB. Even the most brutally squashed build is 594 GB and needs ~610 GB of memory.',
+    use:'API at about $3 in / $15 out per million. The largest open model ever released (score 44). Custom license — read it before commercial use.', flag:'weights released 2026-07' },
+  { name:'Qwen3.8-Max', lab:'Alibaba · China', size:'2.4 trillion (95B active)',
+    need:'About 2.5 TB of files. Datacenter-only — no squashed home build exists.',
+    use:'Alibaba\'s API at about $2 in / $6 out per million. The downloadable version reads text only; the API version also takes images and video.', flag:'new 2026-08-12' },
   { name:'DeepSeek V4-Pro', lab:'DeepSeek · China', size:'1.6 trillion (49B active)',
-    need:'The official files are ~865 GB. Even squashed to the point of damage it needs 366 GB of memory. Multi-server territory.',
-    use:'Its API is startlingly cheap — about $0.44 in / $0.87 out per million. Self-hosters should target its little brother V4-Flash instead.' },
-  { name:'MiMo-V2.5-Pro', lab:'Xiaomi · China', size:'1.02 trillion (42B active)',
-    need:'Server-class. Among the very top open models on public leaderboards.',
-    use:'API, or rented multi-GPU servers. MIT licensed — genuinely unrestricted.' },
-  { name:'Kimi K2.6', lab:'Moonshot AI · China', size:'1 trillion (32B active)',
-    need:'The official compact version is ~594 GB. A squashed 2-bit build still needs ~350 GB of memory.',
-    use:'API (~$0.66 in / $3.41 out per million). Handles images and video natively.' },
+    need:'The smallest available build is ~850 GB (it ships pre-squashed, so there\'s no smaller one). Multi-server territory.',
+    use:'DeepSeek\'s API — but prices went UP in August: now $1.32 in / $3.96 out per million at peak, half that off-peak. MIT licensed.', flag:'updated 2026-08-13' },
+  { name:'DeepSeek V4.1-Flash', lab:'DeepSeek · China', size:'552 billion (16B active)',
+    need:'Even the 2-bit community build is ~246 GB, and the standard home tools can\'t load it yet.',
+    use:'DeepSeek\'s API at $0.30 in / $1.20 out per million (half off-peak). This is now what DeepSeek\'s "flash" API name points to. MIT licensed.', flag:'new 2026-09-10' },
+  { name:'MiniMax-M3', lab:'MiniMax · China', size:'428 billion (23B active)',
+    need:'1-bit build ~128 GB, 2-bit ~148 GB — just out of reach of even a 128 GB machine.',
+    use:'API at about $0.30 in / $1.20 out per million. Free for non-commercial use; commercial use has conditions.' },
+  { name:'K2 Horizon', lab:'MBZUAI · UAE', size:'375 billion (23B active)',
+    need:'Only large builds exist so far (403 GB and up); a 4-bit version would be roughly 190 GB.',
+    use:'Hosted by Cerebras and Nebius. Apache 2.0 and "fully open" — the training data and code were released too, which almost nobody does at this size.', flag:'new 2026-09-03' },
   { name:'Inkling', lab:'Thinking Machines · USA', size:'975 billion (41B active)',
-    need:'The most brutally compressed version is a 270 GB download needing ~290 GB of memory — about 4× the RAM of a maxed-out enthusiast PC. Full quality: 1.9 TB.',
-    use:'Thinking Machines\' own API, or rent ~8 top-tier server GPUs at roughly $35/hour. The leading US open-weights model, and unusually efficient — it uses about a third fewer words to finish a task than its rivals, which cuts the real bill.' },
-  { name:'GLM-5.2', lab:'Z.ai / Zhipu · China', size:'744 billion (40B active)',
-    need:'217 GB download at 1-bit, 239 GB at 2-bit (the better one) — needs ~245 GB of memory.',
-    use:'The current open-weights leader on Artificial Analysis\' index, and a coding standout. Cheap API (~$0.45 in / $3.31 out per million) or a ~$13/month coding plan.' },
+    need:'The most compressed version needs ~270 GB of memory. Full quality: 1.9 TB.',
+    use:'Thinking Machines\' API. Note its own little sibling Inkling-Small (below) now scores higher at a quarter of the size.' },
   { name:'Nemotron 3 Ultra', lab:'NVIDIA · USA', size:'550 billion (55B active)',
     need:'~275 GB of graphics memory. NVIDIA suggests 8 datacenter GPUs.',
-    use:'Free to try on NVIDIA\'s own site. Unusually open — NVIDIA published the training data and recipes, not just the weights.' },
+    use:'Free to try on NVIDIA\'s own site. Unusually open — training data and recipes published too. No new version since July.' },
+];
+// The 128 GB band — new section. Sizes are squashed (quantized) builds from Unsloth unless noted.
+const MIDGIANTS = [
+  { name:'GLM-5.3-Flash', lab:'Z.ai / Zhipu · China', size:'320 billion (18B active)',
+    need:'The 3-bit build (120 GB) is the one recommended for 128 GB machines; 2-bit is 102–109 GB. Tight on a 128 GB Mac, which lets the graphics side use only ~96 GB by default.',
+    use:'By far the strongest model in this band (score 42 — near the trillion-size giants). MIT licensed. Or use the API at $0.15 in / $0.50 out per million. Some users report broken code from the 1–2-bit builds.', flag:'best you can run at home' },
+  { name:'MiMo-V2.6-Flash', lab:'Xiaomi · China', size:'309 billion (15B active)',
+    need:'A community 2-bit build (82 GB) is sized for a 128 GB Mac. No official squashed build yet.',
+    use:'Score 38. The cheapest API of the lot: $0.14 in / $0.28 out per million. MIT licensed.', flag:'new 2026-09-21' },
   { name:'DeepSeek V4-Flash', lab:'DeepSeek · China', size:'284 billion (13B active)',
-    need:'~103 GB squashed — the most reachable model on this list. A single rented 80 GB server GPU, about $4.39/hour.',
-    use:'The one to pick if you actually want the "I ran a giant model myself" experience. Practitioners describe roughly 80% of flagship quality at a fraction of the cost. API: ~$0.05 in / $0.24 out per million.', flag:'most reachable' },
-  { name:'gpt-oss 120B', lab:'OpenAI · USA', size:'120 billion',
-    need:'~63 GB — the only one here a very high-end enthusiast machine (or a large-memory Mac) can genuinely attempt.',
-    use:'Runs locally on serious hardware; otherwise widely available via APIs.', flag:'borderline home-runnable' },
+    need:'3-bit build is 103 GB (plan on 110–135 GB of total memory). Works with the standard home tools.',
+    use:'Score 34. DeepSeek retired it from its own API in September, but the downloadable files (MIT) are still a solid, well-supported choice.' },
   { name:'Inkling-Small', lab:'Thinking Machines · USA', size:'276 billion (12B active)',
-    need:'No official figures yet — the weights were still a preview when this was researched.',
-    use:'Worth watching: if released, it would be the first model of this family a big-memory workstation could hold. Claimed to match its huge sibling on several tests.', flag:'not released yet' },
+    need:'2-bit build is 88 GB (needs ~89 GB) — the safest fit for a 96 GB machine. 3-bit needs ~128 GB.',
+    use:'Score 28. Apache 2.0. The most reachable American giant; API about $0.30 in / $1.20 out per million.', flag:'released 2026-07-31' },
+  { name:'gpt-oss 120B', lab:'OpenAI · USA', size:'117 billion (5.1B active)',
+    need:'~63 GB — fits a 96 GB or 128 GB machine comfortably and runs faster than anything above.',
+    use:'Score 12 — far behind the others on smarts, but quick and dependable. Apache 2.0. No successor has been released.', flag:'easiest fit' },
 ];
 const FRONTIER_NOTES = [
-  ['💡 The honest recommendation','For almost everyone: <b>don\'t run these — rent nothing, buy nothing, just use an API.</b> Hosted access to these exact models costs cents per million words. One hour of the server rig needed to run Inkling yourself (~$35) buys roughly ten million words of API usage instead. You\'d need enormous, continuous volume for owning to win.'],
+  ['💡 The honest recommendation','For almost everyone: <b>don\'t run these — rent nothing, buy nothing, just use an API.</b> Hosted access to these exact models costs cents to a few dollars per million words. You\'d need enormous, continuous volume for owning the hardware to win.'],
   ['🤝 The setup that actually wins','A small model on your own machine for the private, high-volume 80% of work — plus an API key for the hard 20%. That combination beats both extremes on cost AND quality. A $2,000 machine with a $30/month API bill outperforms a $20,000 rig running a giant model badly.'],
-  ['💸 Terrible timing for a big build','There\'s a global memory shortage: RAM contract prices roughly doubled, top graphics cards are selling far above list, and Apple has stopped selling its large-memory Mac Studio configurations altogether. The classic "buy a 256 GB Mac and run anything" answer isn\'t purchasable right now. If you can wait, wait.'],
+  ['💸 Still terrible timing for a big build','The memory shortage has not eased. RAM contract prices roughly doubled in early 2026 and are forecast up another 10–15% this quarter, with relief not expected until 2027 (TrendForce, 2026-09-30). A 32 GB RAM kit that cost ~$90 in mid-2025 now runs $400+, and an RTX 5090 sells for well over double its $1,999 launch price.'],
+  ['🍎 Big-memory Macs are back — at a price','Apple\'s new Mac Studio (M5 Max / M5 Ultra) shipped 2026-09-22: up to 128 GB on the M5 Max (about $5K configured that way), and 256 GB on the M5 Ultra (the reviewed 256 GB unit was $11,299). A 512 GB option is due late October. These are the machines that make section 9b possible.'],
   ['🌏 Where your words go','Most of these giants are from Chinese labs. The weights are yours to run anywhere — but calling their <em>official</em> APIs sends your text to China. If that matters, route through a Western provider with data-retention turned off, or self-host. This is exactly the case where a local model earns its keep.'],
-  ['📊 A caution on leaderboard numbers','Ranking scales get re-based, so scores from different months aren\'t comparable — a model "scoring 54" in April and one "scoring 41" in July may be the other way round in reality. Compare models only within one source, published on one date. (This page\'s own fact-checkers caught exactly that trap.)'],
+  ['📊 A caution on leaderboard numbers','The scores quoted here are Artificial Analysis\' index as of late September 2026. That index was re-scaled three times in September alone, so every model\'s number dropped — a "54" in July and a "46" today can be the same quality. Only compare scores from the same source on the same date.'],
 ];
-function buildFrontier(){
-  $('frontier').innerHTML = `<tr><th>Model</th><th>Size</th><th>What it would actually take</th><th>The realistic way to use it</th></tr>` +
-    FRONTIER.map(f => `<tr>
+function giantRows(list){
+  return `<tr><th>Model</th><th>Size</th><th>What it would actually take</th><th>The realistic way to use it</th></tr>` +
+    list.map(f => `<tr>
       <td><span class="modelName">${f.name}</span><span class="modelFam">${f.lab}${f.flag ? ' · ' + f.flag : ''}</span></td>
       <td style="font-size:12.5px; color:var(--ink-2); white-space:nowrap;">${f.size}</td>
       <td style="font-size:12.5px; color:var(--ink-2);">${f.need}</td>
       <td style="font-size:12.5px; color:var(--ink-2);">${f.use}</td>
     </tr>`).join('');
+}
+function buildFrontier(){
+  $('frontier').innerHTML = giantRows(FRONTIER);
+  $('midgiants').innerHTML = giantRows(MIDGIANTS);
   $('frontierNotes').innerHTML = FRONTIER_NOTES.map(n => `<div class="note"><b>${n[0]}</b>${n[1]}</div>`).join('');
 }
 
