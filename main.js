@@ -212,7 +212,7 @@ function createWindow() {
     },
     autoHideMenuBar: true,
     titleBarStyle: 'default',
-    title: 'Claude Project Dashboard'
+    title: 'Terminal Project Dashboard'
   });
 
   mainWindow.loadFile('index.html');
@@ -914,7 +914,7 @@ function writeLocalOnlyOpenCodeConfig(tags) {
     }
     const cfg = {
       $schema: 'https://opencode.ai/config.json',
-      // Written by Claude Project Dashboard — safe to delete; it is regenerated.
+      // Written by Terminal Project Dashboard — safe to delete; it is regenerated.
       enabled_providers: ['ollama'],
       provider: {
         ollama: {

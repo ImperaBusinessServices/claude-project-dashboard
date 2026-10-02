@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claude Project Dashboard</title>
+  <title>Terminal Project Dashboard</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -995,7 +995,7 @@
   <div class="header">
     <h1>
       <span class="logo">C</span>
-      Claude Project Dashboard
+      Terminal Project Dashboard
     </h1>
     <div class="usage-widget ai-claude" id="usageWidget" title="Your Claude plan usage — same numbers as Claude's own /usage screen. Updates every minute."></div>
     <div class="usage-widget-group" id="otherUsageGroup">
@@ -1045,7 +1045,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.16.0</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.17.0</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1105,17 +1105,21 @@
       </div>
 
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
-        <p style="margin-bottom: 14px;">A simple app to manage your Claude Code project folders.</p>
+        <p style="margin-bottom: 14px;">A simple app to manage your AI terminal project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.16.0:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.17.0:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>⚡ Local AI answers in seconds again, not minutes.</strong> Most models you download think to themselves before answering — they write out a long private train of thought first, and you see nothing on screen while they do it. On a modest computer that turns a two-second reply into a several-minute one, and sometimes the thinking uses up the whole reply so <em>nothing at all</em> comes back. <strong>Launch Local AI</strong> now switches that off, so answers come straight back. If you have a powerful graphics card and want the thinking (it does make hard questions better), there's a new switch for it in <em>Settings → Local AI</em>. On this computer the same question went from <strong>21 seconds and a blank answer</strong> to <strong>under a second and a proper one</strong>.</li>
-          <li><strong>🏢 Launch Claude on your company's AWS Bedrock.</strong> If your employer runs Claude through their own AWS account, that's now one of the AIs you can launch. It is the same Claude Code — only the connection changes, so the messages are billed to the company instead of your personal plan, and your personal <strong>Launch Claude</strong> is left exactly as it was. Switch it on under <em>Settings → Which AI runs when you click Launch</em>, then pick it from any project's <strong>▾</strong> menu; that project remembers it. Bedrock projects get an orange Launch button and an orange terminal tab, so work and personal are never confused at a glance. It needs a one-off setup on this computer first (Claude Code, the AWS CLI, and credentials from your AWS admin) — if it isn't ready, the app says so and lists what's missing.</li>
+          <li><strong>🖥️ New name: Terminal Project Dashboard.</strong> The app used to be called Claude Project Dashboard. It now launches Claude Code, Codex, OpenCode, local models and Claude on AWS Bedrock, so the name now says what it does for all of them. Nothing else changes: your projects, settings and notes are exactly where they were. The website has moved to <strong>terminal-manager.com</strong> (the old address forwards there).</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.16.0:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>⚡ Local AI answers in seconds again, not minutes.</strong> Most models you download think to themselves before answering — they write out a long private train of thought first, and you see nothing on screen while they do it. On a modest computer that turns a two-second reply into a several-minute one, and sometimes the thinking uses up the whole reply so <em>nothing at all</em> comes back. <strong>Launch Local AI</strong> now switches that off, so answers come straight back. If you have a powerful graphics card and want the thinking (it does make hard questions better), there's a new switch for it in <em>Settings → Local AI</em>. On this computer the same question went from <strong>21 seconds and a blank answer</strong> to <strong>under a second and a proper one</strong>.</li>
+              <li><strong>🏢 Launch Claude on your company's AWS Bedrock.</strong> If your employer runs Claude through their own AWS account, that's now one of the AIs you can launch. It is the same Claude Code — only the connection changes, so the messages are billed to the company instead of your personal plan, and your personal <strong>Launch Claude</strong> is left exactly as it was. Switch it on under <em>Settings → Which AI runs when you click Launch</em>, then pick it from any project's <strong>▾</strong> menu; that project remembers it. Bedrock projects get an orange Launch button and an orange terminal tab, so work and personal are never confused at a glance. It needs a one-off setup on this computer first (Claude Code, the AWS CLI, and credentials from your AWS admin) — if it isn't ready, the app says so and lists what's missing.</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.14.0:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>📊 Usage meters for Codex and Kimi.</strong> The Claude usage bars in the header now have company. If you use Codex CLI, a blue-edged meter shows your Codex plan usage — the same numbers as Codex's own <code>/status</code> screen, with the countdown to when the limit resets. And if you've bought prepaid Kimi (Moonshot) credit, a green-edged meter shows how many dollars you have left, with a bar filling up as your top-up gets used. Each meter appears by itself only when that tool is signed in on this computer — if you only use Claude, nothing changes. Hover any meter for the details.</li>
@@ -1934,7 +1938,7 @@
       const grid = document.getElementById('grid');
       grid.innerHTML = `
         <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
-          <h2 style="color: #b388ff; margin-bottom: 12px;">Welcome to Claude Project Dashboard</h2>
+          <h2 style="color: #b388ff; margin-bottom: 12px;">Welcome to Terminal Project Dashboard</h2>
           <p style="color: #999; font-size: 14px; max-width: 420px; margin: 0 auto 24px; line-height: 1.6;">
             To get started, choose the folder where your Claude Code projects live.
             Each subfolder with a <strong style="color: #e94560;">CLAUDE.md</strong> file will show up as a project.

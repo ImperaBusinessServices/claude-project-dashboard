@@ -1,7 +1,7 @@
 {
   "name": "claude-manager",
-  "version": "2.16.0",
-  "description": "Claude Project Dashboard - manage your Claude Code project folders",
+  "version": "2.17.0",
+  "description": "Terminal Project Dashboard - manage your AI terminal project folders",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -13,7 +13,7 @@
   "type": "commonjs",
   "build": {
     "appId": "com.keith.claude-manager",
-    "productName": "Claude Project Dashboard",
+    "productName": "Terminal Project Dashboard",
     "afterPack": "./afterPack.js",
     "win": {
       "target": "nsis",
@@ -28,7 +28,7 @@
       "createStartMenuShortcut": true,
       "installerIcon": "icon.ico",
       "uninstallerIcon": "icon.ico",
-      "shortcutName": "Claude Project Dashboard"
+      "shortcutName": "Terminal Project Dashboard"
     },
     "mac": {
       "target": [
