@@ -1,4 +1,4 @@
-/* claude-manager.com — private first-party visitor beacon.
+/* terminal-manager.com — private first-party visitor beacon.
  * Static-site port of the VisitorTracker (visitor-stats skill, 2026-07-14),
  * cloned from the imperabusinessservices.com build.
  *
@@ -68,6 +68,8 @@
       try { host = new URL(ref).hostname.toLowerCase(); } catch (e) { host = ""; }
       var strip = function (h) { return h.replace(/^www\./, ""); };
       if (host && strip(host) === strip(location.hostname.toLowerCase())) return "direct";
+      // the old domain forwards here (moved 2026-10-01), so its hop is not a referral
+      if (strip(host) === "claude-manager.com") return "direct";
       if (/(^|\.)(google|bing|duckduckgo|yahoo|ecosia|baidu|yandex)\.|search\.brave/.test(host)) return "organic";
       if (/(^|\.)(facebook|instagram|twitter|linkedin|reddit|pinterest|tiktok)\.|(^|\.)(t\.co|x\.com|fb\.com|lnkd\.in)$/.test(host)) return "social";
       return "referral";
