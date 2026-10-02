@@ -205,5 +205,18 @@
   <div class="foot">A living document — updated at every step. Full technical memory lives in this project's <code>brain/</code> folder; the friendly version is this page.</div>
 </div>
 <script src="visitor-stats.js" defer></script>
+<script>
+  // "Back" link follows where the reader came from: the AI picker, or Terminal Manager home.
+  (function () {
+    var fromPicker = /[?&]from=picker/.test(location.search) || /local-ai-picker\.html/.test(document.referrer || '');
+    if (!fromPicker) return;
+    document.querySelectorAll('a.homeLink').forEach(function (a) {
+      a.href = 'local-ai-picker.html';
+      a.textContent = '← Back to the AI picker';
+      var btn = a.parentNode.querySelector('.pickerBtn');
+      if (btn) btn.style.display = 'none';
+    });
+  })();
+</script>
 </body>
 </html>
