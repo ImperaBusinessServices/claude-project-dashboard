@@ -1,6 +1,6 @@
 {
   "name": "claude-manager",
-  "version": "2.17.0",
+  "version": "2.17.1",
   "description": "Terminal Project Dashboard - manage your AI terminal project folders",
   "main": "main.js",
   "scripts": {

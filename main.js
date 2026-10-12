@@ -675,7 +675,7 @@ function getLaunchCommandFor(folderPath) {
 // in use: it's the global default, or some project's remembered override.
 // "In use" means the first whitespace-separated word equals the preset key
 // exactly ("codex --profile x" counts for codex; "codexy-tool" does not).
-const TOGGLEABLE_AIS = ['bedrock', 'codex', 'opencode', 'localai'];
+const TOGGLEABLE_AIS = ['bedrock', 'codex', 'opencode', 'kimi', 'localai'];
 function cmdFirstWord(cmd) { return String(cmd || '').trim().split(/\s+/)[0]; }
 // Is this launch still Claude Code, just wired to a different account? Both
 // 'claude' and the 'bedrock' preset (Claude Code pointed at a company's AWS
@@ -785,8 +785,25 @@ ipcMain.handle('set-local-ai-command', async (event, cmd) => {
 // (resolution in the getters would let the custom-command input round-trip the
 // resolved string back into storage, destroying the setting). Single,
 // non-recursive substitution: localAiCommand = 'localai' runs literally.
+// ---- Kimi Code CLI preset ----
+// Moonshot's own terminal, signed in with a Kimi membership via /login (no API
+// key). Its official installer puts it in ~/.kimi-code/bin and adds that to the
+// user PATH — but our process PATH (and an already-running Windows Terminal's)
+// is frozen, so right after an install bare `kimi` isn't found. Fall back to
+// the installer's known location. Skipped when HOME has a space: the command is
+// interpolated unquoted into the terminal launch line.
+const KIMI_INSTALL_BIN = path.join(HOME, '.kimi-code', 'bin', IS_WIN ? 'kimi.exe' : 'kimi');
+function kimiInstalledAtDefault() {
+  return !/\s/.test(KIMI_INSTALL_BIN) && fs.existsSync(KIMI_INSTALL_BIN);
+}
+function getKimiExecCommand() {
+  if (commandExists('kimi')) return 'kimi';
+  return kimiInstalledAtDefault() ? KIMI_INSTALL_BIN.replace(/\\/g, '/') : 'kimi';
+}
+
 function resolveLaunchCmdForExec(cmd) {
   if (cmd === 'localai') return getLocalAiCommand();
+  if (cmd === 'kimi') return getKimiExecCommand();
   if (cmd === 'bedrock') return getBedrockCommand() || cmd;
   return cmd;
 }
@@ -802,6 +819,7 @@ const AI_TAB_COLORS = {
   bedrock:  '#ff9900',
   codex:    '#2f6fe4',
   opencode: '#16a34a',
+  kimi:     '#0891b2',
   localai:  '#d97706'
 };
 function aiTabColor(cmd) {
@@ -996,14 +1014,16 @@ function commandExistsAsync(bin) {
 ipcMain.handle('detect-ai-clis', async () => {
   const localBin = cmdFirstWord(getLocalAiCommand()) || 'opencode';
   const bedBin = cmdFirstWord(getBedrockCommand());
-  const [codex, opencode, ollama, localaiBin, bedrockBin] = await Promise.all([
+  const [codex, opencode, ollama, localaiBin, bedrockBin, kimiOnPath] = await Promise.all([
     commandExistsAsync('codex'),
     commandExistsAsync('opencode'),
     commandExistsAsync('ollama'),
     commandExistsAsync(localBin),
-    bedBin ? commandExistsAsync(bedBin) : Promise.resolve(false)
+    bedBin ? commandExistsAsync(bedBin) : Promise.resolve(false),
+    commandExistsAsync('kimi')
   ]);
-  return { codex, opencode, ollama, localaiBin, bedrockBin };
+  const kimi = kimiOnPath || kimiInstalledAtDefault();
+  return { codex, opencode, ollama, localaiBin, bedrockBin, kimi };
 });
 
 // One implementation for "remember this AI for this project" — used by the
@@ -2726,12 +2746,77 @@ async function fetchKimiBalance() {
   };
 }
 
+// Kimi Code membership allowance — the same numbers as Kimi's own /usage panel.
+// Kimi Code keeps its login in ~/.kimi-code (or $KIMI_CODE_HOME): config.toml
+// names the managed provider's base_url (api.kimi.com = China, api.kimi.ai =
+// everywhere else) and which credentials/<name>.json holds its OAuth token.
+// GET <base_url>/usages → usages.limit_5h / limit_7d / limit_month_total, each
+// { used_ratio, reset_time } (endpoint + shape read from kimi-code 2.1.1).
+// ⚠ The access token lives only 15 minutes and Kimi renews it while it runs.
+// Strictly read-only, like Codex: NEVER refresh it ourselves — a rotated
+// refresh token we didn't save would log Kimi out. Expired → { stale: true },
+// and the renderer keeps showing the last reading, greyed out.
+const KIMI_CODE_HOME_DIR = process.env.KIMI_CODE_HOME || path.join(HOME, '.kimi-code');
+function getKimiCodeAuth() {
+  let toml;
+  try { toml = fs.readFileSync(path.join(KIMI_CODE_HOME_DIR, 'config.toml'), 'utf-8'); } catch (e) { return null; }
+  // Minimal TOML read: just the managed provider's table and its .oauth table.
+  function table(name) {
+    const lines = toml.split(/\r?\n/);
+    const start = lines.findIndex(l => l.trim() === `[${name}]`);
+    if (start < 0) return {};
+    const out = {};
+    for (let i = start + 1; i < lines.length && !/^\s*\[/.test(lines[i]); i++) {
+      const m = lines[i].match(/^\s*([A-Za-z_]+)\s*=\s*"([^"]*)"/);
+      if (m) out[m[1]] = m[2];
+    }
+    return out;
+  }
+  const prov = table('providers."managed:kimi-code"');
+  const oauth = table('providers."managed:kimi-code".oauth');
+  const baseUrl = String(prov.base_url || '').replace(/\/+$/, '');
+  if (!/^https:\/\/api\.kimi\.(ai|com)\//.test(baseUrl)) return null;
+  const credName = path.basename(String(oauth.key || ''));
+  if (!credName || credName.startsWith('.')) return null;
+  try {
+    const t = JSON.parse(fs.readFileSync(path.join(KIMI_CODE_HOME_DIR, 'credentials', credName + '.json'), 'utf-8').replace(/^﻿/, ''));
+    if (!t.access_token) return null;
+    const exp = Number(t.expires_at) || 0;
+    const expMs = exp > 1e12 ? exp : exp * 1000;
+    return { baseUrl, token: t.access_token, expired: expMs > 0 && expMs < Date.now() + 30000 };
+  } catch (e) { return null; }
+}
+
+async function fetchKimiCodeUsage() {
+  const auth = getKimiCodeAuth();
+  if (!auth) return null;
+  if (auth.expired) return { stale: true };
+  const data = JSON.parse(await httpsGet(auth.baseUrl + '/usages', { 'Authorization': 'Bearer ' + auth.token }));
+  const u = (data && data.usages) || {};
+  function win(w, windowMs) {
+    if (!w || w.used_ratio == null) return null;
+    const r = Number(w.used_ratio);
+    if (!Number.isFinite(r)) return null;
+    return {
+      pct: Math.max(0, Math.min(100, Math.round(r <= 1 ? r * 100 : r))),
+      resetsAt: w.reset_time || null,
+      windowMs
+    };
+  }
+  const session = win(u.limit_5h, 5 * 3600000);
+  const week = win(u.limit_7d, 7 * 86400000);
+  const month = win(u.limit_month_total, 30 * 86400000);
+  if (!session && !week && !month) return null;
+  return { session, week, month, at: new Date().toISOString() };
+}
+
 ipcMain.handle('get-other-usage', async () => {
-  const [codex, kimi] = await Promise.all([
+  const [codex, kimi, kimiCode] = await Promise.all([
     fetchCodexUsage().catch(() => null),
-    fetchKimiBalance().catch(() => null)
+    fetchKimiBalance().catch(() => null),
+    fetchKimiCodeUsage().catch(() => null)
   ]);
-  return { codex, kimi };
+  return { codex, kimi, kimiCode };
 });
 
 // ---- 💸 Spend tracker ----

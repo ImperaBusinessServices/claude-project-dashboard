@@ -72,6 +72,9 @@
     .usage-widget.ai-claude { border-left: 3px solid #e94560; padding-left: 8px; }
     .usage-widget.ai-codex  { border-left: 3px solid #2f6fe4; padding-left: 8px; }
     .usage-widget.ai-kimi   { border-left: 3px solid #16a34a; padding-left: 8px; }
+    .usage-widget.ai-kimicode { border-left: 3px solid #0891b2; padding-left: 8px; }
+    /* Last reading we have, but no longer live (e.g. Kimi Code is closed) */
+    .usage-widget.stale { opacity: 0.45; }
     /* Codex + Kimi stack into one block, mirroring how Claude stacks Session/Week */
     .usage-widget-group {
       display: flex;
@@ -83,6 +86,11 @@
       flex: 1 1 200px;
     }
     .usage-widget-group .usage-widget { margin: 0; min-width: 0; max-width: none; flex: 0 0 auto; }
+    /* Kimi block: one teal edge spanning the membership rows AND the API balance */
+    #kimiUsageGroup { border-left: 3px solid #0891b2; padding-left: 8px; }
+    #kimiUsageGroup .usage-widget { border-left: none; padding-left: 0; }
+    /* No meters to show in a block (that AI isn't used here) → no empty gap */
+    .usage-widget-group:not(:has(.usage-widget.visible)) { display: none; }
     /* "$21.25" needs more room than a 2-digit percentage */
     .usage-row .usage-money {
       color: rgba(255,255,255,0.7);
@@ -826,6 +834,7 @@
     .btn-ai-bedrock  { background: #ff9900; color: #1a1a2e; }
     .btn-ai-codex    { background: #2f6fe4; }
     .btn-ai-opencode { background: #16a34a; }
+    .btn-ai-kimi     { background: #0891b2; }
     .btn-ai-localai  { background: #d97706; }
     .btn-ai-custom   { background: #6d4aa8; }
     .ai-dot {
@@ -836,8 +845,25 @@
     .ai-dot-bedrock  { background: #ff9900; }
     .ai-dot-codex    { background: #2f6fe4; }
     .ai-dot-opencode { background: #16a34a; }
+    .ai-dot-kimi     { background: #0891b2; }
     .ai-dot-localai  { background: #d97706; }
     .ai-dot-custom   { background: #6d4aa8; }
+
+    /* Settings: prompt library */
+    .prompt-item { border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; margin-bottom: 6px; background: rgba(15,23,41,0.5); }
+    .prompt-item summary { cursor: pointer; padding: 8px 10px; font-size: 12px; color: #ddd; list-style: none; display: flex; align-items: center; gap: 8px; }
+    .prompt-item summary::-webkit-details-marker { display: none; }
+    .prompt-item summary::before { content: '▸'; color: #b388ff; font-size: 10px; }
+    .prompt-item[open] summary::before { content: '▾'; }
+    .prompt-item .prompt-where { margin-left: auto; font-size: 10px; color: #b388ff; white-space: nowrap; }
+    .prompt-item .prompt-body { padding: 0 10px 10px; font-size: 11px; color: #aaa; line-height: 1.5; }
+    .prompt-item pre { white-space: pre-wrap; word-wrap: break-word; background: #0f1729; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #ddd; max-height: 220px; overflow-y: auto; margin: 8px 0; font-family: Consolas, Menlo, monospace; }
+    .prompt-item ol { margin: 6px 0 6px 18px; }
+
+    /* Settings: which header meters to show */
+    .meter-toggles { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 12px; font-size: 12px; color: #ccc; }
+    .meter-toggles label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .meter-toggles .ai-dot { margin-right: 0; }
 
     /* Settings: per-AI enable rows (v2.12) */
     .ai-toggle-row { display: flex; align-items: center; gap: 8px; padding: 7px 0; }
@@ -998,9 +1024,13 @@
       Terminal Project Dashboard
     </h1>
     <div class="usage-widget ai-claude" id="usageWidget" title="Your Claude plan usage — same numbers as Claude's own /usage screen. Updates every minute."></div>
+    <!-- Kimi: membership allowance + pay-as-you-go API balance, stacked in one block -->
+    <div class="usage-widget-group" id="kimiUsageGroup">
+      <div class="usage-widget ai-kimicode" id="kimiCodeUsageWidget" title="Your Kimi Code membership usage."></div>
+      <div class="usage-widget ai-kimi" id="kimiUsageWidget" title="Your prepaid Kimi (Moonshot) balance."></div>
+    </div>
     <div class="usage-widget-group" id="otherUsageGroup">
       <div class="usage-widget ai-codex" id="codexUsageWidget" title="Your Codex plan usage."></div>
-      <div class="usage-widget ai-kimi" id="kimiUsageWidget" title="Your prepaid Kimi (Moonshot) balance."></div>
     </div>
     <div class="header-actions">
       <button class="btn btn-ghost" onclick="showAbout()">Settings</button>
@@ -1045,7 +1075,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.17.0</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.17.1</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1062,10 +1092,10 @@
         <div class="spend-loading" id="spendLoading">Scanning your session logs…</div>
         <div id="spendBody" style="display:none;">
           <div class="spend-tiles">
-            <div class="spend-tile hero"><div class="lbl">This month</div><div class="val" id="spMonth"></div><div class="sub" id="spMonthSub"></div></div>
-            <div class="spend-tile"><div class="lbl">Today</div><div class="val" id="spToday"></div></div>
-            <div class="spend-tile"><div class="lbl">Last 7 days</div><div class="val" id="sp7"></div></div>
-            <div class="spend-tile"><div class="lbl">All time</div><div class="val" id="spAll"></div><div class="sub" id="spAllSub"></div></div>
+            <div class="spend-tile hero"><div class="lbl">This month</div><div class="val" id="spMonth"></div><div class="sub" id="spMonthSub"></div><div class="sub" id="spMonthTok"></div></div>
+            <div class="spend-tile"><div class="lbl">Today</div><div class="val" id="spToday"></div><div class="sub" id="spTodayTok"></div></div>
+            <div class="spend-tile"><div class="lbl">Last 7 days</div><div class="val" id="sp7"></div><div class="sub" id="sp7Tok"></div></div>
+            <div class="spend-tile"><div class="lbl">All time</div><div class="val" id="spAll"></div><div class="sub" id="spAllSub"></div><div class="sub" id="spAllTok"></div></div>
           </div>
           <!-- Everything below the tiles folds behind the ▸ Details toggle -->
           <div id="spendDetail" style="display:none;">
@@ -1107,14 +1137,23 @@
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your AI terminal project folders.</p>
 
-        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.17.0:</h3>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.17.1:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
-          <li><strong>🖥️ New name: Terminal Project Dashboard.</strong> The app used to be called Claude Project Dashboard. It now launches Claude Code, Codex, OpenCode, local models and Claude on AWS Bedrock, so the name now says what it does for all of them. Nothing else changes: your projects, settings and notes are exactly where they were. The website has moved to <strong>terminal-manager.com</strong> (the old address forwards there).</li>
+          <li><strong>🩵 Kimi Code in the Launch menu.</strong> If you have a monthly Kimi membership, switch on <strong>Kimi Code</strong> in Settings and pick it from the <strong>▾</strong> next to Launch on any project. It opens Kimi K3 in a teal tab, signed in with your membership, with no API key and no pay-as-you-go bills.</li>
+          <li><strong>📊 A Kimi meter in the header.</strong> Shows how much of your Kimi membership you have used in the current 5 hours and this month, the same numbers as Kimi's own <code>/usage</code>. It is live while Kimi is open and shows the last reading, faded, the rest of the time. Your prepaid Kimi API balance now sits in the same block. The top Claude row is now labelled <strong>Claude</strong>.</li>
+          <li><strong>Choose which meters to show.</strong> Settings → <strong>Usage meters</strong> has a tick box for each one. A meter still only appears when that AI is signed in on this computer.</li>
+          <li><strong>📚 Prompt library.</strong> A new card in Settings with ready-made instructions you copy and paste into your AI to set things up: installing Claude Code from scratch, giving a project a memory, installing Codex, OpenCode, Kimi Code or a local AI, and a setup health check.</li>
+          <li><strong>Token counts in Spend.</strong> The Spend totals and tables now show how many tokens went in and out, next to the dollars.</li>
+          <li><strong>Fixed: "Custom command…" did nothing.</strong> Picking it from the ▾ menu now opens a box where you type the command.</li>
         </ul>
 
         <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
           <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
           <div style="margin-top: 10px;">
+            <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.17.0:</h3>
+            <ul style="margin-left: 18px; margin-bottom: 10px;">
+              <li><strong>🖥️ New name: Terminal Project Dashboard.</strong> The app used to be called Claude Project Dashboard. It now launches Claude Code, Codex, OpenCode, local models and Claude on AWS Bedrock, so the name now says what it does for all of them. Nothing else changes: your projects, settings and notes are exactly where they were. The website has moved to <strong>terminal-manager.com</strong> (the old address forwards there).</li>
+            </ul>
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.16.0:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>⚡ Local AI answers in seconds again, not minutes.</strong> Most models you download think to themselves before answering — they write out a long private train of thought first, and you see nothing on screen while they do it. On a modest computer that turns a two-second reply into a several-minute one, and sometimes the thinking uses up the whole reply so <em>nothing at all</em> comes back. <strong>Launch Local AI</strong> now switches that off, so answers come straight back. If you have a powerful graphics card and want the thinking (it does make hard questions better), there's a new switch for it in <em>Settings → Local AI</em>. On this computer the same question went from <strong>21 seconds and a blank answer</strong> to <strong>under a second and a proper one</strong>.</li>
@@ -1308,6 +1347,7 @@
                 <option value="bedrock">Claude on AWS Bedrock (work)</option>
                 <option value="codex">Codex CLI (OpenAI)</option>
                 <option value="opencode">OpenCode</option>
+                <option value="kimi">Kimi Code</option>
                 <option value="localai">Local AI (Ollama)</option>
                 <option value="custom">Custom command…</option>
               </select>
@@ -1356,6 +1396,17 @@
             </div>
             <div class="ai-row-note" id="aiRowNote-opencode"></div>
             <div class="ai-toggle-row">
+              <span class="ai-dot ai-dot-kimi"></span>
+              <span class="ai-row-name">Kimi Code <span class="ai-row-sub">Moonshot's terminal, runs on a Kimi membership</span></span>
+              <span class="ai-badge" id="aiBadge-kimi">…</span>
+              <label style="position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0;">
+                <input type="checkbox" id="aiToggle-kimi" onchange="toggleAiEnabled('kimi', this.checked)" style="opacity:0; width:0; height:0;">
+                <span id="aiSlider-kimi" style="position:absolute; top:0; left:0; right:0; bottom:0; background:#333; border-radius:12px; transition:0.3s;"></span>
+                <span id="aiKnob-kimi" style="position:absolute; top:2px; left:2px; width:20px; height:20px; background:#888; border-radius:50%; transition:0.3s;"></span>
+              </label>
+            </div>
+            <div class="ai-row-note" id="aiRowNote-kimi"></div>
+            <div class="ai-toggle-row">
               <span class="ai-dot ai-dot-localai"></span>
               <span class="ai-row-name">Local AI (Ollama) <span class="ai-row-sub">models that run on this computer</span></span>
               <span class="ai-badge" id="aiBadge-localai">…</span>
@@ -1401,8 +1452,8 @@
       <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div style="flex: 1; padding-right: 14px;">
-              <strong style="color: #b388ff; font-size: 13px;">Claude usage bars</strong>
-              <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">The Session / Week bars in the header showing how much of your Claude plan you've used. Pick how often they update — or turn them off.</div>
+              <strong style="color: #b388ff; font-size: 13px;">Usage meters</strong>
+              <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">The bars in the header showing how much of each AI plan you've used. Pick how often they update — or turn them all off.</div>
             </div>
             <select id="usageIntervalSelect" onchange="changeUsageInterval(this.value)" style="flex-shrink: 0; background: #0f1729; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none; cursor: pointer;">
               <option value="30">Every 30 seconds</option>
@@ -1411,6 +1462,20 @@
               <option value="0">Off (hide the bars)</option>
             </select>
           </div>
+          <div class="meter-toggles">
+            <label><input type="checkbox" id="meterToggle-claude" onchange="setMeterShown('claude', this.checked)"><span class="ai-dot ai-dot-claude"></span>Claude</label>
+            <label><input type="checkbox" id="meterToggle-codex" onchange="setMeterShown('codex', this.checked)"><span class="ai-dot ai-dot-codex"></span>Codex</label>
+            <label><input type="checkbox" id="meterToggle-kimiCode" onchange="setMeterShown('kimiCode', this.checked)"><span class="ai-dot ai-dot-kimi"></span>Kimi Code (membership)</label>
+            <label><input type="checkbox" id="meterToggle-kimi" onchange="setMeterShown('kimi', this.checked)"><span class="ai-dot ai-dot-opencode"></span>Kimi API balance</label>
+          </div>
+          <div style="font-size: 11px; color: #888; margin-top: 6px; line-height: 1.5;">A meter only ever appears when that AI is signed in on this computer — so you won't see ones you don't use. Untick any you'd rather hide. The Kimi Code meter is live while Kimi Code is open; the rest of the time it shows the last reading, faded.</div>
+        </div>
+
+      <!-- Prompt library: ready-made prompts people paste into their AI to set things up -->
+      <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
+          <strong style="color: #b388ff; font-size: 13px;">📚 Prompt library</strong>
+          <div style="font-size: 11px; color: #999; margin-top: 2px; line-height: 1.5;">Ready-made instructions you copy and paste into an AI, and it does the setup for you. Each one says where to paste it. New to all this? Start with the first one.</div>
+          <div id="promptLibrary" style="margin-top: 10px;"></div>
         </div>
 
       <div style="margin-top: 14px; padding: 14px 14px; background: rgba(83,52,131,0.25); border: 1px solid rgba(179,136,255,0.2); border-radius: 8px;">
@@ -1627,6 +1692,20 @@
     </div>
   </div>
 
+  <!-- Custom launch command (replaces window.prompt, which Electron doesn't support) -->
+  <div class="modal-overlay" id="customCmdModal">
+    <div class="modal" style="width: 460px;">
+      <h2>Custom command</h2>
+      <div style="font-size: 12px; color: #888; margin-bottom: 10px;">Type the command to run in the terminal for this project (e.g. <code>aider</code>). The Launch button will remember it.</div>
+      <input type="text" id="customCmdInput" placeholder="e.g. aider"
+             onkeydown="if(event.key==='Enter') submitCustomCmd(); if(event.key==='Escape') hideCustomCmd();">
+      <div class="modal-buttons">
+        <button class="btn btn-ghost" onclick="hideCustomCmd()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitCustomCmd()">Launch</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Create Folder Modal -->
   <div class="modal-overlay" id="createModal">
     <div class="modal">
@@ -1739,7 +1818,7 @@
 
     // Grouping order for the AI sort — matches the ▾ menu, so the tiles come out
     // in the same order (and the same colour run) as the menu that sets them.
-    const AI_SORT_ORDER = ['claude', 'bedrock', 'codex', 'opencode', 'localai', 'custom'];
+    const AI_SORT_ORDER = ['claude', 'bedrock', 'codex', 'opencode', 'kimi', 'localai', 'custom'];
 
     function sortFolders(list) {
       const dir = sortAscending ? 1 : -1;
@@ -2091,6 +2170,11 @@
         body = `
         The Launch button for this project is set to run <strong>Codex CLI</strong> — OpenAI's coding terminal — and it isn't installed on this computer yet. You'll need a <strong>ChatGPT account</strong> to sign in. ${nodeNote} Then open ${shellName}, paste this line, and press Enter:${codeRow('npm install -g @openai/codex')}
         <div style="margin-top:10px;">${restartNote}</div>`;
+      } else if (kw === 'kimi') {
+        title = 'One more step — install Kimi Code';
+        body = `
+        The Launch button for this project is set to run <strong>Kimi Code</strong> — Moonshot's coding terminal — and it isn't installed on this computer yet. You'll need a <strong>Kimi membership</strong> (Moderato or higher, from kimi.ai) to sign in. Open ${shellName}, paste this line, and press Enter:${codeRow(res.isMac ? 'curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash' : 'irm https://code.kimi.com/kimi-code/install.ps1 | iex')}
+        <div style="margin-top:10px;">The first time it opens, type <strong>/login</strong> and choose <strong>Kimi Code</strong>. ${restartNote}</div>`;
       } else if (kw === 'opencode') {
         title = 'One more step — install OpenCode';
         body = `
@@ -2343,10 +2427,10 @@
     // only; a stored default/override to a switched-off AI still launches.
     let launchGlobal = 'claude';
     let launchOverrides = {};
-    let enabledAIs = { bedrock: false, codex: false, opencode: false, localai: false };
-    const AI_TOGGLE_KEYS = ['bedrock', 'codex', 'opencode', 'localai'];
-    const LAUNCH_PRESETS = { claude: 'Launch Claude', bedrock: 'Launch Claude (AWS)', codex: 'Launch Codex', opencode: 'Launch OpenCode', localai: 'Launch Local AI' };
-    const LAUNCH_MENU = [['claude', 'Claude Code'], ['bedrock', 'Claude on AWS Bedrock'], ['codex', 'Codex CLI'], ['opencode', 'OpenCode'], ['localai', 'Local AI (Ollama)']];
+    let enabledAIs = { bedrock: false, codex: false, opencode: false, kimi: false, localai: false };
+    const AI_TOGGLE_KEYS = ['bedrock', 'codex', 'opencode', 'kimi', 'localai'];
+    const LAUNCH_PRESETS = { claude: 'Launch Claude', bedrock: 'Launch Claude (AWS)', codex: 'Launch Codex', opencode: 'Launch OpenCode', kimi: 'Launch Kimi', localai: 'Launch Local AI' };
+    const LAUNCH_MENU = [['claude', 'Claude Code'], ['bedrock', 'Claude on AWS Bedrock'], ['codex', 'Codex CLI'], ['opencode', 'OpenCode'], ['kimi', 'Kimi Code'], ['localai', 'Local AI (Ollama)']];
     function tileLaunchCmd(path) { return launchOverrides[path] || launchGlobal; }
     function tileLaunchLabel(path) {
       const c = tileLaunchCmd(path);
@@ -2390,10 +2474,28 @@
       try { renderFolders(); } catch (e) {}
       handleLaunchResult(await window.api.openTerminal(p, cmd), p, cmd);
     }
+    // window.prompt() is not supported in Electron (it silently returns null),
+    // so the Custom command… menu item never did anything. In-app modal instead.
+    let customCmdPath = null;
     function launchWithCustom() {
+      customCmdPath = launchMenuPath;
       hideLaunchMenu();
-      const v = prompt('Type the command to run in the terminal (e.g. aider):');
-      if (v && v.trim()) launchWith(v.trim());
+      if (!customCmdPath) return;
+      const cur = launchOverrides[customCmdPath];
+      const input = document.getElementById('customCmdInput');
+      input.value = (cur && !LAUNCH_PRESETS[cur]) ? cur : '';
+      document.getElementById('customCmdModal').classList.add('active');
+      setTimeout(() => input.focus(), 50);
+    }
+    function hideCustomCmd() {
+      document.getElementById('customCmdModal').classList.remove('active');
+    }
+    function submitCustomCmd() {
+      const v = document.getElementById('customCmdInput').value.trim();
+      if (!v) return;
+      hideCustomCmd();
+      launchMenuPath = customCmdPath;
+      launchWith(v);
     }
     function syncLaunchCmdUI() {
       const sel = document.getElementById('launchCmdSelect');
@@ -2581,6 +2683,7 @@
         setAiBadge('bedrock', d.bedrockBin ? 'ok' : 'no');
         setAiBadge('codex', d.codex ? 'ok' : 'no');
         setAiBadge('opencode', d.opencode ? 'ok' : 'no');
+        setAiBadge('kimi', d.kimi ? 'ok' : 'no');
         // Local AI needs its command's binary AND ollama (the model engine).
         setAiBadge('localai', d.localaiBin && d.ollama ? 'ok' : d.localaiBin ? 'warn' : 'no');
       } catch (e) {}
@@ -2596,6 +2699,8 @@
       document.getElementById('aboutModal').classList.add('active');
       try { syncLaunchCmdUI(); } catch (e) {}
       try { refreshAiToggleRows(); } catch (e) {}
+      try { syncMeterToggles(); } catch (e) {}
+      try { renderPromptLibrary(); } catch (e) {}
       // 💸 Spend: the chart can't be drawn while the modal is hidden (it has no
       // width) — render now that it's visible, or kick off the first scan.
       if (spDays) spApplyAll(); else loadSpend(false);
@@ -3130,8 +3235,193 @@
     let lastUsage = null;
     let usageReason = null;   // why the last poll had no data: 'no-token' | 'api' | null
 
+    // Per-meter show/hide (Settings → Usage meters). Remembered per computer.
+    function metersHidden() {
+      try { return JSON.parse(localStorage.getItem('cpdMetersHidden') || '{}') || {}; } catch (e) { return {}; }
+    }
+    function meterHidden(key) { return !!metersHidden()[key]; }
+    function setMeterShown(key, on) {
+      const h = metersHidden();
+      if (on) delete h[key]; else h[key] = true;
+      try { localStorage.setItem('cpdMetersHidden', JSON.stringify(h)); } catch (e) {}
+      renderUsage();
+      renderOtherUsage();
+    }
+    function syncMeterToggles() {
+      for (const k of ['claude', 'codex', 'kimiCode', 'kimi']) {
+        const cb = document.getElementById('meterToggle-' + k);
+        if (cb) cb.checked = !meterHidden(k);
+      }
+    }
+
+    // ---- 📚 Prompt library (Settings) ----
+    // Each entry: what it's for, where to paste it, optional human steps, and
+    // the prompt itself. Prompts are written for ANY coding agent (Claude Code,
+    // Codex, OpenCode, Kimi Code) and for Windows or Mac — they tell the AI to
+    // check which computer it's on, explain in plain English, and ask first.
+    const PROMPT_LIBRARY = [
+      {
+        title: '🚀 Start here — set everything up from zero',
+        where: 'claude.ai in your web browser',
+        intro: `For someone who has nothing installed yet. You can't paste this into a terminal AI because you don't have one yet — so use the free chat on <strong>claude.ai</strong> (or ChatGPT) in your web browser, and it will walk you through it one step at a time.`,
+        prompt: `I'm not technical. Please walk me through installing Claude Code — the version that runs in the terminal, not the desktop app — on my computer, one small step at a time.
+
+How to help me:
+- First ask me whether I'm on Windows or a Mac, and wait for my answer.
+- Give me ONE step at a time. After each step, wait until I tell you what I see before moving on.
+- Explain any technical word in plain English the first time you use it.
+- If I paste an error, tell me in plain words what went wrong and the one thing to try next.
+
+What needs to happen:
+1. I need a paid Claude plan (Pro is the cheapest that includes Claude Code). Check I have one, or tell me where to get it (claude.ai → upgrade).
+2. Open the right program: on Windows that's PowerShell (search for it in the Start menu); on a Mac it's Terminal (Applications → Utilities).
+3. Install Claude Code with the official one-line installer:
+   - Windows (PowerShell):  irm https://claude.ai/install.ps1 | iex
+   - Mac (Terminal):        curl -fsSL https://claude.ai/install.sh | bash
+4. Close that window, open a fresh one, and type:  claude --version   — it should print a version number.
+5. Type  claude  and follow the sign-in in my web browser.
+6. Finally, tell me to open the Terminal Project Dashboard and click Launch on a project — and that from then on I can paste the other prompts from the dashboard's Prompt library straight into Claude.`
+      },
+      {
+        title: '🧠 Give this project a memory',
+        where: 'your AI, inside the project',
+        intro: `Sets up a <code>brain/</code> folder so the AI remembers where you left off. After this, type <strong>WWW?</strong> ("where were we?") at the start of a session and <strong>SS!</strong> to save.`,
+        prompt: `Set up project memory in this folder so you can pick up where we left off next time.
+
+1. Create a folder called brain/ (no dot at the front) with four files:
+   - STATE.md — what's in flight right now, starting with a 1–2 sentence "## Objective"
+   - next.md — the next steps as a checklist: [ ] not started, [~] in progress, [?] done and waiting for my OK, [x] approved and closed
+   - changelog.md — what was built or changed, newest first, dated YYYY-MM-DD, with the files touched
+   - decisions.md — decisions we make, each with a one-line "Why:"
+2. Fill them in from what's already in this folder (read the README, any notes, and the code) — don't leave them empty.
+3. Add a short "Project memory" section to this project's instructions file (CLAUDE.md for Claude Code, AGENTS.md for any other AI; create it if missing) saying:
+   - When I type "WWW?" or "where were we?": read brain/STATE.md, brain/next.md and the last 20 lines of brain/changelog.md, then tell me where we are and what's next.
+   - When I type "SS!" or "save state": bring all four files up to date.
+   - After every meaningful step, update STATE.md and add a line to changelog.md without being asked.
+4. Show me a short summary of what you wrote. Don't change anything else.`
+      },
+      {
+        title: '📝 Write instructions for this project',
+        where: 'your AI, inside the project',
+        intro: `Creates the instructions file the AI reads every time it opens this project — what the project is, how it's built, and your preferences — so you stop repeating yourself.`,
+        prompt: `Write an instructions file for this project that you'll read at the start of every session.
+
+1. Look around first: read the README, package files, folder layout and any notes, so you understand what this project is and how it's built and run.
+2. Ask me up to 3 short questions about anything you can't work out — for example who it's for, or how I like to work. One question at a time.
+3. Then write it. Use CLAUDE.md if you're Claude Code; otherwise AGENTS.md. If one already exists, add to it — never delete what's there.
+4. Keep it short and practical: what the project is (2–3 sentences), how to run / build / test it, important folders, things to never do, and how I like you to communicate.
+5. If both CLAUDE.md and AGENTS.md end up existing, make AGENTS.md simply say to follow CLAUDE.md, so every AI reads the same rules.`
+      },
+      {
+        title: '🔁 Make this project work with any AI',
+        where: 'your AI, inside the project',
+        intro: `Claude Code reads <code>CLAUDE.md</code>; Codex, OpenCode and Kimi read <code>AGENTS.md</code>. This makes sure whichever AI you launch here gets the same instructions.`,
+        prompt: `Make this project's instructions work for every AI, not just one.
+
+- Claude Code reads CLAUDE.md. Codex, OpenCode, Kimi Code and most others read AGENTS.md.
+- Check which of the two files exist here.
+- If only one exists, create the other so it contains one line pointing at the first (e.g. AGENTS.md: "Read and follow CLAUDE.md in this folder — it has all the project instructions.").
+- If both exist with different content, show me the differences and ask which to keep before merging anything.
+- Don't change any other files. Tell me in one or two sentences what you did.`
+      },
+      {
+        title: '🔵 Install Codex CLI (OpenAI)',
+        where: 'your AI (e.g. Claude Code)',
+        intro: `OpenAI's coding terminal, signed in with a ChatGPT account. Afterwards, switch it on in Settings → "Which AI runs when you click Launch".`,
+        prompt: `Please install OpenAI's Codex CLI on this computer for me. I'm not technical, so explain each step in one plain sentence.
+
+1. Check whether Node.js is installed (node --version). If it isn't, tell me and point me to nodejs.org — don't try to install it silently.
+2. Install Codex:  npm install -g @openai/codex
+3. Check it worked:  codex --version
+4. Tell me the last step I have to do myself: open a new terminal, type  codex , and sign in with my ChatGPT account in the browser.
+5. If anything fails, tell me in plain words what went wrong and what you'll try next.`
+      },
+      {
+        title: '🟢 Install OpenCode',
+        where: 'your AI (e.g. Claude Code)',
+        intro: `A free, open-source coding terminal that works with many AI providers — and is what the dashboard uses for Local AI.`,
+        prompt: `Please install OpenCode (the open-source AI coding terminal) on this computer. Explain each step in one plain sentence.
+
+1. Check Node.js is installed (node --version). If not, tell me to get it from nodejs.org and stop.
+2. Install:  npm install -g opencode-ai
+3. Check it worked:  opencode --version
+4. Tell me how to connect an AI to it: run  opencode auth login  and pick a provider. Explain in one line that this usually means pay-as-you-go billing to that provider, and that a monthly subscription (like Kimi Code) is often cheaper if I'll use it a lot.`
+      },
+      {
+        title: '🩵 Install Kimi Code (monthly membership)',
+        where: 'your AI (e.g. Claude Code)',
+        intro: `Moonshot's own terminal for Kimi K3. Runs on a monthly Kimi membership (Moderato or higher) — no API key and no pay-as-you-go bills. Buy the plan at <strong>kimi.ai</strong> first (kimi.com is the China site).`,
+        prompt: `Please install Kimi Code — Moonshot's official terminal app for Kimi K3 — on this computer. I'm not technical; explain each step in a plain sentence.
+
+1. Work out whether this is Windows or a Mac.
+2. Run the official installer:
+   - Windows (PowerShell):  irm https://code.kimi.com/kimi-code/install.ps1 | iex
+   - Mac:                   curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash
+3. Check it worked:  kimi --version   (if it says "not found", it's because this window started before the install — use the full path the installer printed instead).
+4. Then tell me the steps I do myself:
+   - Open a NEW terminal and type  kimi
+   - Type  /login  and choose "Kimi Code (kimi.ai/code)" — unless I'm in mainland China, in which case the kimi.com one.
+   - Sign in in the browser with the same account that has my Kimi membership.
+   - Type  /model  and pick K3-256k (same answers as K3 on the cheaper plans, and it uses less of my allowance).
+5. Remind me: in the Terminal Project Dashboard, Settings → switch on "Kimi Code", then use the ▾ next to Launch on any project to pick Kimi.`
+      },
+      {
+        title: '🟠 Run AI on your own computer (free, private)',
+        where: 'your AI (e.g. Claude Code)',
+        intro: `Installs Ollama and picks a model that actually fits your computer. Free and fully offline — but much slower and less capable than the paid AIs on most PCs.`,
+        prompt: `Help me run an AI model locally on this computer with Ollama. I'm not technical — keep explanations short and plain.
+
+1. Check my hardware first and tell me in one paragraph what it can realistically handle: the graphics card and how much video memory it has (on Windows: nvidia-smi if it's NVIDIA; on a Mac: the chip and total memory), plus total system memory and free disk space.
+2. If Ollama isn't installed (ollama --version), tell me to download it from ollama.com and wait for me to confirm.
+3. Recommend ONE model that fits comfortably in my video memory (or, on a Mac, about two-thirds of total memory), with a one-line reason. Ask me before downloading — they're several gigabytes.
+4. Download it with  ollama pull <model>  and test it with a one-line question.
+5. Finish by telling me: in the Terminal Project Dashboard, Settings → switch on "Local AI (Ollama)" and choose this model from the dropdown.`
+      },
+      {
+        title: '🩺 Check my setup',
+        where: 'your AI (e.g. Claude Code)',
+        intro: `A quick health check — what's installed, what's out of date, and anything that looks broken. Changes nothing unless you say yes.`,
+        prompt: `Do a quick health check of my AI coding setup on this computer. Don't install or change anything without asking me first.
+
+Check and report, in a short plain-English table (tool · installed? · version · note):
+- Node.js (node --version)
+- Claude Code (claude --version)
+- Codex CLI (codex --version)
+- OpenCode (opencode --version)
+- Kimi Code (kimi --version — on Windows also look in %USERPROFILE%\\.kimi-code\\bin)
+- Ollama (ollama --version) and which models are downloaded (ollama list)
+- Git (git --version)
+
+Then list at most three things worth fixing, most important first, each with one sentence on why — and ask me which, if any, to do.`
+      }
+    ];
+
+    function renderPromptLibrary() {
+      const box = document.getElementById('promptLibrary');
+      if (!box || box.dataset.ready) return;
+      box.dataset.ready = '1';
+      PROMPT_LIBRARY.forEach((p, i) => {
+        const d = document.createElement('details');
+        d.className = 'prompt-item';
+        d.innerHTML = `<summary><span>${escapeHtml(p.title)}</span><span class="prompt-where">Paste into: ${escapeHtml(p.where)}</span></summary>
+          <div class="prompt-body">
+            <div>${p.intro}</div>
+            <pre id="promptText-${i}"></pre>
+            <button class="btn btn-secondary btn-small" onclick="copyPrompt(${i}, this)">Copy prompt</button>
+          </div>`;
+        d.querySelector('pre').textContent = p.prompt;   // textContent: prompts are shown verbatim, never parsed as HTML
+        box.appendChild(d);
+      });
+    }
+    function copyPrompt(i, btn) {
+      navigator.clipboard.writeText(PROMPT_LIBRARY[i].prompt);
+      btn.textContent = 'Copied! Now paste it into your AI';
+      setTimeout(() => { btn.textContent = 'Copy prompt'; }, 2500);
+    }
+
     function renderUsage() {
       const w = document.getElementById('usageWidget');
+      if (meterHidden('claude')) { w.classList.remove('visible'); return; }
       const res = lastUsage;
       if (!res || !res.success || (!res.fiveHour && !res.sevenDay)) {
         // No numbers yet. If the reason is "not signed in to Claude", hide.
@@ -3150,7 +3440,7 @@
       let html = '';
       const tips = [];
       if (res.fiveHour) {
-        html += usageRowHtml('Session', res.fiveHour, USAGE_WINDOW_5H);
+        html += usageRowHtml('Claude', res.fiveHour, USAGE_WINDOW_5H);
         tips.push('Session: ' + res.fiveHour.pct + '% used' + (usageTimeLeft(res.fiveHour.resetsAt) ? ' · ' + usageTimeLeft(res.fiveHour.resetsAt) : ''));
       }
       if (res.sevenDay) {
@@ -3171,7 +3461,11 @@
     // Each meter appears only once its data has loaded at least once, and a
     // failed poll keeps showing the last good numbers — so friends without
     // Codex or a Moonshot key see exactly the header they see today.
-    let lastOther = { codex: null, kimi: null };
+    let lastOther = { codex: null, kimi: null, kimiCode: null };
+    // Kimi Code's sign-in only lasts 15 minutes and is renewed by Kimi while it
+    // runs, so most of the time we can't read live numbers. Show the last good
+    // reading (saved across restarts), faded, until Kimi is next open.
+    let kimiCodeStale = false;
 
     // Kimi's balance is prepaid money with no official "total", so we remember
     // the highest balance we've ever seen (the top-up high-water mark) and the
@@ -3187,9 +3481,30 @@
     function kimiMoney(v) { return '$' + (v >= 100 ? Math.round(v) : v.toFixed(2)); }
 
     function renderOtherUsage() {
+      const kc = document.getElementById('kimiCodeUsageWidget');
+      const m = lastOther.kimiCode;
+      if (m && (m.session || m.week || m.month) && !meterHidden('kimiCode')) {
+        let html = '';
+        const tips = [];
+        const rows = [['Kimi', m.session, '5-hour'], [m.session ? 'Week' : 'Kimi', m.week, 'Week'], ['Month', m.month, 'Month']];
+        for (const [label, b, name] of rows) {
+          if (!b) continue;
+          html += usageRowHtml(label, b, b.windowMs);
+          tips.push(name + ': ' + b.pct + '% used' + (usageTimeLeft(b.resetsAt) ? ' · ' + usageTimeLeft(b.resetsAt) : ''));
+        }
+        kc.innerHTML = html;
+        const ago = m.at ? Math.round((Date.now() - new Date(m.at)) / 60000) : null;
+        kc.title = 'Your Kimi Code membership usage — same numbers as Kimi\'s own /usage screen.\n' + tips.join('\n')
+          + (kimiCodeStale ? '\n\nLast checked ' + (ago == null ? 'a while' : ago < 60 ? ago + ' min' : Math.round(ago / 60) + ' h') + ' ago. It updates live while Kimi Code is open.' : '');
+        kc.classList.toggle('stale', kimiCodeStale);
+        kc.classList.add('visible');
+      } else {
+        kc.classList.remove('visible');
+      }
+
       const cw = document.getElementById('codexUsageWidget');
       const c = lastOther.codex;
-      if (c && (c.session || c.week)) {
+      if (c && (c.session || c.week) && !meterHidden('codex')) {
         let html = '';
         const tips = [];
         if (c.session) {
@@ -3212,12 +3527,12 @@
 
       const kw = document.getElementById('kimiUsageWidget');
       const k = lastOther.kimi;
-      if (k && typeof k.available === 'number') {
+      if (k && typeof k.available === 'number' && !meterHidden('kimi')) {
         const used = kimiUsedPct(k.available);
         const cls = used == null ? '' : used >= 90 ? ' hot' : used >= 70 ? ' warn' : '';
         kw.innerHTML = `
           <div class="usage-row">
-            <span class="usage-label">Kimi</span>
+            <span class="usage-label">${lastOther.kimiCode && !meterHidden('kimiCode') ? 'API' : 'Kimi'}</span>
             <div class="usage-bar"><div class="usage-fill${cls}" style="width:${used == null ? 0 : used}%"></div></div>
             <span class="usage-money">${kimiMoney(k.available)}</span>
           </div>`;
@@ -3235,6 +3550,18 @@
         const res = await window.api.getOtherUsage();
         if (res && res.codex) lastOther.codex = res.codex;
         if (res && res.kimi) lastOther.kimi = res.kimi;
+        const kc = res && res.kimiCode;
+        if (kc && !kc.stale) {
+          lastOther.kimiCode = kc;
+          kimiCodeStale = false;
+          try { localStorage.setItem('cpdKimiCodeLast', JSON.stringify(kc)); } catch (e) {}
+        } else if (kc && kc.stale) {
+          // Signed in, but the token has lapsed since Kimi was last open.
+          kimiCodeStale = true;
+          if (!lastOther.kimiCode) {
+            try { lastOther.kimiCode = JSON.parse(localStorage.getItem('cpdKimiCodeLast') || 'null'); } catch (e) {}
+          }
+        }
       } catch (e) { /* keep whatever we had */ }
       renderOtherUsage();
     }
@@ -3344,7 +3671,7 @@
     // Keep the countdown ticking even when polling is set to a slow interval
     setInterval(function() {
       if (lastUsage) renderUsage();
-      if (lastOther.codex || lastOther.kimi) renderOtherUsage();
+      if (lastOther.codex || lastOther.kimi || lastOther.kimiCode) renderOtherUsage();
     }, 60000);
     let usageTimer = null;
 
@@ -3356,6 +3683,7 @@
         document.getElementById('usageWidget').classList.remove('visible');
         document.getElementById('codexUsageWidget').classList.remove('visible');
         document.getElementById('kimiUsageWidget').classList.remove('visible');
+        document.getElementById('kimiCodeUsageWidget').classList.remove('visible');
         return;
       }
       usageTimer = setInterval(refreshUsage, sec * 1000);
@@ -3401,6 +3729,8 @@
       if (v >= 1e3) return (v / 1e3).toFixed(0) + 'K';
       return String(v);
     }
+    // Tokens "in" = everything the model read (new input + cache reads + cache writes); "out" = what it wrote.
+    function spTokLine(a) { return '↓ ' + spTok(a.i + a.r + a.w) + ' in · ↑ ' + spTok(a.o) + ' out'; }
     function spFmtDate(iso) {
       const [y, m, d] = iso.split('-').map(Number);
       return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -3586,13 +3916,20 @@
       const monthPrefix = todayISO.slice(0, 7);
       const from7 = spAddDaysISO(todayISO, -6);
       let sumMonth = 0, sumToday = 0, sum7 = 0, sumAll = 0;
+      const z = () => ({ i: 0, o: 0, r: 0, w: 0 });
+      const tkMonth = z(), tkToday = z(), tk7 = z(), tkAll = z();
+      const addTk = (to, a) => { to.i += a.i; to.o += a.o; to.r += a.r; to.w += a.w; };
       for (const dk of spDayKeys) {
-        const t = spDayAgg(dk).c;
-        sumAll += t;
-        if (dk.startsWith(monthPrefix)) sumMonth += t;
-        if (dk === todayISO) sumToday += t;
-        if (dk >= from7) sum7 += t;
+        const a = spDayAgg(dk), t = a.c;
+        sumAll += t; addTk(tkAll, a);
+        if (dk.startsWith(monthPrefix)) { sumMonth += t; addTk(tkMonth, a); }
+        if (dk === todayISO) { sumToday += t; addTk(tkToday, a); }
+        if (dk >= from7) { sum7 += t; addTk(tk7, a); }
       }
+      spEl('spMonthTok').textContent = spTokLine(tkMonth);
+      spEl('spTodayTok').textContent = spTokLine(tkToday);
+      spEl('sp7Tok').textContent = spTokLine(tk7);
+      spEl('spAllTok').textContent = spTokLine(tkAll);
       spEl('spMonth').textContent = spMoney(sumMonth);
       const fd = spFilterDesc();
       spEl('spMonthSub').textContent = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) + (fd ? ' · ' + fd : '');
@@ -3645,7 +3982,7 @@
       }
       if (agg.m > 0) {
         const f = document.createElement('div'); f.className = 'tfoot';
-        f.textContent = agg.m.toLocaleString() + ' replies · ' + spTok(agg.o) + ' tokens out';
+        f.textContent = agg.m.toLocaleString() + ' replies · ' + spTokLine(agg);
         tooltip.appendChild(f);
       }
       tooltip.style.display = 'block';
@@ -3744,18 +4081,20 @@
 
     function spRenderProjTable() {
       // scoped to date range + model filter (click a row to filter by that project)
-      const totals = {};
+      const totals = {}, tok = {};
       let grand = 0;
       for (const dk of spDatesInRange()) for (const cell of spDayCells[dk] || []) {
         if (spState.model !== 'all' && cell.mo !== spState.model) continue;
         totals[cell.p] = (totals[cell.p] || 0) + cell.c; grand += cell.c;
+        const k = tok[cell.p] || (tok[cell.p] = { i: 0, o: 0 });
+        k.i += cell.i + cell.r + cell.w; k.o += cell.o;
       }
       const ranked = Object.entries(totals).sort((a, b) => b[1] - a[1]);
       spEl('spProjNote').textContent = spRangeLabel() +
         (spState.model !== 'all' ? ' · ' + spState.model : '') + ' · click a row to filter';
       const t = spEl('spProjTable'); t.textContent = '';
       const hr = document.createElement('tr');
-      spTh(hr, 'Project'); spTh(hr, 'Spend', 'money'); spTh(hr, 'Share', 'num'); spTh(hr, '');
+      spTh(hr, 'Project'); spTh(hr, 'Spend', 'money'); spTh(hr, '↓ In', 'num'); spTh(hr, '↑ Out', 'num'); spTh(hr, 'Share', 'num'); spTh(hr, '');
       t.appendChild(hr);
       const max = ranked.length ? ranked[0][1] : 1;
       for (const [p, c] of ranked.slice(0, 10)) {
@@ -3771,6 +4110,7 @@
         sw.style.background = 'var(' + spColorVar(p) + ')';
         nameCell.appendChild(sw); nameCell.appendChild(document.createTextNode(p));
         spTd(tr, spMoney(c, 0), 'money');
+        spTd(tr, spTok(tok[p].i), 'num'); spTd(tr, spTok(tok[p].o), 'num');
         spTd(tr, (grand ? (c / grand * 100) : 0).toFixed(1) + '%', 'num');
         const mc = spTd(tr, '');
         const m = document.createElement('span'); m.className = 'meter';
@@ -3781,9 +4121,12 @@
       }
       if (ranked.length > 10) {
         const rest = ranked.slice(10).reduce((s, r) => s + r[1], 0);
+        const restIn = ranked.slice(10).reduce((s, r) => s + tok[r[0]].i, 0);
+        const restOut = ranked.slice(10).reduce((s, r) => s + tok[r[0]].o, 0);
         const tr = document.createElement('tr');
         spTd(tr, (ranked.length - 10) + ' more projects', 'name');
         spTd(tr, spMoney(rest, 0), 'money');
+        spTd(tr, spTok(restIn), 'num'); spTd(tr, spTok(restOut), 'num');
         spTd(tr, (grand ? (rest / grand * 100) : 0).toFixed(1) + '%', 'num');
         spTd(tr, '');
         t.appendChild(tr);
@@ -3792,17 +4135,19 @@
 
     function spRenderModelTable() {
       // scoped to date range + project filter (click a row to filter by that model)
-      const totals = {};
+      const totals = {}, tok = {};
       let grand = 0;
       for (const dk of spDatesInRange()) for (const cell of spDayCells[dk] || []) {
         if (spState.projs.size && !spState.projs.has(cell.p)) continue;
         totals[cell.mo] = (totals[cell.mo] || 0) + cell.c; grand += cell.c;
+        const k = tok[cell.mo] || (tok[cell.mo] = { i: 0, o: 0 });
+        k.i += cell.i + cell.r + cell.w; k.o += cell.o;
       }
       spEl('spModelNote').textContent = spRangeLabel() +
         (spState.projs.size ? ' · ' + spProjDesc() : '') + ' · click a row to filter';
       const t = spEl('spModelTable'); t.textContent = '';
       const hr = document.createElement('tr');
-      spTh(hr, 'Model'); spTh(hr, 'Spend', 'money'); spTh(hr, 'Share', 'num');
+      spTh(hr, 'Model'); spTh(hr, 'Spend', 'money'); spTh(hr, '↓ In', 'num'); spTh(hr, '↑ Out', 'num'); spTh(hr, 'Share', 'num');
       t.appendChild(hr);
       for (const [m, c] of Object.entries(totals).sort((a, b) => b[1] - a[1])) {
         const tr = document.createElement('tr');
@@ -3814,6 +4159,7 @@
           spApplyAll();
         });
         spTd(tr, m, 'name'); spTd(tr, spMoney(c, 0), 'money');
+        spTd(tr, spTok(tok[m].i), 'num'); spTd(tr, spTok(tok[m].o), 'num');
         spTd(tr, (grand ? (c / grand * 100) : 0).toFixed(1) + '%', 'num');
         t.appendChild(tr);
       }
