@@ -801,6 +801,35 @@ function getKimiExecCommand() {
   return kimiInstalledAtDefault() ? KIMI_INSTALL_BIN.replace(/\\/g, '/') : 'kimi';
 }
 
+// ---- Claude Code installed but not on PATH ----
+// Claude's native installer puts claude in ~/.local/bin, but on some PCs it
+// never adds that folder to the user PATH (seen 2026-10-27 on a fresh Windows
+// 11 PC: install "complete", yet the dashboard kept showing the install screen
+// even after a restart). Our own PATH is also frozen at launch, so even a
+// correct install isn't seen until the dashboard restarts. Fall back to the
+// installer's known location: put the folder on our PATH (so summaries and a
+// fresh terminal find it), persist it to the Windows user PATH (so the user's
+// own terminals do too — same fix as the manual one-liner), and launch by full
+// path for the rest of the session (an already-running Windows Terminal keeps
+// its old PATH). Returns true once claude is known to live there.
+const CLAUDE_INSTALL_DIR = path.join(HOME, '.local', 'bin');
+const CLAUDE_INSTALL_BIN = path.join(CLAUDE_INSTALL_DIR, IS_WIN ? 'claude.exe' : 'claude');
+let claudeFoundOffPath = false;
+function ensureClaudeOnPath() {
+  if (claudeFoundOffPath) return true;
+  if (commandExists('claude')) { foundBins.claude = true; return false; }
+  if (!fs.existsSync(CLAUDE_INSTALL_BIN)) return false;
+  claudeFoundOffPath = true;
+  process.env.PATH = CLAUDE_INSTALL_DIR + path.delimiter + (process.env.PATH || '');
+  if (IS_WIN) {
+    const d = CLAUDE_INSTALL_DIR.replace(/'/g, "''");
+    const ps = `$d='${d}'; $p=[Environment]::GetEnvironmentVariable('Path','User'); ` +
+      `if (-not (($p -split ';') -contains $d)) { [Environment]::SetEnvironmentVariable('Path', ("$p".TrimEnd(';') + ';' + $d).TrimStart(';'), 'User') }`;
+    execFile('powershell', ['-NoProfile', '-NonInteractive', '-Command', ps], () => {});
+  }
+  return true;
+}
+
 function resolveLaunchCmdForExec(cmd) {
   if (cmd === 'localai') return getLocalAiCommand();
   if (cmd === 'kimi') return getKimiExecCommand();
@@ -1070,6 +1099,13 @@ ipcMain.handle('open-terminal', async (event, folderPath, aiCmd) => {
     }
   }
   launchCmd = resolveLaunchCmdForExec(launchCmd);
+  // Claude installed but its folder isn't on PATH — run it by full path (see
+  // ensureClaudeOnPath). Skipped when HOME has a space: the command is
+  // interpolated unquoted into the terminal launch line.
+  if (cmdFirstWord(launchCmd) === 'claude' && !foundBins.claude && ensureClaudeOnPath()
+      && !/\s/.test(CLAUDE_INSTALL_BIN)) {
+    launchCmd = CLAUDE_INSTALL_BIN.replace(/\\/g, '/') + launchCmd.trim().slice('claude'.length);
+  }
 
   // First-run friends often don't have the AI installed yet. Catch that HERE
   // and tell the renderer, instead of opening a terminal that just prints
