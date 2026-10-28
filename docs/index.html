@@ -605,19 +605,20 @@
     .intro, .reveal { opacity: 1; transform: none; }
   }
 
-  /* "New here?" link: a glowing pill with a light sweep, a letter wave and a nudging arrow */
-  .newhere { position: relative; display: inline-flex; align-items: center; gap: 10px; overflow: hidden; padding: 12px 22px; border-radius: 100px; font-size: 16px; font-weight: 700; text-decoration: none; color: #fff6ef; background: linear-gradient(180deg, var(--coral-br), var(--coral-deep)); box-shadow: 0 0 0 0 rgba(226,130,91,0.55), 0 8px 22px -8px rgba(203,99,54,0.6); animation: nhGlow 2.4s ease-in-out infinite; max-width: 100%; }
+  /* Claude Code CLI setup-video link: a glowing pill with a light sweep, a letter wave and a nudging arrow */
+  .newhere { position: relative; display: inline-flex; align-items: center; gap: 10px; overflow: hidden; padding: 12px 24px 12px 16px; border-radius: 28px; font-size: 16px; font-weight: 700; text-decoration: none; color: #fff6ef; background: linear-gradient(180deg, var(--coral-br), var(--coral-deep)); box-shadow: 0 0 0 0 rgba(226,130,91,0.55), 0 8px 22px -8px rgba(203,99,54,0.6); animation: nhGlow 2.4s ease-in-out infinite; max-width: 100%; }
   .newhere::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; background: linear-gradient(100deg, transparent, rgba(255,255,255,0.55), transparent); transform: skewX(-20deg); animation: nhSweep 3.2s ease-in-out infinite; pointer-events: none; }
   .newhere:hover { filter: brightness(1.08); }
   .newhere .nh-play { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,0.22); font-size: 12px; flex: none; }
-  .newhere .nh-text { white-space: normal; text-align: left; }
-  .newhere .nh-text span { display: inline-block; animation: nhWave 3.2s ease-in-out infinite; }
+  .newhere .nh-text { display: flex; flex-direction: column; gap: 3px; white-space: normal; text-align: left; }
+  .newhere .nh-sub { font-size: 13.5px; font-weight: 500; opacity: 0.92; }
+  .newhere .nh-main span span { display: inline-block; animation: nhWave 3.2s ease-in-out infinite; }
   .newhere .nh-arrow { flex: none; animation: nhNudge 1.2s ease-in-out infinite; }
   @keyframes nhGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(226,130,91,0.55), 0 8px 22px -8px rgba(203,99,54,0.6); } 50% { box-shadow: 0 0 0 10px rgba(226,130,91,0), 0 8px 22px -8px rgba(203,99,54,0.6); } }
   @keyframes nhSweep { 0% { left: -40%; } 45%,100% { left: 120%; } }
   @keyframes nhWave { 0%,30%,100% { transform: translateY(0); } 15% { transform: translateY(-5px); } }
   @keyframes nhNudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(5px); } }
-  @media (prefers-reduced-motion: reduce) { .newhere, .newhere::after, .newhere .nh-text span, .newhere .nh-arrow { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .newhere, .newhere::after, .newhere .nh-main span span, .newhere .nh-arrow { animation: none; } }
 </style>
 </head>
 <body>
@@ -658,7 +659,7 @@
         <span>Windows &amp; Mac</span><span class="dot"></span>
         <span>Installs in seconds — no admin needed</span>
       </div>
-      <div class="intro d5" style="margin-top:18px;text-align:center;"><a href="getting-started.html" class="newhere"><span class="nh-play">▶</span><span class="nh-text">New here? Watch the 3-minute setup video and step-by-step guide</span><span class="nh-arrow">→</span></a></div>
+      <div class="intro d5" style="margin-top:18px;text-align:center;"><a href="getting-started.html" class="newhere"><span class="nh-play">▶</span><span class="nh-text"><span class="nh-main">Want to use Claude Code’s command line (CLI) in the terminal?</span><span class="nh-sub">Advance to the next stage of AI, with more control and more capability. Watch the 3-minute setup video.</span></span><span class="nh-arrow">→</span></a></div>
       <div class="intro d5" style="margin-top:10px;text-align:center;"><a href="local-ai-picker.html" style="font-size:15px;font-weight:600;color:var(--coral-br);text-decoration:none;">🧭 Want a free AI that runs on your own computer? Find the right model for your machine →</a></div>
     </div>
 
@@ -1626,8 +1627,8 @@
 </script>
 <script src="visitor-stats.js" defer></script>
 <script>
-// Split the "New here?" words into letters so they can ripple in a wave, left to right.
-(function(){var t=document.querySelector(".newhere .nh-text");if(!t)return;var txt=t.textContent,i=0;t.textContent="";
+// Split the CLI-link headline into letters so they can ripple in a wave, left to right.
+(function(){var t=document.querySelector(".newhere .nh-main");if(!t)return;var txt=t.textContent,i=0;t.textContent="";
 txt.split(" ").forEach(function(w,wi){var word=document.createElement("span");word.style.animation="none";word.style.whiteSpace="nowrap";
 w.split("").forEach(function(ch){var c=document.createElement("span");c.textContent=ch;c.style.animationDelay=(i++*0.03)+"s";word.appendChild(c);});
 t.appendChild(word);if(wi<txt.split(" ").length-1)t.appendChild(document.createTextNode(" "));});})();
