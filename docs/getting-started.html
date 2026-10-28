@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Getting Started — Terminal Project Dashboard</title>
+<meta name="description" content="Install Terminal Project Dashboard and Claude Code on a Windows PC, step by step, with a video walkthrough.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+  /* Four brightness stops (same palette as the AI picker pages). Always opens Light. */
+  :root, :root[data-theme="light"] {
+    color-scheme: light;
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink1:#0b0b0b; --ink2:#52514e; --ink3:#7a7872;
+    --line:rgba(11,11,11,0.10); --grid:#e1e0d9; --accent:#c4552b; --on-accent:#ffffff; --warn:#8a5a00; --warn-bg:#fff6e2;
+  }
+  :root[data-theme="slate"] {
+    color-scheme: light;
+    --plane:#c9c5bd; --surface:#ebe8e3; --ink1:#15171c; --ink2:#33363d; --ink3:#4c5058;
+    --line:rgba(18,21,26,0.16); --grid:#b3ada5; --accent:#9c3c16; --on-accent:#ffffff; --warn:#6b4300; --warn-bg:#efe2c4;
+  }
+  :root[data-theme="steel"] {
+    color-scheme: dark;
+    --plane:#2a313b; --surface:#38414d; --ink1:#f3f6fa; --ink2:#ccd4de; --ink3:#a0abb9;
+    --line:rgba(255,255,255,0.14); --grid:#46505d; --accent:#ff9a6c; --on-accent:#1d1208; --warn:#f0c068; --warn-bg:#3f3a2e;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19; --ink1:#ffffff; --ink2:#c3c2b7; --ink3:#969489;
+    --line:rgba(255,255,255,0.10); --grid:#2c2c2a; --accent:#f07a4a; --on-accent:#140a04; --warn:#e8ae45; --warn-bg:#2a2416;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--plane); color:var(--ink1); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.6; padding:32px 16px 70px; }
+  .wrap { max-width:860px; margin:0 auto; }
+  h1 { font-size:27px; letter-spacing:-0.3px; }
+  .sub { color:var(--ink2); font-size:15px; margin:6px 0 22px; max-width:70ch; }
+  .themeToggle { position:fixed; top:14px; right:14px; background:var(--surface); border:1px solid var(--line); color:var(--ink1); border-radius:8px; padding:6px 12px; cursor:pointer; font-size:13px; z-index:10; }
+  .navRow { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+  @media (max-width: 1120px) { .navRow:not(.bottom) { padding-right:110px; } }
+  .navRow.bottom { margin:30px 0 0; padding-right:0; border-top:1px solid var(--grid); padding-top:18px; }
+  .homeLink { color:var(--accent); text-decoration:none; font-size:13.5px; font-weight:600; }
+  .dlBtn { background:var(--accent); color:var(--on-accent); text-decoration:none; font-weight:600; font-size:13.5px; padding:8px 16px; border-radius:8px; white-space:nowrap; }
+  .dlBtn:hover, .homeLink:hover { opacity:0.88; }
+
+  .video { position:relative; width:100%; aspect-ratio:16/9; background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:12px; }
+  .video video { position:absolute; inset:0; width:100%; height:100%; background:#000; }
+  .videoNote { color:var(--ink3); font-size:13px; margin-bottom:26px; }
+
+  .needs { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:30px; }
+  .needs h2 { font-size:16.5px; margin-bottom:8px; }
+  .needs ul { margin-left:20px; font-size:14px; color:var(--ink2); }
+  .needs li { margin-bottom:4px; }
+  .needs b { color:var(--ink1); }
+
+  .part { font-size:13px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase; color:var(--ink3); margin:30px 0 14px; }
+  .step { display:flex; gap:16px; margin-bottom:20px; }
+  .stepNum { flex-shrink:0; width:34px; height:34px; border-radius:50%; background:var(--accent); color:var(--on-accent); font-weight:700; display:flex; align-items:center; justify-content:center; font-size:15px; margin-top:2px; }
+  .stepBody { flex:1; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .stepBody h2 { font-size:16.5px; margin-bottom:6px; }
+  .stepBody p, .stepBody li { font-size:14px; color:var(--ink2); }
+  .stepBody p { margin-bottom:8px; }
+  .stepBody ol, .stepBody ul { margin:4px 0 8px 20px; }
+  .stepBody li { margin-bottom:4px; }
+  .stepBody b { color:var(--ink1); }
+  .why { background:var(--plane); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; padding:8px 12px; font-size:13px; color:var(--ink2); margin-top:8px; }
+  .warnBox { background:var(--warn-bg); border:1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius:12px; padding:16px 18px; margin:8px 0 20px; }
+  .warnBox h2 { font-size:16px; color:var(--warn); margin-bottom:6px; }
+  .warnBox p, .warnBox li { font-size:14px; color:var(--ink2); }
+  .warnBox ol { margin:4px 0 0 20px; }
+
+  .cmd { display:flex; gap:8px; align-items:stretch; margin:8px 0; }
+  .cmd code { flex:1; min-width:0; overflow-x:auto; white-space:nowrap; background:var(--plane); border:1px solid var(--line); border-radius:6px; padding:8px 10px; font-family:Consolas,"Cascadia Mono",monospace; font-size:12.5px; color:var(--ink1); }
+  .cmd button { flex-shrink:0; background:var(--surface); color:var(--ink1); border:1px solid var(--line); border-radius:6px; padding:0 12px; cursor:pointer; font-size:12.5px; font-weight:600; }
+  .cmd button:hover { border-color:var(--accent); }
+  kbd { background:var(--plane); border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; padding:0 5px; font-size:12px; font-family:inherit; color:var(--ink1); }
+  .tip { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-top:30px; }
+  .tip h2 { font-size:16.5px; margin-bottom:6px; }
+  .tip p { font-size:14px; color:var(--ink2); }
+  .foot { color:var(--ink3); font-size:12px; margin-top:24px; }
+  @media (max-width: 560px) { .step { gap:10px; } .stepNum { width:28px; height:28px; font-size:13px; } }
+</style>
+</head>
+<body>
+<button class="themeToggle" id="themeBtn" type="button">☀️ Light</button>
+<script>
+// Four brightness stops; shares the guide pages' saved choice. Opens Light unless the visitor clicked before.
+(function(){
+  var MODES = ["light","slate","steel","dark"], LABEL = { light:"☀️ Light", slate:"◑ Slate", steel:"◐ Steel", dark:"🌙 Dark" };
+  var saved = null; try { saved = localStorage.getItem("lamp-theme"); } catch (e) {}
+  var mode = MODES.indexOf(saved) > -1 ? saved : "light";
+  var btn = document.getElementById("themeBtn");
+  function paint(){ document.documentElement.setAttribute("data-theme", mode); btn.textContent = LABEL[mode]; btn.title = "Change brightness: Light → Slate → Steel → Dark"; }
+  btn.addEventListener("click", function(){ mode = MODES[(MODES.indexOf(mode) + 1) % MODES.length]; try { localStorage.setItem("lamp-theme", mode); } catch (e) {} paint(); });
+  paint();
+})();
+</script>
+<div class="wrap">
+  <div class="navRow">
+    <a href="index.html" class="homeLink">← Terminal Manager home</a>
+    <a href="index.html#download" class="dlBtn">⬇ Download</a>
+  </div>
+
+  <h1>Getting Started on Windows</h1>
+  <div class="sub">How to install Terminal Project Dashboard and Claude Code on any Windows PC, from download to your first request. It takes less than 5 minutes, and you do it once.</div>
+
+  <div class="video">
+    <video controls preload="metadata" playsinline poster="getting-started-poster.jpg" title="Video walkthrough: installing Terminal Project Dashboard and Claude Code">
+      <source src="getting-started.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="videoNote">3-minute video walkthrough. The numbered steps below match the step labels in the video.</div>
+
+  <div class="needs">
+    <h2>What you need</h2>
+    <ul>
+      <li><b>A Windows 10 or 11 PC.</b> On a Mac, see the note at the bottom.</li>
+      <li><b>A Claude account on a paid plan</b> from <b>claude.ai</b>. Pro is the cheapest plan that includes Claude Code.</li>
+      <li><b>Less than 5 minutes.</b></li>
+    </ul>
+  </div>
+
+  <div class="part">Part 1: Install the dashboard</div>
+
+  <div class="step"><div class="stepNum">1</div><div class="stepBody">
+    <h2>Download the installer</h2>
+    <p>Go to <b>terminal-manager.com</b> and click <b>Download for Windows</b>. If it asks for your email, you can click <b>No thanks, just download</b>.</p>
+    <p>Your browser may warn that the file <b>"isn't commonly downloaded."</b> That's normal for a new program. To keep it:</p>
+    <ol>
+      <li>Hover over the warning and click the <b>⋯</b> (three dots).</li>
+      <li>Click <b>Keep</b>. If it asks again, click <b>Show more → Keep anyway</b>.</li>
+    </ol>
+  </div></div>
+
+  <div class="step"><div class="stepNum">2</div><div class="stepBody">
+    <h2>Install the dashboard</h2>
+    <p>Open the downloaded file. If Windows shows a blue box saying it protected your PC, click <b>More info</b>, then <b>Run anyway</b>.</p>
+    <p>It installs in a few seconds, puts a <b>Terminal Project Dashboard</b> icon on your desktop and opens the dashboard. No administrator password is needed. If it asks <b>"Set up project memory for Claude?"</b>, click <b>Yes</b>.</p>
+    <div class="why">Project memory lets Claude remember each project between visits, so you can come back days later and carry on.</div>
+  </div></div>
+
+  <div class="step"><div class="stepNum">3</div><div class="stepBody">
+    <h2>Choose your projects folder</h2>
+    <p>Click <b>Choose Project Folder</b> (or <b>+ New Project</b>, which asks for the folder first). Go to <b>Documents</b>, click <b>New folder</b>, name it <code>my-projects</code>, select it and click <b>Select Folder</b>.</p>
+    <p>Every project you make will live inside this folder.</p>
+  </div></div>
+
+  <div class="step"><div class="stepNum">4</div><div class="stepBody">
+    <h2>Create your first project</h2>
+    <p>Click <b>+ New Project</b>, type a name (for example <code>my-recipe-site</code>) and click <b>Create</b>. A new tile appears.</p>
+  </div></div>
+
+  <div class="part">Part 2: Install Claude Code (one time only)</div>
+
+  <div class="step"><div class="stepNum">5</div><div class="stepBody">
+    <h2>Install Claude Code</h2>
+    <p>Click the <b>Launch</b> button on your new tile. If Claude Code isn't installed yet, a box appears titled <b>"One more step — install Claude Code."</b></p>
+    <ol>
+      <li>Click the <b>Copy</b> button in that box. This is the line it copies:
+        <div class="cmd"><code>irm https://claude.ai/install.ps1 | iex</code><button type="button" onclick="copyCmd(this)">Copy</button></div>
+      </li>
+      <li>Press the <kbd>Windows</kbd> key, type <code>powershell</code> and press <kbd>Enter</kbd>.</li>
+      <li><b>Right-click</b> inside the PowerShell window to paste, then press <kbd>Enter</kbd>.</li>
+      <li>Wait about a minute until it says the install is complete. Then close PowerShell.</li>
+    </ol>
+    <div class="why">The dashboard organises your projects. The AI itself, Claude Code, is a separate program, so it gets installed once.</div>
+  </div></div>
+
+  <div class="step"><div class="stepNum">6</div><div class="stepBody">
+    <h2>Launch Claude</h2>
+    <p>Close the dashboard with the <b>✕</b> in its top-right corner, open it again from the desktop icon, and click <b>Launch</b>.</p>
+    <p>A black terminal window opens with Claude starting up.</p>
+  </div></div>
+
+  <div class="warnBox">
+    <h2>If the "install Claude Code" box keeps coming back</h2>
+    <p>On some PCs the Claude installer finishes but doesn't tell Windows where it put the program. To fix it, open PowerShell again, paste this line and press <kbd>Enter</kbd>:</p>
+    <div class="cmd"><code>$b="$env:USERPROFILE\.local\bin"; if (Test-Path "$b\claude.exe") { $p=[Environment]::GetEnvironmentVariable('Path','User'); if ($p -notlike "*$b*") { [Environment]::SetEnvironmentVariable('Path',"$p;$b",'User'); 'FIXED' } else { 'ALREADY SET' } } else { 'NOT FOUND' }</code><button type="button" onclick="copyCmd(this)">Copy</button></div>
+    <p>When it prints <b>FIXED</b>, close and reopen the dashboard, then click Launch. If it prints <b>NOT FOUND</b>, run the install line from step 5 again.</p>
+  </div>
+
+  <div class="step"><div class="stepNum">7</div><div class="stepBody">
+    <h2>Sign in</h2>
+    <ol>
+      <li>Press <kbd>Enter</kbd> to accept each setup question, such as the colour style.</li>
+      <li>When it asks how to sign in, choose <b>Claude account with subscription</b>.</li>
+      <li>A browser page opens. Click <b>Authorize</b>, then go back to the black window and press <kbd>Enter</kbd>.</li>
+      <li>If it asks <b>"Do you trust the files in this folder?"</b>, choose <b>Yes</b>.</li>
+    </ol>
+    <p>You only sign in once on each computer.</p>
+  </div></div>
+
+  <div class="part">Part 3: Use it</div>
+
+  <div class="step"><div class="stepNum">8</div><div class="stepBody">
+    <h2>Ask for anything</h2>
+    <p>Type what you want, the way you'd write a text message, and press <kbd>Enter</kbd>. For example:</p>
+    <div class="cmd"><code>Make me a simple web page with my three favorite recipes, and open it in my browser</code><button type="button" onclick="copyCmd(this)">Copy</button></div>
+    <p>Claude asks before it creates files or runs anything. Press <kbd>Enter</kbd> to say yes.</p>
+  </div></div>
+
+  <div class="tip">
+    <h2>Coming back to a project later</h2>
+    <p>Open the dashboard, click <b>Launch</b> on the project, and type <code>where were we?</code>. Claude reads its notes and tells you what was done and what comes next.</p>
+  </div>
+
+  <div class="tip">
+    <h2>On a Mac</h2>
+    <p>Download the Mac version from the same page, open the <b>.dmg</b> file and drag the app into <b>Applications</b>. It opens without warnings. For step 7, open the <b>Terminal</b> app instead of PowerShell and paste the line the dashboard's install box shows you.</p>
+  </div>
+
+  <div class="navRow bottom">
+    <a href="index.html" class="homeLink">← Terminal Manager home</a>
+    <a href="index.html#download" class="dlBtn">⬇ Download</a>
+  </div>
+  <div class="foot">Terminal Project Dashboard is made by Impera Business Services. Claude and Claude Code are products of Anthropic; this project is not affiliated with Anthropic. <a href="legal.html" style="color:inherit;">Legal &amp; disclaimer</a></div>
+</div>
+<script src="visitor-stats.js" defer></script>
+<script>
+  function copyCmd(btn) {
+    var text = btn.previousElementSibling.textContent;
+    function done() { btn.textContent = 'Copied!'; setTimeout(function () { btn.textContent = 'Copy'; }, 1500); }
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, function () {});
+  }
+</script>
+</body>
+</html>
