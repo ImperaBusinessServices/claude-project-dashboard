@@ -24,7 +24,7 @@ permissions:
 jobs:
   build-mac:
     name: Build signed + notarized macOS .dmg (universal)
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 60
 
     steps:
