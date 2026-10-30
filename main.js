@@ -2951,9 +2951,15 @@ function spendAddCell(day, project, model, cost, inTok, outTok, cr, cw) {
   c[1] += inTok; c[2] += outTok; c[3] += cr; c[4] += cw; c[5] += 1;
 }
 
+const SPEND_LOG_CACHE_PATH = path.join(HOME, '.claude-manager-spend-logcache.json');
+
 async function scanSpendDays() {
   const days = {};
   const seen = new Set();
+  let oldCache = {};
+  try { oldCache = JSON.parse(fs.readFileSync(SPEND_LOG_CACHE_PATH, 'utf8')).files || {}; } catch { /* first run */ }
+  const newCache = {};
+  let cacheChanged = false;
   let projectDirs = [];
   try {
     projectDirs = fs.readdirSync(SPEND_PROJECTS_DIR, { withFileTypes: true })
@@ -2966,33 +2972,47 @@ async function scanSpendDays() {
     const files = [];
     spendWalkJsonl(path.join(SPEND_PROJECTS_DIR, dirName), files);
     for (const file of files) {
-      let text;
-      try { text = fs.readFileSync(file, 'utf8'); } catch { continue; }
-      for (const line of text.split('\n')) {
-        // cheap pre-filter before JSON.parse
-        if (!line.includes('"assistant"') || !line.includes('"usage"')) continue;
-        let e;
-        try { e = JSON.parse(line); } catch { continue; }
-        if (e.type !== 'assistant' || !e.message || !e.message.usage) continue;
-        if (e.isApiErrorMessage) continue;
-        const m = e.message;
-        const model = m.model || '';
-        if (!model || model === '<synthetic>') continue;
-        const key = (m.id || e.uuid || '') + '|' + (e.requestId || '');
-        if (key !== '|') { if (seen.has(key)) continue; seen.add(key); }
-        const date = spendLocalDate(e.timestamp);
-        if (!date) continue;
-        const u = m.usage;
-        const inTok = u.input_tokens || 0;
-        const outTok = u.output_tokens || 0;
-        const cr = u.cache_read_input_tokens || 0;
-        let w5 = 0, w1h = 0;
-        if (u.cache_creation) {
-          w5 = u.cache_creation.ephemeral_5m_input_tokens || 0;
-          w1h = u.cache_creation.ephemeral_1h_input_tokens || 0;
-        } else {
-          w5 = u.cache_creation_input_tokens || 0;
+      // Session logs only ever grow, and finished ones never change, so each
+      // file's parsed records are cached by size + mtime. Only new/changed
+      // files are re-read — that is what keeps launch fast (the logs total GBs).
+      let st;
+      try { st = await fs.promises.stat(file); } catch { continue; }
+      let ent = oldCache[file];
+      if (!ent || ent.size !== st.size || ent.mtime !== st.mtimeMs) {
+        let text;
+        try { text = await fs.promises.readFile(file, 'utf8'); } catch { continue; }
+        const recs = [];
+        for (const line of text.split('\n')) {
+          // cheap pre-filter before JSON.parse
+          if (!line.includes('"assistant"') || !line.includes('"usage"')) continue;
+          let e;
+          try { e = JSON.parse(line); } catch { continue; }
+          if (e.type !== 'assistant' || !e.message || !e.message.usage) continue;
+          if (e.isApiErrorMessage) continue;
+          const m = e.message;
+          const model = m.model || '';
+          if (!model || model === '<synthetic>') continue;
+          const key = (m.id || e.uuid || '') + '|' + (e.requestId || '');
+          const date = spendLocalDate(e.timestamp);
+          if (!date) continue;
+          const u = m.usage;
+          let w5 = 0, w1h = 0;
+          if (u.cache_creation) {
+            w5 = u.cache_creation.ephemeral_5m_input_tokens || 0;
+            w1h = u.cache_creation.ephemeral_1h_input_tokens || 0;
+          } else {
+            w5 = u.cache_creation_input_tokens || 0;
+          }
+          recs.push([key, date, model, u.input_tokens || 0, u.output_tokens || 0,
+            u.cache_read_input_tokens || 0, w5, w1h]);
         }
+        ent = { size: st.size, mtime: st.mtimeMs, recs };
+        cacheChanged = true;
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+      newCache[file] = ent;
+      for (const [key, date, model, inTok, outTok, cr, w5, w1h] of ent.recs) {
+        if (key !== '|') { if (seen.has(key)) continue; seen.add(key); }
         const r = spendRatesFor(model, date);
         const cost = (inTok * r[0] + w5 * r[1] + w1h * r[2] + cr * r[3] + outTok * r[4]) / 1e6;
 
@@ -3004,6 +3024,9 @@ async function scanSpendDays() {
     }
     // let the event loop breathe between projects so the app stays responsive
     await new Promise((resolve) => setImmediate(resolve));
+  }
+  if (cacheChanged || Object.keys(newCache).length !== Object.keys(oldCache).length) {
+    try { await fs.promises.writeFile(SPEND_LOG_CACHE_PATH, JSON.stringify({ version: 1, files: newCache })); } catch { /* cache is optional */ }
   }
   return days;
 }
