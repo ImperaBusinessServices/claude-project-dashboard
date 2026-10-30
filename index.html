@@ -1075,7 +1075,7 @@
   <div class="modal-overlay" id="aboutModal">
     <div class="modal" style="width: 640px; max-width: 92%; max-height: 90vh; overflow-y: auto;">
       <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.17.1</span></h2>
+        <h2 style="margin: 0;">Settings <span style="font-size: 12px; color: #888; font-weight: normal;">v2.17.2</span></h2>
         <button class="btn btn-ghost btn-small" onclick="checkForUpdatesClick()" style="font-size: 11px; padding: 3px 9px;">Check for updates</button>
         <a class="btn btn-ghost btn-small" href="https://github.com/ImperaBusinessServices/claude-project-dashboard" target="_blank" rel="noopener" style="font-size: 11px; padding: 3px 9px; text-decoration: none;">View on GitHub</a>
       </div>
@@ -1136,6 +1136,15 @@
 
       <div style="font-size: 13px; line-height: 1.8; color: #bbb;">
         <p style="margin-bottom: 14px;">A simple app to manage your AI terminal project folders.</p>
+        <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.17.2:</h3>
+        <ul style="margin-left: 18px; margin-bottom: 14px;">
+          <li><strong>⚡ Opens much faster.</strong> The app no longer re-reads all of your old Claude chat history every time it starts, which could make it freeze and show "Not Responding". It now remembers what it has already counted and only reads new activity. Your Spend totals are unchanged.</li>
+        </ul>
+
+
+        <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
+          <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
+          <div style="margin-top: 10px;">
 
         <h3 style="color: #e94560; font-size: 14px; margin-bottom: 6px;">New in v2.17.1:</h3>
         <ul style="margin-left: 18px; margin-bottom: 14px;">
@@ -1146,10 +1155,6 @@
           <li><strong>Token counts in Spend.</strong> The Spend totals and tables now show how many tokens went in and out, next to the dollars.</li>
           <li><strong>Fixed: "Custom command…" did nothing.</strong> Picking it from the ▾ menu now opens a box where you type the command.</li>
         </ul>
-
-        <details style="margin-bottom: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
-          <summary style="cursor: pointer; color: #e94560; font-size: 13px; font-weight: 600; user-select: none;">Older updates</summary>
-          <div style="margin-top: 10px;">
             <h3 style="color: #e94560; font-size: 13px; margin: 8px 0 6px;">v2.17.0:</h3>
             <ul style="margin-left: 18px; margin-bottom: 10px;">
               <li><strong>🖥️ New name: Terminal Project Dashboard.</strong> The app used to be called Claude Project Dashboard. It now launches Claude Code, Codex, OpenCode, local models and Claude on AWS Bedrock, so the name now says what it does for all of them. Nothing else changes: your projects, settings and notes are exactly where they were. The website has moved to <strong>terminal-manager.com</strong> (the old address forwards there).</li>
